@@ -1,150 +1,325 @@
 // ============================================
-// AMPARA API Configuration
-// ============================================
-// Configure your API endpoints here
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://your-api.com/api';
-
-// Auth endpoints
-export const AUTH_ENDPOINTS = {
-  login: `${API_BASE_URL}/auth/login`,
-  logout: `${API_BASE_URL}/auth/logout`,
-  forgotPassword: `${API_BASE_URL}/auth/forgot-password`,
-  refreshToken: `${API_BASE_URL}/auth/refresh`,
-};
-
-// Panic endpoints
-export const PANIC_ENDPOINTS = {
-  activate: `${API_BASE_URL}/panic/activate`,
-  deactivate: `${API_BASE_URL}/panic/deactivate`,
-  status: `${API_BASE_URL}/panic/status`,
-};
-
-// Recording endpoints
-export const RECORDING_ENDPOINTS = {
-  startSession: `${API_BASE_URL}/recording/start`,
-  uploadSegment: `${API_BASE_URL}/recording/segment`,
-  endSession: `${API_BASE_URL}/recording/end`,
-};
-
-// Location endpoints
-export const LOCATION_ENDPOINTS = {
-  update: `${API_BASE_URL}/location/update`,
-};
-
-// File upload endpoints
-export const UPLOAD_ENDPOINTS = {
-  file: `${API_BASE_URL}/upload/file`,
-  pending: `${API_BASE_URL}/upload/pending`,
-};
-
-// ============================================
-// API Helper Functions
+// AMPARA API - Centralized API Client
 // ============================================
 
-interface ApiOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  body?: unknown;
-  headers?: Record<string, string>;
+import { getDeviceId } from './deviceId';
+import {
+  ApiResponse,
+  LoginResponse,
+  PanicActivationResponse,
+  PanicCancelResponse,
+  AudioUploadResponse,
+  LocationUpdateResponse,
+  ConfigSyncResponse,
+  PingResponse,
+  PanicActivationType,
+  PanicCancelType,
+  RecordingStatusType,
+  STORAGE_KEYS,
+} from './types';
+
+// API Base URL - single endpoint with action field
+const API_URL = import.meta.env.VITE_API_BASE_URL || 
+  'https://ilikiajeduezvvanjejz.supabase.co/functions/v1/mobile-api';
+
+// ============================================
+// Session Token Management
+// ============================================
+
+export function getSessionToken(): string | null {
+  return localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
 }
 
-export async function apiRequest<T>(
-  endpoint: string,
-  options: ApiOptions = {}
-): Promise<{ data: T | null; error: string | null }> {
-  const { method = 'GET', body, headers = {} } = options;
+export function setSessionToken(token: string): void {
+  localStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, token);
+}
+
+export function clearSessionToken(): void {
+  localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
+}
+
+// ============================================
+// Core API Request Function
+// ============================================
+
+interface MobileApiPayload {
+  action: string;
+  [key: string]: unknown;
+}
+
+async function mobileApi<T>(
+  action: string,
+  payload: Record<string, unknown> = {},
+  options: { requiresAuth?: boolean } = {}
+): Promise<ApiResponse<T>> {
+  const { requiresAuth = true } = options;
   
-  const token = localStorage.getItem('ampara_token');
-  
+  const body: MobileApiPayload = {
+    action,
+    device_id: getDeviceId(),
+    ...payload,
+  };
+
+  // Add session token if required
+  if (requiresAuth) {
+    const token = getSessionToken();
+    if (!token) {
+      return { data: null, error: 'Sessão expirada. Faça login novamente.' };
+    }
+    body.session_token = token;
+  }
+
   try {
-    const response = await fetch(endpoint, {
-      method,
+    const response = await fetch(API_URL, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...headers,
       },
-      ...(body ? { body: JSON.stringify(body) } : {}),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return { data: null, error: errorData.message || 'Request failed' };
+      return { 
+        data: null, 
+        error: errorData.error || errorData.message || `Erro ${response.status}` 
+      };
     }
 
     const data = await response.json();
     return { data, error: null };
   } catch (error) {
     console.error('API Error:', error);
-    return { data: null, error: 'Network error. Check your connection.' };
+    return { data: null, error: 'Erro de conexão. Verifique sua internet.' };
   }
 }
 
-// Upload file with progress
-export async function uploadFileWithProgress(
-  file: File,
-  onProgress: (progress: number) => void
-): Promise<{ success: boolean; error: string | null }> {
-  return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    const formData = new FormData();
-    formData.append('file', file);
+// ============================================
+// Authentication Actions
+// ============================================
 
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        const progress = Math.round((e.loaded / e.total) * 100);
-        onProgress(progress);
-      }
-    });
+/**
+ * Login with email and password
+ * Supports coercion password (silent alert)
+ */
+export async function loginCustomizado(
+  email: string,
+  senha: string
+): Promise<ApiResponse<LoginResponse> & { isCoercion?: boolean }> {
+  const result = await mobileApi<LoginResponse>(
+    'loginCustomizado',
+    { email, senha },
+    { requiresAuth: false }
+  );
 
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve({ success: true, error: null });
-      } else {
-        resolve({ success: false, error: 'Upload failed' });
-      }
-    });
+  if (result.data) {
+    // Store session token
+    setSessionToken(result.data.session.token);
+    
+    // Store user config
+    localStorage.setItem(
+      STORAGE_KEYS.USER_CONFIG,
+      JSON.stringify(result.data.configuracoes)
+    );
 
-    xhr.addEventListener('error', () => {
-      resolve({ success: false, error: 'Network error' });
-    });
-
-    const token = localStorage.getItem('ampara_token');
-    xhr.open('POST', UPLOAD_ENDPOINTS.file);
-    if (token) {
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    // Check for coercion (silent - no visual feedback)
+    if (result.data.coacao_detectada) {
+      return { ...result, isCoercion: true };
     }
-    xhr.send(formData);
+  }
+
+  return result;
+}
+
+/**
+ * Logout from the app
+ */
+export async function logoutMobile(): Promise<ApiResponse<{ success: boolean }>> {
+  const result = await mobileApi<{ success: boolean }>('logoutMobile');
+  
+  // Clear local session even if API fails
+  clearSessionToken();
+  localStorage.removeItem(STORAGE_KEYS.USER_CONFIG);
+  
+  return result;
+}
+
+// ============================================
+// Panic Mode Actions
+// ============================================
+
+/**
+ * Activate panic mode
+ */
+export async function acionarPanicoMobile(
+  latitude: number,
+  longitude: number,
+  tipo_acionamento: PanicActivationType = 'manual'
+): Promise<ApiResponse<PanicActivationResponse>> {
+  return mobileApi<PanicActivationResponse>('acionarPanicoMobile', {
+    localizacao: { latitude, longitude },
+    tipo_acionamento,
+    timestamp: new Date().toISOString(),
   });
 }
 
-// Upload audio segment (for real-time recording)
-export async function uploadAudioSegment(
-  sessionId: string,
-  segmentData: Blob,
+/**
+ * Cancel panic mode (requires password validation)
+ */
+export async function cancelarPanicoMobile(
+  tipo_cancelamento: PanicCancelType = 'manual'
+): Promise<ApiResponse<PanicCancelResponse>> {
+  return mobileApi<PanicCancelResponse>('cancelarPanicoMobile', {
+    tipo_cancelamento,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+// ============================================
+// Location Actions
+// ============================================
+
+/**
+ * Send GPS location update
+ */
+export async function enviarLocalizacaoGPS(
+  latitude: number,
+  longitude: number
+): Promise<ApiResponse<LocationUpdateResponse>> {
+  const result = await mobileApi<LocationUpdateResponse>('enviarLocalizacaoGPS', {
+    latitude,
+    longitude,
+    timestamp: new Date().toISOString(),
+  });
+
+  // Cache last known location
+  if (result.data?.success) {
+    localStorage.setItem(
+      STORAGE_KEYS.LAST_LOCATION,
+      JSON.stringify({ latitude, longitude, timestamp: new Date().toISOString() })
+    );
+  }
+
+  return result;
+}
+
+// ============================================
+// Recording Actions
+// ============================================
+
+/**
+ * Upload audio segment (multipart/form-data)
+ */
+export async function receberAudioMobile(
+  audioBlob: Blob,
   segmentIndex: number
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<ApiResponse<AudioUploadResponse>> {
   const formData = new FormData();
-  formData.append('session_id', sessionId);
+  formData.append('action', 'receberAudioMobile');
+  formData.append('session_token', getSessionToken() || '');
+  formData.append('device_id', getDeviceId());
   formData.append('segment_index', segmentIndex.toString());
-  formData.append('audio', segmentData, `segment_${segmentIndex}.webm`);
+  formData.append('timestamp', new Date().toISOString());
+  formData.append('audio', audioBlob, `segment_${segmentIndex}.webm`);
 
   try {
-    const token = localStorage.getItem('ampara_token');
-    const response = await fetch(RECORDING_ENDPOINTS.uploadSegment, {
+    const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
       body: formData,
     });
 
     if (!response.ok) {
-      return { success: false, error: 'Segment upload failed' };
+      const errorData = await response.json().catch(() => ({}));
+      return { 
+        data: null, 
+        error: errorData.error || 'Falha no envio do áudio' 
+      };
     }
 
-    return { success: true, error: null };
+    const data = await response.json();
+    return { data, error: null };
   } catch (error) {
-    return { success: false, error: 'Network error' };
+    console.error('Audio upload error:', error);
+    return { data: null, error: 'Erro ao enviar áudio' };
   }
+}
+
+/**
+ * Report recording status changes
+ */
+export async function reportarStatusGravacao(
+  status: RecordingStatusType
+): Promise<ApiResponse<{ success: boolean }>> {
+  return mobileApi<{ success: boolean }>('reportarStatusGravacao', {
+    status,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+// ============================================
+// Configuration & Heartbeat Actions
+// ============================================
+
+/**
+ * Sync user configuration
+ */
+export async function syncConfigMobile(): Promise<ApiResponse<ConfigSyncResponse>> {
+  const result = await mobileApi<ConfigSyncResponse>('syncConfigMobile');
+  
+  if (result.data?.configuracoes) {
+    localStorage.setItem(
+      STORAGE_KEYS.USER_CONFIG,
+      JSON.stringify(result.data.configuracoes)
+    );
+  }
+  
+  return result;
+}
+
+/**
+ * Ping server to maintain online status
+ */
+export async function pingMobile(): Promise<ApiResponse<PingResponse>> {
+  return mobileApi<PingResponse>('pingMobile');
+}
+
+// ============================================
+// Utility Functions
+// ============================================
+
+/**
+ * Get cached user configuration
+ */
+export function getCachedConfig(): ConfigSyncResponse['configuracoes'] | null {
+  const stored = localStorage.getItem(STORAGE_KEYS.USER_CONFIG);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Get last known location
+ */
+export function getLastKnownLocation(): { latitude: number; longitude: number; timestamp: string } | null {
+  const stored = localStorage.getItem(STORAGE_KEYS.LAST_LOCATION);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if session is valid (basic check - doesn't verify with server)
+ */
+export function hasValidSession(): boolean {
+  return !!getSessionToken();
 }
