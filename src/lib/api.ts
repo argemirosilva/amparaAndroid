@@ -80,8 +80,10 @@ async function mobileApi<T>(
       return { data: null, error: 'Sessão expirada. Faça login novamente.' };
     }
     body.session_token = token;
+    // API expects email in multiple places for validation
     if (email) {
       body.email = email;
+      body.usuario_email = email;
     }
   }
 
