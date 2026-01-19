@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
-import { StatusIndicator } from '@/components/StatusIndicator';
+
 import { MonitoringStatus } from '@/components/MonitoringStatus';
 import { usePanic } from '@/hooks/usePanic';
 import { useRecording } from '@/hooks/useRecording';
@@ -120,11 +120,6 @@ export function HomePage({ onLogout }: HomePageProps) {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 gap-8">
-        {/* Status indicator */}
-        <StatusIndicator
-          status={panic.isPanicActive ? 'panic' : recording.isRecording ? 'recording' : 'normal'}
-          pendingUploads={appState.pendingUploads}
-        />
 
         {/* Monitoring status */}
         {!panic.isPanicActive && !recording.isRecording && (
