@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, File, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { getSessionToken } from '@/lib/api';
+import { getSessionToken, getUserEmail } from '@/lib/api';
 import { getDeviceId } from '@/lib/deviceId';
 import { addPendingUpload } from '@/lib/appState';
 import { useAppState } from '@/hooks/useAppState';
@@ -45,6 +45,7 @@ export function UploadPage() {
       formData.append('action', 'uploadArquivo');
       formData.append('session_token', getSessionToken() || '');
       formData.append('device_id', getDeviceId());
+      formData.append('email_usuario', getUserEmail() || '');
       formData.append('file', file);
       formData.append('timestamp', new Date().toISOString());
 
