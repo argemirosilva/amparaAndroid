@@ -232,11 +232,8 @@ export async function receberAudioMobile(
 ): Promise<ApiResponse<AudioUploadResponse>> {
   const email = getUserEmail();
   const token = getSessionToken();
-  
-  console.log('[receberAudioMobile] email:', email, 'token:', token ? 'exists' : 'missing');
-  
+
   if (!token || !email) {
-    console.error('[receberAudioMobile] Missing token or email');
     return { data: null, error: 'Sessão expirada. Faça login novamente.' };
   }
 
@@ -248,8 +245,6 @@ export async function receberAudioMobile(
   formData.append('segment_index', segmentIndex.toString());
   formData.append('timestamp', new Date().toISOString());
   formData.append('audio', audioBlob, `segment_${segmentIndex}.webm`);
-  
-  console.log('[receberAudioMobile] FormData created with email_usuario:', email);
 
   try {
     const response = await fetch(API_URL, {
