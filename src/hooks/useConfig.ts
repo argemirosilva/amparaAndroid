@@ -1,17 +1,39 @@
 import { useState, useCallback, useEffect } from 'react';
 import { syncConfigMobile, getCachedConfig } from '@/lib/api';
-import { UserConfig, SupportContact } from '@/lib/types';
+import { UserConfig, SupportContact, MonitoringPeriod } from '@/lib/types';
+
+interface MonitoringState {
+  dentroHorario: boolean;
+  gravacaoAtiva: boolean;
+  periodoAtualIndex: number | null;
+  gravacaoInicio: string | null;
+  gravacaoFim: string | null;
+  periodosHoje: MonitoringPeriod[];
+  gravacaoDias: string[];
+}
 
 interface ConfigState {
   config: UserConfig | null;
+  monitoring: MonitoringState;
   isLoading: boolean;
   lastSync: string | null;
   error: string | null;
 }
 
+const initialMonitoringState: MonitoringState = {
+  dentroHorario: false,
+  gravacaoAtiva: false,
+  periodoAtualIndex: null,
+  gravacaoInicio: null,
+  gravacaoFim: null,
+  periodosHoje: [],
+  gravacaoDias: [],
+};
+
 export function useConfig() {
   const [state, setState] = useState<ConfigState>(() => ({
     config: getCachedConfig(),
+    monitoring: initialMonitoringState,
     isLoading: false,
     lastSync: null,
     error: null,
@@ -34,6 +56,15 @@ export function useConfig() {
 
     setState({
       config: result.data.configuracoes,
+      monitoring: {
+        dentroHorario: result.data.dentro_horario ?? false,
+        gravacaoAtiva: result.data.gravacao_ativa ?? false,
+        periodoAtualIndex: result.data.periodo_atual_index ?? null,
+        gravacaoInicio: result.data.gravacao_inicio ?? null,
+        gravacaoFim: result.data.gravacao_fim ?? null,
+        periodosHoje: result.data.periodos_hoje ?? [],
+        gravacaoDias: result.data.gravacao_dias ?? [],
+      },
       isLoading: false,
       lastSync: result.data.ultima_atualizacao || new Date().toISOString(),
       error: null,

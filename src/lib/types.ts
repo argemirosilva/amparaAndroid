@@ -68,10 +68,23 @@ export interface LocationUpdateResponse {
   timestamp: string;
 }
 
+// Monitoring Period
+export interface MonitoringPeriod {
+  inicio: string; // "08:00"
+  fim: string;    // "12:00"
+}
+
 // Config Sync Response
 export interface ConfigSyncResponse {
   configuracoes: UserConfig;
   ultima_atualizacao: string;
+  dentro_horario?: boolean;
+  gravacao_ativa?: boolean;
+  periodo_atual_index?: number | null;
+  gravacao_inicio?: string | null;
+  gravacao_fim?: string | null;
+  periodos_hoje?: MonitoringPeriod[];
+  gravacao_dias?: string[];
 }
 
 // Ping Response
