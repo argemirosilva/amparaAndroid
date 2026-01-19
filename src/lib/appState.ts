@@ -1,0 +1,103 @@
+// ============================================
+// AMPARA App State Machine
+// ============================================
+// Clear state management for the app lifecycle
+
+export type AppStatus = 'normal' | 'recording' | 'panic';
+
+export interface AppState {
+  status: AppStatus;
+  isAuthenticated: boolean;
+  pendingUploads: number;
+  recordingStartTime: number | null;
+  panicStartTime: number | null;
+  lastLocation: { lat: number; lng: number } | null;
+}
+
+export const initialAppState: AppState = {
+  status: 'normal',
+  isAuthenticated: false,
+  pendingUploads: 0,
+  recordingStartTime: null,
+  panicStartTime: null,
+  lastLocation: null,
+};
+
+// State persistence
+const STATE_KEY = 'ampara_state';
+
+export function saveState(state: Partial<AppState>): void {
+  const current = loadState();
+  const updated = { ...current, ...state };
+  localStorage.setItem(STATE_KEY, JSON.stringify(updated));
+}
+
+export function loadState(): AppState {
+  try {
+    const saved = localStorage.getItem(STATE_KEY);
+    if (saved) {
+      return { ...initialAppState, ...JSON.parse(saved) };
+    }
+  } catch (error) {
+    console.error('Error loading state:', error);
+  }
+  return initialAppState;
+}
+
+export function clearState(): void {
+  localStorage.removeItem(STATE_KEY);
+}
+
+// Pending uploads queue
+const PENDING_QUEUE_KEY = 'ampara_pending_queue';
+
+export interface PendingUpload {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  type: 'audio' | 'file';
+  data: string; // Base64 encoded
+  createdAt: number;
+  status: 'pending' | 'uploading' | 'failed';
+  retryCount: number;
+}
+
+export function getPendingUploads(): PendingUpload[] {
+  try {
+    const saved = localStorage.getItem(PENDING_QUEUE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addPendingUpload(upload: Omit<PendingUpload, 'id' | 'createdAt' | 'status' | 'retryCount'>): void {
+  const uploads = getPendingUploads();
+  const newUpload: PendingUpload = {
+    ...upload,
+    id: crypto.randomUUID(),
+    createdAt: Date.now(),
+    status: 'pending',
+    retryCount: 0,
+  };
+  uploads.push(newUpload);
+  localStorage.setItem(PENDING_QUEUE_KEY, JSON.stringify(uploads));
+}
+
+export function updatePendingUpload(id: string, updates: Partial<PendingUpload>): void {
+  const uploads = getPendingUploads();
+  const index = uploads.findIndex((u) => u.id === id);
+  if (index >= 0) {
+    uploads[index] = { ...uploads[index], ...updates };
+    localStorage.setItem(PENDING_QUEUE_KEY, JSON.stringify(uploads));
+  }
+}
+
+export function removePendingUpload(id: string): void {
+  const uploads = getPendingUploads().filter((u) => u.id !== id);
+  localStorage.setItem(PENDING_QUEUE_KEY, JSON.stringify(uploads));
+}
+
+export function clearPendingUploads(): void {
+  localStorage.removeItem(PENDING_QUEUE_KEY);
+}
