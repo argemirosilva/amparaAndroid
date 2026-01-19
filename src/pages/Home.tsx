@@ -9,6 +9,7 @@ import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
 
 import { MonitoringStatus } from '@/components/MonitoringStatus';
+import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
 import { usePanic } from '@/hooks/usePanic';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
@@ -124,14 +125,21 @@ export function HomePage({ onLogout }: HomePageProps) {
 
         {/* Monitoring status */}
         {!panic.isPanicActive && !recording.isRecording && (
-          <MonitoringStatus
-            dentroHorario={monitoring.dentroHorario}
-            periodoAtualIndex={monitoring.periodoAtualIndex}
-            periodosHoje={monitoring.periodosHoje}
-            gravacaoInicio={monitoring.gravacaoInicio}
-            gravacaoFim={monitoring.gravacaoFim}
-            isLoading={isConfigLoading}
-          />
+          <div className="w-full max-w-sm flex flex-col gap-2">
+            <MonitoringStatus
+              dentroHorario={monitoring.dentroHorario}
+              periodoAtualIndex={monitoring.periodoAtualIndex}
+              periodosHoje={monitoring.periodosHoje}
+              gravacaoInicio={monitoring.gravacaoInicio}
+              gravacaoFim={monitoring.gravacaoFim}
+              isLoading={isConfigLoading}
+            />
+            <MonitoringPeriodsList
+              periodosHoje={monitoring.periodosHoje}
+              periodoAtualIndex={monitoring.periodoAtualIndex}
+              isLoading={isConfigLoading}
+            />
+          </div>
         )}
 
         {/* Panic button */}
