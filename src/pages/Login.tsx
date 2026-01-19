@@ -71,10 +71,10 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-sm bg-white rounded-2xl shadow-lg p-8"
+        className="relative z-10 w-full max-w-sm bg-white rounded-2xl shadow-lg p-5"
       >
         {/* Logo */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-3">
           <LogoWithText />
         </div>
 
@@ -83,7 +83,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-center text-muted-foreground mb-6"
+          className="text-center text-muted-foreground text-sm mb-4"
         >
           Você não está sozinha
         </motion.p>
@@ -94,17 +94,17 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           onSubmit={handleSubmit}
-          className="space-y-4"
+          className="space-y-3"
         >
           {/* Email Field */}
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="email"
               placeholder="E-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-12 h-14 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+              className="pl-10 h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground rounded-lg text-sm"
               autoComplete="email"
               disabled={auth.isLoading}
             />
@@ -112,23 +112,23 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
           {/* Password Field */}
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type={showPassword ? 'text' : 'password'}
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-12 pr-12 h-14 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+              className="pl-10 pr-10 h-11 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground rounded-lg text-sm"
               autoComplete="current-password"
               disabled={auth.isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               disabled={auth.isLoading}
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
 
@@ -136,7 +136,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <button
             type="button"
             onClick={handleForgotPassword}
-            className="text-sm text-primary hover:text-primary/80 transition-colors"
+            className="text-xs text-primary hover:text-primary/80 transition-colors"
             disabled={auth.isLoading}
           >
             Esqueceu sua senha?
@@ -145,14 +145,14 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           {/* Submit Button */}
           <Button
             type="submit"
-            className="w-full h-14 text-lg font-semibold bg-gradient-primary hover:opacity-90 transition-opacity rounded-xl"
+            className="w-full h-11 text-base font-semibold bg-gradient-primary hover:opacity-90 transition-opacity rounded-lg"
             disabled={auth.isLoading}
           >
             {auth.isLoading ? (
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
+                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
               />
             ) : (
               'Entrar'
@@ -165,7 +165,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="text-center text-sm text-muted-foreground mt-6"
+          className="text-center text-xs text-muted-foreground mt-4"
         >
           Proteção sempre que você precisar
         </motion.p>
