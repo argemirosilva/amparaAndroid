@@ -267,7 +267,7 @@ export async function reportarStatusGravacao(
   status: RecordingStatusType
 ): Promise<ApiResponse<{ success: boolean }>> {
   return mobileApi<{ success: boolean }>('reportarStatusGravacao', {
-    status,
+    status_gravacao: status,
     timestamp: new Date().toISOString(),
   });
 }
