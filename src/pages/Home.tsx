@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Settings, Upload, Menu, LogOut, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
+import orizonLogo from '@/assets/orizon-tech-logo.png';
 import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
 
@@ -193,6 +194,12 @@ export function HomePage({ onLogout }: HomePageProps) {
           </motion.div>
         )}
       </main>
+
+      {/* Powered by footer */}
+      <footer className="py-4 flex flex-col items-center gap-1">
+        <span className="text-xs text-muted-foreground">powered by</span>
+        <img src={orizonLogo} alt="Orizon Tech" className="h-6 object-contain" />
+      </footer>
 
       {/* Floating upload button */}
       <Button
