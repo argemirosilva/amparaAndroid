@@ -9,6 +9,7 @@ interface MonitoringStatusProps {
   periodosHoje: MonitoringPeriod[];
   gravacaoInicio: string | null;
   gravacaoFim: string | null;
+  isLoading?: boolean;
 }
 
 export function MonitoringStatus({
@@ -17,6 +18,7 @@ export function MonitoringStatus({
   periodosHoje,
   gravacaoInicio,
   gravacaoFim,
+  isLoading = false,
 }: MonitoringStatusProps) {
   const [now, setNow] = useState(new Date());
 
@@ -71,6 +73,28 @@ export function MonitoringStatus({
     }
     return `${minutes}min`;
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-sm bg-muted/50 border border-border rounded-xl p-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+            <div className="h-3 w-24 bg-muted/70 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-border">
+          <div className="h-3 w-28 bg-muted/70 rounded animate-pulse" />
+        </div>
+      </motion.div>
+    );
+  }
 
   // Active monitoring
   if (dentroHorario && currentPeriod) {

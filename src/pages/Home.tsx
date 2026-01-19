@@ -26,7 +26,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   const appState = useAppState();
   const panic = usePanic();
   const recording = useRecording();
-  const { monitoring, syncConfig } = useConfig();
+  const { monitoring, isLoading: isConfigLoading, syncConfig } = useConfig();
 
   // Sync config on mount and every 5 minutes
   useEffect(() => {
@@ -134,6 +134,7 @@ export function HomePage({ onLogout }: HomePageProps) {
             periodosHoje={monitoring.periodosHoje}
             gravacaoInicio={monitoring.gravacaoInicio}
             gravacaoFim={monitoring.gravacaoFim}
+            isLoading={isConfigLoading}
           />
         )}
 
