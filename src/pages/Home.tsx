@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Upload, Menu, LogOut, X } from 'lucide-react';
@@ -7,9 +7,11 @@ import { Logo } from '@/components/Logo';
 import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
 import { StatusIndicator } from '@/components/StatusIndicator';
+import { MonitoringStatus } from '@/components/MonitoringStatus';
 import { usePanic } from '@/hooks/usePanic';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
+import { useConfig } from '@/hooks/useConfig';
 import { useToast } from '@/hooks/use-toast';
 
 interface HomePageProps {
@@ -24,6 +26,25 @@ export function HomePage({ onLogout }: HomePageProps) {
   const appState = useAppState();
   const panic = usePanic();
   const recording = useRecording();
+  const { monitoring, syncConfig } = useConfig();
+
+  // Sync config on mount and every 5 minutes
+  useEffect(() => {
+    syncConfig();
+    const interval = setInterval(syncConfig, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [syncConfig]);
+
+  // Re-sync when app becomes visible
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncConfig();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [syncConfig]);
 
   const handleRecordToggle = async () => {
     if (recording.isRecording) {
@@ -104,6 +125,17 @@ export function HomePage({ onLogout }: HomePageProps) {
           status={panic.isPanicActive ? 'panic' : recording.isRecording ? 'recording' : 'normal'}
           pendingUploads={appState.pendingUploads}
         />
+
+        {/* Monitoring status */}
+        {!panic.isPanicActive && !recording.isRecording && (
+          <MonitoringStatus
+            dentroHorario={monitoring.dentroHorario}
+            periodoAtualIndex={monitoring.periodoAtualIndex}
+            periodosHoje={monitoring.periodosHoje}
+            gravacaoInicio={monitoring.gravacaoInicio}
+            gravacaoFim={monitoring.gravacaoFim}
+          />
+        )}
 
         {/* Panic button */}
         {!panic.isPanicActive ? (
