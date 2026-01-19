@@ -43,7 +43,7 @@ export function useRecording() {
       streamRef.current = stream;
 
       // Report recording started
-      await reportarStatusGravacao('iniciado');
+      await reportarStatusGravacao('iniciada');
 
       // Setup MediaRecorder
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
@@ -150,7 +150,7 @@ export function useRecording() {
     }
 
     // Report recording ended
-    await reportarStatusGravacao('finalizado');
+    await reportarStatusGravacao('finalizada');
 
     mediaRecorderRef.current = null;
 
@@ -166,7 +166,7 @@ export function useRecording() {
   const pauseRecording = useCallback(async () => {
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.pause();
-      await reportarStatusGravacao('pausado');
+      await reportarStatusGravacao('pausada');
       setState((prev) => ({ ...prev, isPaused: true }));
     }
   }, []);
@@ -174,7 +174,7 @@ export function useRecording() {
   const resumeRecording = useCallback(async () => {
     if (mediaRecorderRef.current?.state === 'paused') {
       mediaRecorderRef.current.resume();
-      await reportarStatusGravacao('retomado');
+      await reportarStatusGravacao('retomada');
       setState((prev) => ({ ...prev, isPaused: false }));
     }
   }, []);

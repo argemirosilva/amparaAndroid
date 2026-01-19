@@ -114,7 +114,7 @@ export type PanicActivationType = 'manual' | 'voz' | 'oculto' | 'widget';
 export type PanicCancelType = 'manual' | 'timeout' | 'coacao';
 
 // Recording status types
-export type RecordingStatusType = 'iniciado' | 'pausado' | 'retomado' | 'finalizado';
+export type RecordingStatusType = 'iniciada' | 'pausada' | 'retomada' | 'finalizada' | 'enviando' | 'erro';
 
 // App status types
 export type AppStatusType = 'normal' | 'recording' | 'panic';
