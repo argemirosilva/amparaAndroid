@@ -80,17 +80,14 @@ export function MonitoringStatus({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm bg-muted/50 border border-border rounded-xl p-4"
+        className="w-full max-w-sm bg-muted/50 border border-border rounded-lg p-2"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-            <div className="h-3 w-24 bg-muted/70 rounded animate-pulse" />
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-muted animate-pulse" />
+          <div className="flex-1 space-y-1">
+            <div className="h-3 w-28 bg-muted rounded animate-pulse" />
+            <div className="h-2 w-20 bg-muted/70 rounded animate-pulse" />
           </div>
-        </div>
-        <div className="mt-3 pt-3 border-t border-border">
-          <div className="h-3 w-28 bg-muted/70 rounded animate-pulse" />
         </div>
       </motion.div>
     );
@@ -104,26 +101,22 @@ export function MonitoringStatus({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4"
+        className="w-full max-w-sm bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-emerald-500" />
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <Shield className="w-3 h-3 text-emerald-500" />
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-medium text-emerald-500">Monitoramento Ativo</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-sm font-medium text-emerald-500">Ativo</span>
+              <span className="text-xs text-muted-foreground">{currentPeriod.inicio}-{currentPeriod.fim}</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {currentPeriod.inicio} - {currentPeriod.fim}
+            <p className="text-xs text-muted-foreground">
+              Termina em {formatTimeDiff(endTime)}
             </p>
           </div>
-        </div>
-        <div className="mt-3 pt-3 border-t border-emerald-500/20">
-          <p className="text-sm text-muted-foreground">
-            Termina em <span className="font-medium text-foreground">{formatTimeDiff(endTime)}</span>
-          </p>
         </div>
       </motion.div>
     );
@@ -137,23 +130,21 @@ export function MonitoringStatus({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm bg-amber-500/10 border border-amber-500/30 rounded-xl p-4"
+        className="w-full max-w-sm bg-amber-500/10 border border-amber-500/30 rounded-lg p-2"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-amber-500" />
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+            <Clock className="w-3 h-3 text-amber-500" />
           </div>
           <div className="flex-1">
-            <span className="font-medium text-amber-500">Próximo Monitoramento</span>
-            <p className="text-sm text-muted-foreground">
-              {nextPeriod.inicio} - {nextPeriod.fim}
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium text-amber-500">Próximo</span>
+              <span className="text-xs text-muted-foreground">{nextPeriod.inicio}-{nextPeriod.fim}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Inicia em {formatTimeDiff(startTime)}
             </p>
           </div>
-        </div>
-        <div className="mt-3 pt-3 border-t border-amber-500/20">
-          <p className="text-sm text-muted-foreground">
-            Inicia em <span className="font-medium text-foreground">{formatTimeDiff(startTime)}</span>
-          </p>
         </div>
       </motion.div>
     );
@@ -164,17 +155,17 @@ export function MonitoringStatus({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-sm bg-muted/50 border border-border rounded-xl p-4"
+      className="w-full max-w-sm bg-muted/50 border border-border rounded-lg p-2"
     >
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-          <Moon className="w-5 h-5 text-muted-foreground" />
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+          <Moon className="w-3 h-3 text-muted-foreground" />
         </div>
         <div className="flex-1">
-          <span className="font-medium text-muted-foreground">Sem monitoramento hoje</span>
+          <span className="text-sm font-medium text-muted-foreground">Sem monitoramento</span>
           {periodosHoje.length > 0 && (
-            <p className="text-sm text-muted-foreground/70">
-              Próximo: amanhã às {periodosHoje[0].inicio}
+            <p className="text-xs text-muted-foreground/70">
+              Próximo: amanhã {periodosHoje[0].inicio}
             </p>
           )}
         </div>
