@@ -230,10 +230,18 @@ export async function receberAudioMobile(
   audioBlob: Blob,
   segmentIndex: number
 ): Promise<ApiResponse<AudioUploadResponse>> {
+  const email = getUserEmail();
+  const token = getSessionToken();
+  
+  if (!token || !email) {
+    return { data: null, error: 'Sessão expirada. Faça login novamente.' };
+  }
+
   const formData = new FormData();
   formData.append('action', 'receberAudioMobile');
-  formData.append('session_token', getSessionToken() || '');
+  formData.append('session_token', token);
   formData.append('device_id', getDeviceId());
+  formData.append('email_usuario', email);
   formData.append('segment_index', segmentIndex.toString());
   formData.append('timestamp', new Date().toISOString());
   formData.append('audio', audioBlob, `segment_${segmentIndex}.webm`);
