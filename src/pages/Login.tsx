@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import orizonLogo from '@/assets/orizon-tech-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LogoWithText } from '@/components/Logo';
@@ -169,6 +170,12 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           Proteção sempre que você precisar
         </motion.p>
       </motion.div>
+
+      {/* Powered by footer */}
+      <footer className="absolute bottom-6 flex flex-col items-center gap-1">
+        <span className="text-xs text-muted-foreground">powered by</span>
+        <img src={orizonLogo} alt="Orizon Tech" className="h-6 object-contain" />
+      </footer>
     </div>
   );
 }
