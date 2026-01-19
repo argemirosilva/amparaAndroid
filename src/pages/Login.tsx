@@ -70,10 +70,10 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-sm"
+        className="relative z-10 w-full max-w-sm bg-white rounded-2xl shadow-lg p-8"
       >
         {/* Logo */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6">
           <LogoWithText />
         </div>
 
@@ -82,7 +82,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-center text-muted-foreground mb-8"
+          className="text-center text-muted-foreground mb-6"
         >
           Você não está sozinha
         </motion.p>
@@ -103,7 +103,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               placeholder="E-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-12 h-14 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+              className="pl-12 h-14 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground rounded-xl"
               autoComplete="email"
               disabled={auth.isLoading}
             />
@@ -117,7 +117,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-12 pr-12 h-14 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+              className="pl-12 pr-12 h-14 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground rounded-xl"
               autoComplete="current-password"
               disabled={auth.isLoading}
             />
@@ -164,7 +164,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="text-center text-sm text-muted-foreground mt-8"
+          className="text-center text-sm text-muted-foreground mt-6"
         >
           Proteção sempre que você precisar
         </motion.p>
