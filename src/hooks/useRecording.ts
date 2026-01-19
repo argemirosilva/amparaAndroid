@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { receberAudioMobile, reportarStatusGravacao } from '@/lib/api';
 import { addPendingUpload } from '@/lib/appState';
 
@@ -29,7 +29,37 @@ export function useRecording() {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
+  // Cleanup effect - stops recording when component unmounts
+  useEffect(() => {
+    return () => {
+      // Stop MediaRecorder if active
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      // Release microphone
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      // Clear timers
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const startRecording = useCallback(async (): Promise<boolean> => {
+    // Prevent starting if already recording
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      console.warn('Recording already in progress');
+      return false;
+    }
+
     try {
       // Request microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({
