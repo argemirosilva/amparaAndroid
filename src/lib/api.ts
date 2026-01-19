@@ -244,7 +244,7 @@ export async function receberAudioMobile(
   formData.append('email_usuario', email);
   formData.append('segment_index', segmentIndex.toString());
   formData.append('timestamp', new Date().toISOString());
-  formData.append('audio', audioBlob, `segment_${segmentIndex}.webm`);
+  formData.append('audio', audioBlob, `segment_${segmentIndex}.wav`);
 
   try {
     const response = await fetch(API_URL, {
