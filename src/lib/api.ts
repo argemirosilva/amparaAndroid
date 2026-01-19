@@ -38,6 +38,18 @@ export function clearSessionToken(): void {
   localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
 }
 
+export function getUserEmail(): string | null {
+  const user = localStorage.getItem('ampara_user');
+  if (user) {
+    try {
+      return JSON.parse(user).email;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 // ============================================
 // Core API Request Function
 // ============================================
@@ -60,13 +72,17 @@ async function mobileApi<T>(
     ...payload,
   };
 
-  // Add session token if required
+  // Add session token and email if required
   if (requiresAuth) {
     const token = getSessionToken();
+    const email = getUserEmail();
     if (!token) {
       return { data: null, error: 'Sessão expirada. Faça login novamente.' };
     }
     body.session_token = token;
+    if (email) {
+      body.email = email;
+    }
   }
 
   try {
