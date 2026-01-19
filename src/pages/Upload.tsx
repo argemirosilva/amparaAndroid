@@ -46,7 +46,7 @@ export function UploadPage() {
       formData.append('session_token', getSessionToken() || '');
       formData.append('device_id', getDeviceId());
       formData.append('email_usuario', getUserEmail() || '');
-      formData.append('file', file);
+      formData.append('audio', file);
       formData.append('timestamp', new Date().toISOString());
 
       xhr.upload.addEventListener('progress', (e) => {
