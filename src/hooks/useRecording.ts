@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { uploadAudioSegment, RECORDING_ENDPOINTS, apiRequest } from '@/lib/api';
+import { receberAudioMobile, reportarStatusGravacao } from '@/lib/api';
 import { addPendingUpload } from '@/lib/appState';
 
 interface RecordingState {
@@ -24,7 +24,6 @@ export function useRecording() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const sessionIdRef = useRef<string | null>(null);
   const segmentIndexRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,19 +42,8 @@ export function useRecording() {
 
       streamRef.current = stream;
 
-      // Start recording session on server
-      const { data, error } = await apiRequest<{ session_id: string }>(
-        RECORDING_ENDPOINTS.startSession,
-        { method: 'POST' }
-      );
-
-      if (error || !data) {
-        console.error('Failed to start session:', error);
-        // Continue recording locally, will sync later
-        sessionIdRef.current = `local_${Date.now()}`;
-      } else {
-        sessionIdRef.current = data.session_id;
-      }
+      // Report recording started
+      await reportarStatusGravacao('iniciado');
 
       // Setup MediaRecorder
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
@@ -77,13 +65,9 @@ export function useRecording() {
           
           setState((prev) => ({ ...prev, segmentsPending: prev.segmentsPending + 1 }));
 
-          const { success, error } = await uploadAudioSegment(
-            sessionIdRef.current!,
-            segmentBlob,
-            segmentIndexRef.current
-          );
+          const result = await receberAudioMobile(segmentBlob, segmentIndexRef.current);
 
-          if (success) {
+          if (!result.error) {
             setState((prev) => ({
               ...prev,
               segmentsSent: prev.segmentsSent + 1,
@@ -103,7 +87,7 @@ export function useRecording() {
             reader.readAsDataURL(segmentBlob);
             
             setState((prev) => ({ ...prev, segmentsPending: prev.segmentsPending - 1 }));
-            console.error('Failed to upload segment:', error);
+            console.error('Failed to upload segment:', result.error);
           }
 
           segmentIndexRef.current++;
@@ -117,7 +101,7 @@ export function useRecording() {
         setState((prev) => ({ ...prev, duration: prev.duration + 1 }));
       }, 1000);
 
-      // Reset silence timer on audio activity (simplified - would need AudioContext for real detection)
+      // Reset silence timer on audio activity
       const resetSilenceTimer = () => {
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current);
@@ -165,15 +149,9 @@ export function useRecording() {
       silenceTimerRef.current = null;
     }
 
-    // End session on server
-    if (sessionIdRef.current && !sessionIdRef.current.startsWith('local_')) {
-      await apiRequest(RECORDING_ENDPOINTS.endSession, {
-        method: 'POST',
-        body: { session_id: sessionIdRef.current },
-      });
-    }
+    // Report recording ended
+    await reportarStatusGravacao('finalizado');
 
-    sessionIdRef.current = null;
     mediaRecorderRef.current = null;
 
     setState({
@@ -185,16 +163,18 @@ export function useRecording() {
     });
   }, []);
 
-  const pauseRecording = useCallback(() => {
+  const pauseRecording = useCallback(async () => {
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.pause();
+      await reportarStatusGravacao('pausado');
       setState((prev) => ({ ...prev, isPaused: true }));
     }
   }, []);
 
-  const resumeRecording = useCallback(() => {
+  const resumeRecording = useCallback(async () => {
     if (mediaRecorderRef.current?.state === 'paused') {
       mediaRecorderRef.current.resume();
+      await reportarStatusGravacao('retomado');
       setState((prev) => ({ ...prev, isPaused: false }));
     }
   }, []);

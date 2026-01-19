@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LogoWithText } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
-import { AUTH_ENDPOINTS, apiRequest } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -15,8 +15,8 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const auth = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,44 +30,26 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       return;
     }
 
-    setIsLoading(true);
+    const result = await auth.login(email, password);
 
-    try {
-      const { data, error } = await apiRequest<{ token: string; user: unknown }>(
-        AUTH_ENDPOINTS.login,
-        {
-          method: 'POST',
-          body: { email, password },
-        }
-      );
-
-      if (error || !data) {
-        toast({
-          title: 'Erro ao entrar',
-          description: error || 'Credenciais inválidas. Tente novamente.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Save token
-      localStorage.setItem('ampara_token', data.token);
-      
+    if (!result.success) {
       toast({
-        title: 'Bem-vinda!',
-        description: 'Login realizado com sucesso.',
-      });
-
-      onLoginSuccess();
-    } catch (err) {
-      toast({
-        title: 'Erro de conexão',
-        description: 'Não foi possível conectar ao servidor.',
+        title: 'Erro ao entrar',
+        description: result.error || 'Credenciais inválidas. Tente novamente.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    // Note: If isCoercion is true, we DON'T show any visual feedback
+    // The silent alert was already triggered by the API
+    
+    toast({
+      title: 'Bem-vinda!',
+      description: 'Login realizado com sucesso.',
+    });
+
+    onLoginSuccess();
   };
 
   const handleForgotPassword = () => {
@@ -123,7 +105,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               onChange={(e) => setEmail(e.target.value)}
               className="pl-12 h-14 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
               autoComplete="email"
-              disabled={isLoading}
+              disabled={auth.isLoading}
             />
           </div>
 
@@ -137,13 +119,13 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               onChange={(e) => setPassword(e.target.value)}
               className="pl-12 pr-12 h-14 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
               autoComplete="current-password"
-              disabled={isLoading}
+              disabled={auth.isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              disabled={isLoading}
+              disabled={auth.isLoading}
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -154,7 +136,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             type="button"
             onClick={handleForgotPassword}
             className="text-sm text-primary hover:text-primary/80 transition-colors"
-            disabled={isLoading}
+            disabled={auth.isLoading}
           >
             Esqueceu sua senha?
           </button>
@@ -163,9 +145,9 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <Button
             type="submit"
             className="w-full h-14 text-lg font-semibold bg-gradient-primary hover:opacity-90 transition-opacity rounded-xl"
-            disabled={isLoading}
+            disabled={auth.isLoading}
           >
-            {isLoading ? (
+            {auth.isLoading ? (
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}

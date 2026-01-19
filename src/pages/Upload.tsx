@@ -4,12 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, File, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { uploadFileWithProgress } from '@/lib/api';
+import { getSessionToken } from '@/lib/api';
+import { getDeviceId } from '@/lib/deviceId';
 import { addPendingUpload } from '@/lib/appState';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || 
+  'https://ilikiajeduezvvanjejz.supabase.co/functions/v1/mobile-api';
 
 export function UploadPage() {
   const navigate = useNavigate();
@@ -30,13 +34,51 @@ export function UploadPage() {
     }
   };
 
+  const uploadFileWithProgress = async (
+    file: File,
+    onProgress: (progress: number) => void
+  ): Promise<{ success: boolean; error: string | null }> => {
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+      
+      formData.append('action', 'uploadArquivo');
+      formData.append('session_token', getSessionToken() || '');
+      formData.append('device_id', getDeviceId());
+      formData.append('file', file);
+      formData.append('timestamp', new Date().toISOString());
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100);
+          onProgress(progress);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ success: true, error: null });
+        } else {
+          resolve({ success: false, error: 'Upload failed' });
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        resolve({ success: false, error: 'Network error' });
+      });
+
+      xhr.open('POST', API_URL);
+      xhr.send(formData);
+    });
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) return;
 
     setUploadStatus('uploading');
     setUploadProgress(0);
 
-    const { success, error } = await uploadFileWithProgress(
+    const { success } = await uploadFileWithProgress(
       selectedFile,
       (progress) => setUploadProgress(progress)
     );

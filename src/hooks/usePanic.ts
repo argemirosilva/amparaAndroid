@@ -1,12 +1,19 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { PANIC_ENDPOINTS, LOCATION_ENDPOINTS, apiRequest } from '@/lib/api';
+import { 
+  acionarPanicoMobile, 
+  cancelarPanicoMobile,
+} from '@/lib/api';
 import { useRecording } from './useRecording';
+import { useLocation } from './useLocation';
+import { PanicActivationType, PanicCancelType } from '@/lib/types';
 
 interface PanicState {
   isPanicActive: boolean;
   panicDuration: number;
   isActivating: boolean;
   location: { lat: number; lng: number } | null;
+  protocolNumber: string | null;
+  guardiansNotified: number;
 }
 
 const PANIC_TIMEOUT_MS = 1800000; // 30 minutes auto-timeout
@@ -19,39 +26,18 @@ export function usePanic() {
     panicDuration: 0,
     isActivating: false,
     location: null,
+    protocolNumber: null,
+    guardiansNotified: 0,
   });
 
   const { startRecording, stopRecording, isRecording } = useRecording();
+  const location = useLocation();
   
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const canCancelRef = useRef(false);
   const startTimeRef = useRef<number | null>(null);
-
-  // Get current location
-  const getLocation = useCallback(async (): Promise<{ lat: number; lng: number } | null> => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve(null);
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-          resolve(null);
-        },
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    });
-  }, []);
 
   // Start panic activation (on hold start)
   const startHold = useCallback(() => {
@@ -77,7 +63,9 @@ export function usePanic() {
   }, []);
 
   // Full panic activation
-  const activatePanic = useCallback(async () => {
+  const activatePanic = useCallback(async (
+    tipo: PanicActivationType = 'manual'
+  ) => {
     setState((prev) => ({ ...prev, isActivating: false }));
     
     // Vibrate on activation
@@ -85,25 +73,19 @@ export function usePanic() {
       navigator.vibrate([100, 50, 100]);
     }
 
-    // Get location
-    const location = await getLocation();
+    // Get current location
+    const position = await location.getCurrentPosition();
+    const lat = position?.coords.latitude ?? 0;
+    const lng = position?.coords.longitude ?? 0;
     
     // Start recording
     await startRecording();
 
-    // Notify server
-    await apiRequest(PANIC_ENDPOINTS.activate, {
-      method: 'POST',
-      body: { location },
-    });
+    // Enable panic mode location tracking (30s intervals)
+    location.startTracking(true);
 
-    // Send location update
-    if (location) {
-      await apiRequest(LOCATION_ENDPOINTS.update, {
-        method: 'POST',
-        body: location,
-      });
-    }
+    // Notify server
+    const result = await acionarPanicoMobile(lat, lng, tipo);
 
     startTimeRef.current = Date.now();
     canCancelRef.current = false;
@@ -120,19 +102,23 @@ export function usePanic() {
 
     // Auto-timeout after 30 minutes
     timeoutRef.current = setTimeout(() => {
-      deactivatePanic();
+      deactivatePanic('timeout');
     }, PANIC_TIMEOUT_MS);
 
     setState({
       isPanicActive: true,
       panicDuration: 0,
       isActivating: false,
-      location,
+      location: { lat, lng },
+      protocolNumber: result.data?.numero_protocolo || null,
+      guardiansNotified: result.data?.guardioes_notificados || 0,
     });
-  }, [getLocation, startRecording]);
+  }, [location, startRecording]);
 
   // Deactivate panic (requires password validation in UI)
-  const deactivatePanic = useCallback(async () => {
+  const deactivatePanic = useCallback(async (
+    tipo: PanicCancelType = 'manual'
+  ) => {
     // Stop timers
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -146,10 +132,11 @@ export function usePanic() {
     // Stop recording
     await stopRecording();
 
+    // Stop panic mode location tracking
+    location.disablePanicMode();
+
     // Notify server
-    await apiRequest(PANIC_ENDPOINTS.deactivate, {
-      method: 'POST',
-    });
+    await cancelarPanicoMobile(tipo);
 
     startTimeRef.current = null;
     canCancelRef.current = false;
@@ -159,8 +146,10 @@ export function usePanic() {
       panicDuration: 0,
       isActivating: false,
       location: null,
+      protocolNumber: null,
+      guardiansNotified: 0,
     });
-  }, [stopRecording]);
+  }, [stopRecording, location]);
 
   // Check if cancel is allowed
   const canCancel = useCallback(() => {
