@@ -36,7 +36,6 @@ export function LogoWithText({ className = '' }: { className?: string }) {
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
       <Logo size="lg" />
-      <LogoText />
     </div>
   );
 }
