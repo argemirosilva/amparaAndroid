@@ -172,10 +172,15 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       </motion.div>
 
       {/* Powered by footer */}
-      <footer className="absolute bottom-6 flex flex-col items-center gap-1">
+      <motion.footer
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.5 }}
+        className="absolute bottom-6 flex flex-col items-center gap-1"
+      >
         <span className="text-xs text-muted-foreground">powered by</span>
         <img src={orizonLogo} alt="Orizon Tech" className="h-6 object-contain" />
-      </footer>
+      </motion.footer>
     </div>
   );
 }

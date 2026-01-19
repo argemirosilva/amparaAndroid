@@ -91,7 +91,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border">
+      <header className="flex items-center justify-between p-4 border-b border-border bg-card">
         <Logo size="sm" />
         <div className="flex items-center gap-2">
           {/* Pending uploads badge */}
