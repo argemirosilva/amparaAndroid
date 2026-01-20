@@ -225,10 +225,14 @@ export async function enviarLocalizacaoGPS(
 
 /**
  * Upload audio segment (multipart/form-data)
+ * @param audioBlob - The audio blob to upload
+ * @param segmentIndex - The segment index (0-based)
+ * @param durationSeconds - Duration of this segment in seconds
  */
 export async function receberAudioMobile(
   audioBlob: Blob,
-  segmentIndex: number
+  segmentIndex: number,
+  durationSeconds: number
 ): Promise<ApiResponse<AudioUploadResponse>> {
   const email = getUserEmail();
   const token = getSessionToken();
@@ -243,6 +247,7 @@ export async function receberAudioMobile(
   formData.append('device_id', getDeviceId());
   formData.append('email_usuario', email);
   formData.append('segment_index', segmentIndex.toString());
+  formData.append('duration_seconds', durationSeconds.toString());
   formData.append('timestamp', new Date().toISOString());
   formData.append('audio', audioBlob, `segment_${segmentIndex}.wav`);
 
