@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
@@ -13,43 +12,18 @@ export function RecordingPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showCancelModal, setShowCancelModal] = React.useState(false);
-  const [cancelPassword, setCancelPassword] = React.useState('');
-  const [isValidating, setIsValidating] = React.useState(false);
   
   const appState = useAppState();
   const recording = useRecording();
 
   const handleCancelRecording = async () => {
-    if (!cancelPassword) {
-      toast({
-        title: 'Senha obrigatória',
-        description: 'Digite sua senha para cancelar.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsValidating(true);
-    await new Promise((r) => setTimeout(r, 500));
-    
-    if (cancelPassword.length >= 4) {
-      await recording.stopRecording();
-      appState.setStatus('normal');
-      toast({
-        title: 'Gravação cancelada',
-        description: `${recording.segmentsSent} segmentos foram enviados.`,
-      });
-      navigate('/');
-    } else {
-      toast({
-        title: 'Senha incorreta',
-        description: 'Tente novamente.',
-        variant: 'destructive',
-      });
-    }
-    
-    setIsValidating(false);
-    setCancelPassword('');
+    await recording.stopRecording();
+    appState.setStatus('normal');
+    toast({
+      title: 'Gravação encerrada',
+      description: `${recording.segmentsSent} segmentos foram enviados.`,
+    });
+    navigate('/');
   };
 
   return (
@@ -121,10 +95,10 @@ export function RecordingPage() {
           )}
         </div>
 
-        {/* Cancel button - Green panic-style */}
+        {/* Cancel button - Green panic-style with pulse */}
         <motion.button
           onClick={() => setShowCancelModal(true)}
-          className="w-40 h-40 rounded-full bg-gradient-safe flex flex-col items-center justify-center glow-safe"
+          className="w-40 h-40 rounded-full bg-gradient-safe flex flex-col items-center justify-center pulse-safe"
           whileTap={{ scale: 0.95 }}
         >
           <span className="text-2xl font-bold text-white">Cancelar</span>
@@ -164,25 +138,15 @@ export function RecordingPage() {
             </div>
 
             <p className="text-muted-foreground text-sm mb-6">
-              Digite sua senha para confirmar o encerramento da gravação.
+              Deseja encerrar a gravação?
             </p>
-
-            <Input
-              type="password"
-              placeholder="Sua senha"
-              value={cancelPassword}
-              onChange={(e) => setCancelPassword(e.target.value)}
-              className="mb-6"
-              autoFocus
-              disabled={isValidating}
-            />
 
             <div className="flex gap-3">
               <Button
                 variant="outline"
                 className="flex-1"
                 onClick={() => setShowCancelModal(false)}
-                disabled={isValidating || recording.isStopping}
+                disabled={recording.isStopping}
               >
                 Voltar
               </Button>
@@ -190,10 +154,10 @@ export function RecordingPage() {
                 variant="default"
                 className="flex-1"
                 onClick={handleCancelRecording}
-                disabled={isValidating || recording.isStopping}
+                disabled={recording.isStopping}
               >
                 {recording.isStopping && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {recording.isStopping ? 'Finalizando...' : isValidating ? 'Validando...' : 'Confirmar'}
+                {recording.isStopping ? 'Finalizando...' : 'Confirmar'}
               </Button>
             </div>
           </motion.div>

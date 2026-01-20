@@ -160,6 +160,10 @@
     animation: pulse-recording 2s ease-in-out infinite;
   }
 
+  .pulse-safe {
+    animation: pulse-safe 2s ease-in-out infinite;
+  }
+
   /* Glass effect */
   .glass {
     background: hsla(270, 45%, 12%, 0.8);
@@ -204,5 +208,16 @@
   }
   50% {
     box-shadow: 0 0 35px hsla(38, 92%, 50%, 0.6);
+  }
+}
+
+@keyframes pulse-safe {
+  0%, 100% {
+    box-shadow: 0 0 20px hsla(142, 70%, 45%, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 50px hsla(142, 70%, 45%, 0.5);
+    transform: scale(1.02);
   }
 }
