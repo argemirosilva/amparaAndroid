@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePanicContext } from '@/contexts/PanicContext';
 import { useAppState } from '@/hooks/useAppState';
@@ -51,18 +51,25 @@ export function PanicActivePage() {
       </motion.div>
 
       {/* Cancel button */}
-      <Button
-        variant="outline"
-        size="lg"
+      <motion.button
         onClick={() => setShowConfirmModal(true)}
         disabled={!canCancel}
         className={`
-          rounded-xl px-8
-          ${!canCancel ? 'opacity-30' : 'opacity-60 hover:opacity-100'}
+          w-40 h-40 rounded-full bg-gradient-safe 
+          flex flex-col items-center justify-center 
+          ${canCancel ? 'pulse-safe' : 'opacity-50'}
         `}
+        whileTap={canCancel ? { scale: 0.95 } : {}}
       >
-        {canCancel ? 'Cancelar proteção' : 'Aguarde 5s...'}
-      </Button>
+        {canCancel ? (
+          <>
+            <span className="text-2xl font-bold text-white">Cancelar</span>
+            <span className="text-xs text-white/80 mt-1">Agora estou segura</span>
+          </>
+        ) : (
+          <span className="text-lg font-bold text-white">Aguarde 5s...</span>
+        )}
+      </motion.button>
 
       {/* Confirm modal */}
       {showConfirmModal && (
@@ -104,6 +111,7 @@ export function PanicActivePage() {
                 onClick={handleCancelPanic}
                 disabled={isCancelling}
               >
+                {isCancelling && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isCancelling ? 'Cancelando...' : 'Confirmar'}
               </Button>
             </div>
