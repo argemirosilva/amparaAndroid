@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Settings, AlertTriangle, Menu, LogOut, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
 import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
@@ -14,6 +15,7 @@ import { usePanicContext } from '@/contexts/PanicContext';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
 import { useConfig } from '@/hooks/useConfig';
+import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useToast } from '@/hooks/use-toast';
 
 interface HomePageProps {
@@ -29,6 +31,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   const panic = usePanicContext();
   const recording = useRecording();
   const { monitoring, isLoading: isConfigLoading, syncConfig } = useConfig();
+  const { isOnline } = useHeartbeat({ autoStart: true });
 
   // Sync config on mount and every 5 minutes
   useEffect(() => {
@@ -92,8 +95,11 @@ export function HomePage({ onLogout }: HomePageProps) {
     <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
-        <div className="mix-blend-multiply">
-          <Logo size="sm" />
+        <div className="flex items-center gap-3">
+          <div className="mix-blend-multiply">
+            <Logo size="sm" />
+          </div>
+          <ConnectionStatus isOnline={isOnline} />
         </div>
         <div className="flex items-center gap-2">
           {/* Upload file button */}
