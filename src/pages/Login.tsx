@@ -178,7 +178,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         transition={{ delay: 0.8, duration: 0.5 }}
         className="absolute bottom-6 flex flex-col items-center gap-0.5"
       >
-        <span className="text-[10px] text-muted-foreground/70">powered by</span>
+        <span className="text-[8px] text-muted-foreground/60">powered by</span>
         <img src={orizonLogo} alt="Orizon Tech" className="h-4 object-contain opacity-80" />
       </motion.footer>
     </div>
