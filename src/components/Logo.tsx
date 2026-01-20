@@ -32,10 +32,10 @@ export function LogoText({ className = '' }: { className?: string }) {
   );
 }
 
-export function LogoWithText({ className = '' }: { className?: string }) {
+export function LogoWithText({ className = '', size = 'md' }: { className?: string; size?: 'sm' | 'md' | 'lg' }) {
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
-      <Logo size="lg" />
+      <Logo size={size} />
     </div>
   );
 }
