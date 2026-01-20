@@ -71,7 +71,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-sm bg-white rounded-2xl shadow-lg p-5"
+        className="relative z-10 w-full max-w-xs bg-white rounded-2xl shadow-lg p-5"
       >
         {/* Logo */}
         <div className="flex justify-center mb-3">
