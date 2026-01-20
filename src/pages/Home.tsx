@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Paperclip, Clock, Menu, LogOut, X, Upload } from 'lucide-react';
+import { Settings, Clock, Menu, LogOut, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
@@ -102,7 +102,7 @@ export function HomePage({ onLogout }: HomePageProps) {
             size="icon"
             onClick={() => navigate('/upload')}
           >
-            <Paperclip className="w-5 h-5" />
+            <Upload className="w-5 h-5" />
           </Button>
 
           {/* Pending uploads badge */}
