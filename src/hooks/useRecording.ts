@@ -6,6 +6,7 @@ import { encodeWAV, mergeBuffers } from '@/lib/wavEncoder';
 interface RecordingState {
   isRecording: boolean;
   isPaused: boolean;
+  isStopping: boolean;
   duration: number;
   segmentsSent: number;
   segmentsPending: number;
@@ -19,6 +20,7 @@ export function useRecording() {
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
     isPaused: false,
+    isStopping: false,
     duration: 0,
     segmentsSent: 0,
     segmentsPending: 0,
@@ -206,6 +208,7 @@ export function useRecording() {
       setState({
         isRecording: true,
         isPaused: false,
+        isStopping: false,
         duration: 0,
         segmentsSent: 0,
         segmentsPending: 0,
@@ -222,6 +225,9 @@ export function useRecording() {
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) return;
 
+    // Indicate that stopping is in progress
+    setState((prev) => ({ ...prev, isStopping: true }));
+
     // Send remaining audio buffer before stopping
     if (audioBufferRef.current.length > 0) {
       await sendSegment();
@@ -235,6 +241,7 @@ export function useRecording() {
     setState({
       isRecording: false,
       isPaused: false,
+      isStopping: false,
       duration: 0,
       segmentsSent: 0,
       segmentsPending: 0,

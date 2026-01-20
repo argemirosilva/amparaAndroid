@@ -182,7 +182,7 @@ export function RecordingPage() {
                 variant="outline"
                 className="flex-1"
                 onClick={() => setShowCancelModal(false)}
-                disabled={isValidating}
+                disabled={isValidating || recording.isStopping}
               >
                 Voltar
               </Button>
@@ -190,9 +190,9 @@ export function RecordingPage() {
                 variant="default"
                 className="flex-1"
                 onClick={handleCancelRecording}
-                disabled={isValidating}
+                disabled={isValidating || recording.isStopping}
               >
-                {isValidating ? 'Validando...' : 'Confirmar'}
+                {recording.isStopping ? 'Finalizando...' : isValidating ? 'Validando...' : 'Confirmar'}
               </Button>
             </div>
           </motion.div>
