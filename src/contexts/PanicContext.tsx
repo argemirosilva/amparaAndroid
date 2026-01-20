@@ -25,6 +25,37 @@ interface PanicContextValue extends PanicState {
   canCancel: () => boolean;
 }
 
+// Persistência no localStorage
+const PANIC_STORAGE_KEY = 'ampara_panic_state';
+
+interface PersistedPanicState {
+  isPanicActive: boolean;
+  panicStartTime: number;
+  protocolNumber: string | null;
+  location: { lat: number; lng: number } | null;
+  guardiansNotified: number;
+}
+
+function savePanicState(state: PersistedPanicState): void {
+  localStorage.setItem(PANIC_STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadPanicState(): PersistedPanicState | null {
+  try {
+    const saved = localStorage.getItem(PANIC_STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Erro ao carregar estado do pânico:', e);
+  }
+  return null;
+}
+
+function clearPanicState(): void {
+  localStorage.removeItem(PANIC_STORAGE_KEY);
+}
+
 const PANIC_TIMEOUT_MS = 1800000; // 30 minutes auto-timeout
 const HOLD_DURATION_MS = 2000; // 2 seconds hold to activate
 const CANCEL_DEBOUNCE_MS = 5000; // 5 seconds before cancel is allowed
@@ -49,6 +80,95 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const canCancelRef = useRef(false);
   const startTimeRef = useRef<number | null>(null);
+  const restoredRef = useRef(false);
+
+  // Restaurar estado do localStorage no mount
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+
+    const saved = loadPanicState();
+    if (saved?.isPanicActive) {
+      const elapsedMs = Date.now() - saved.panicStartTime;
+      const elapsedSeconds = Math.floor(elapsedMs / 1000);
+      
+      // Verificar se não passou do timeout de 30 minutos
+      if (elapsedMs < PANIC_TIMEOUT_MS) {
+        console.log('Restaurando estado do pânico:', elapsedSeconds, 'segundos decorridos');
+        
+        startTimeRef.current = saved.panicStartTime;
+        canCancelRef.current = true; // Já passou tempo suficiente
+        
+        // Restaurar estado
+        setState({
+          isPanicActive: true,
+          panicDuration: elapsedSeconds,
+          isActivating: false,
+          location: saved.location,
+          protocolNumber: saved.protocolNumber,
+          guardiansNotified: saved.guardiansNotified,
+        });
+        
+        // Reiniciar recording e location tracking
+        startRecording();
+        location.startTracking(true);
+        
+        // Reiniciar timer de duração
+        timerRef.current = setInterval(() => {
+          setState(prev => ({ ...prev, panicDuration: prev.panicDuration + 1 }));
+        }, 1000);
+        
+        // Reiniciar timeout (tempo restante)
+        const remainingTime = PANIC_TIMEOUT_MS - elapsedMs;
+        timeoutRef.current = setTimeout(() => {
+          deactivatePanicInternal('timeout');
+        }, remainingTime);
+      } else {
+        // Timeout já passou, limpar estado
+        console.log('Pânico expirado, limpando estado');
+        clearPanicState();
+      }
+    }
+  }, []);
+
+  // Função interna para deactivate (evita dependência circular)
+  const deactivatePanicInternal = useCallback(async (
+    tipo: PanicCancelType = 'manual'
+  ) => {
+    // Stop timers
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    // Stop recording
+    await stopRecording();
+
+    // Stop panic mode location tracking
+    location.disablePanicMode();
+
+    // Notify server
+    await cancelarPanicoMobile(tipo);
+
+    // Limpar localStorage
+    clearPanicState();
+
+    startTimeRef.current = null;
+    canCancelRef.current = false;
+
+    setState({
+      isPanicActive: false,
+      panicDuration: 0,
+      isActivating: false,
+      location: null,
+      protocolNumber: null,
+      guardiansNotified: 0,
+    });
+  }, [stopRecording, location]);
 
   // Start panic activation (on hold start)
   const startHold = useCallback(() => {
@@ -98,8 +218,18 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
     // Notify server
     const result = await acionarPanicoMobile(lat, lng, tipo);
 
-    startTimeRef.current = Date.now();
+    const panicStartTime = Date.now();
+    startTimeRef.current = panicStartTime;
     canCancelRef.current = false;
+
+    // Salvar no localStorage
+    savePanicState({
+      isPanicActive: true,
+      panicStartTime,
+      protocolNumber: result.data?.numero_protocolo || null,
+      location: { lat, lng },
+      guardiansNotified: result.data?.guardioes_notificados || 0,
+    });
 
     // Enable cancel button after debounce
     setTimeout(() => {
@@ -113,7 +243,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
 
     // Auto-timeout after 30 minutes
     timeoutRef.current = setTimeout(() => {
-      deactivatePanic('timeout');
+      deactivatePanicInternal('timeout');
     }, PANIC_TIMEOUT_MS);
 
     setState({
@@ -124,43 +254,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
       protocolNumber: result.data?.numero_protocolo || null,
       guardiansNotified: result.data?.guardioes_notificados || 0,
     });
-  }, [location, startRecording]);
-
-  // Deactivate panic (requires password validation in UI)
-  const deactivatePanic = useCallback(async (
-    tipo: PanicCancelType = 'manual'
-  ) => {
-    // Stop timers
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-
-    // Stop recording
-    await stopRecording();
-
-    // Stop panic mode location tracking
-    location.disablePanicMode();
-
-    // Notify server
-    await cancelarPanicoMobile(tipo);
-
-    startTimeRef.current = null;
-    canCancelRef.current = false;
-
-    setState({
-      isPanicActive: false,
-      panicDuration: 0,
-      isActivating: false,
-      location: null,
-      protocolNumber: null,
-      guardiansNotified: 0,
-    });
-  }, [stopRecording, location]);
+  }, [location, startRecording, deactivatePanicInternal]);
 
   // Check if cancel is allowed
   const canCancel = useCallback(() => {
@@ -182,7 +276,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
     startHold,
     cancelHold,
     activatePanic,
-    deactivatePanic,
+    deactivatePanic: deactivatePanicInternal,
     canCancel,
   };
 
