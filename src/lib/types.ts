@@ -113,6 +113,15 @@ export type PanicActivationType = 'manual' | 'voz' | 'oculto' | 'widget';
 // Panic cancel types
 export type PanicCancelType = 'manual' | 'timeout' | 'coacao';
 
+// Recording origin types (for backend routing)
+export type OrigemGravacao = 
+  | 'comando_voz' 
+  | 'botao_panico' 
+  | 'botao_manual' 
+  | 'automatico' 
+  | 'agendado' 
+  | 'upload_arquivo';
+
 // Recording status types
 export type RecordingStatusType = 'iniciada' | 'pausada' | 'retomada' | 'finalizada' | 'enviando' | 'erro';
 

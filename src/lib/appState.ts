@@ -58,6 +58,7 @@ export interface PendingUpload {
   type: 'audio' | 'file';
   data: string; // Base64 encoded
   durationSeconds?: number; // Audio duration in seconds
+  origemGravacao?: import('@/lib/types').OrigemGravacao; // Recording origin for backend routing
   createdAt: number;
   status: 'pending' | 'uploading' | 'failed';
   retryCount: number;

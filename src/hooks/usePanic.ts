@@ -78,8 +78,8 @@ export function usePanic() {
     const lat = position?.coords.latitude ?? 0;
     const lng = position?.coords.longitude ?? 0;
     
-    // Start recording
-    await startRecording();
+    // Start recording with panic origin
+    await startRecording('botao_panico');
 
     // Enable panic mode location tracking (30s intervals)
     location.startTracking(true);
