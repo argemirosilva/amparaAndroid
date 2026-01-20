@@ -130,15 +130,15 @@ export function MonitoringStatus({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm bg-amber-500/10 border border-amber-500/30 rounded-lg p-2"
+        className="w-full max-w-sm bg-primary/10 border border-primary/30 rounded-lg p-2"
       >
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <Clock className="w-3 h-3 text-amber-500" />
+          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+            <Clock className="w-3 h-3 text-primary" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium text-amber-500">Próximo</span>
+              <span className="text-sm font-medium text-primary">Próximo</span>
               <span className="text-xs text-muted-foreground">{nextPeriod.inicio}-{nextPeriod.fim}</span>
             </div>
             <p className="text-xs text-muted-foreground">
