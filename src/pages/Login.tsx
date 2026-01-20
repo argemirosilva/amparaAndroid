@@ -75,7 +75,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       >
         {/* Logo */}
         <div className="flex justify-center mb-3">
-          <LogoWithText />
+          <LogoWithText size="md" />
         </div>
 
         {/* Tagline */}
