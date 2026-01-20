@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Clock, Menu, LogOut, X, Upload } from 'lucide-react';
+import { Settings, AlertTriangle, Menu, LogOut, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
@@ -113,7 +113,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               onClick={() => navigate('/pending')}
               className="relative"
             >
-              <Clock className="w-5 h-5" />
+              <AlertTriangle className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-warning text-warning-foreground text-xs rounded-full flex items-center justify-center">
                 {appState.pendingUploads}
               </span>
@@ -217,7 +217,7 @@ export function HomePage({ onLogout }: HomePageProps) {
       {/* Powered by footer */}
       <footer className="py-4 flex flex-col items-center gap-1">
         <span className="text-xs text-muted-foreground">powered by</span>
-        <img src={orizonLogo} alt="Orizon Tech" className="h-6 object-contain" />
+        <img src={orizonLogo} alt="Orizon Tech" className="h-6 object-contain mix-blend-multiply" />
       </footer>
 
 
