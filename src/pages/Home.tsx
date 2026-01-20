@@ -10,7 +10,7 @@ import { RecordButton } from '@/components/RecordButton';
 
 import { MonitoringStatus } from '@/components/MonitoringStatus';
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
-import { usePanic } from '@/hooks/usePanic';
+import { usePanicContext } from '@/contexts/PanicContext';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
 import { useConfig } from '@/hooks/useConfig';
@@ -26,7 +26,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   
   const appState = useAppState();
-  const panic = usePanic();
+  const panic = usePanicContext();
   const recording = useRecording();
   const { monitoring, isLoading: isConfigLoading, syncConfig } = useConfig();
 
@@ -168,10 +168,20 @@ export function HomePage({ onLogout }: HomePageProps) {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center"
           >
-            <div className="text-6xl font-bold text-destructive mb-4">
+            <motion.div
+              animate={{ 
+                scale: [1, 1.03, 1], 
+                opacity: [1, 0.8, 1] 
+              }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+              className="text-7xl font-bold text-destructive mb-4"
+            >
               {formatDuration(panic.panicDuration)}
-            </div>
-            <p className="text-muted-foreground mb-8">Proteção ativa</p>
+            </motion.div>
             <Button
               variant="outline"
               onClick={() => navigate('/panic-active')}

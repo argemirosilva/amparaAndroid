@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, Lock, MapPin, X } from 'lucide-react';
+import { Lock, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { usePanic } from '@/hooks/usePanic';
+import { usePanicContext } from '@/contexts/PanicContext';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,7 +16,7 @@ export function PanicActivePage() {
   const [isValidating, setIsValidating] = useState(false);
   
   const appState = useAppState();
-  const panic = usePanic();
+  const panic = usePanicContext();
 
   const handleCancelPanic = async () => {
     if (!cancelPassword) {
@@ -57,85 +57,37 @@ export function PanicActivePage() {
   const canCancel = panic.canCancel();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom">
-      {/* Header */}
-      <header className="flex items-center gap-4 p-4 border-b border-border">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-lg font-semibold">Proteção Ativa</h1>
-      </header>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background safe-area-inset-top safe-area-inset-bottom p-6">
+      {/* Timer with pulse effect */}
+      <motion.div
+        animate={{ 
+          scale: [1, 1.03, 1], 
+          opacity: [1, 0.8, 1] 
+        }}
+        transition={{ 
+          duration: 1.5, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+        className="text-8xl font-bold text-destructive mb-12"
+      >
+        {formatDuration(panic.panicDuration)}
+      </motion.div>
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6">
-        {/* Pulsing shield */}
-        <motion.div
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="relative mb-8"
-        >
-          <div className="w-32 h-32 rounded-full bg-destructive/20 flex items-center justify-center">
-            <Shield className="w-16 h-16 text-destructive" />
-          </div>
-          
-          {/* Pulse rings */}
-          <motion.div
-            className="absolute inset-0 rounded-full border-2 border-destructive"
-            animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
-        </motion.div>
-
-        {/* Timer */}
-        <div className="text-6xl font-bold text-destructive mb-2">
-          {formatDuration(panic.panicDuration)}
-        </div>
-        
-        <p className="text-muted-foreground text-center mb-8">
-          Proteção ativa • Gravando e enviando dados
-        </p>
-
-        {/* Location info */}
-        {panic.location && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-            <MapPin className="w-4 h-4" />
-            <span>
-              Localização: {panic.location.lat.toFixed(4)}, {panic.location.lng.toFixed(4)}
-            </span>
-          </div>
-        )}
-
-        {/* Recording status */}
-        {panic.isRecording && (
-          <motion.div
-            animate={{ opacity: [1, 0.5, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-warning/20 text-warning mb-8"
-          >
-            <div className="w-3 h-3 rounded-full bg-warning" />
-            <span>Gravando áudio</span>
-          </motion.div>
-        )}
-
-        {/* Cancel button */}
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={() => setShowCancelModal(true)}
-          disabled={!canCancel}
-          className={`
-            rounded-xl px-8
-            ${!canCancel ? 'opacity-30' : 'opacity-60 hover:opacity-100'}
-          `}
-        >
-          <Lock className="w-4 h-4 mr-2" />
-          {canCancel ? 'Cancelar proteção' : 'Aguarde 5s...'}
-        </Button>
-
-        <p className="text-xs text-muted-foreground mt-4 text-center max-w-xs">
-          A proteção será desativada automaticamente após 30 minutos
-        </p>
-      </main>
+      {/* Cancel button */}
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={() => setShowCancelModal(true)}
+        disabled={!canCancel}
+        className={`
+          rounded-xl px-8
+          ${!canCancel ? 'opacity-30' : 'opacity-60 hover:opacity-100'}
+        `}
+      >
+        <Lock className="w-4 h-4 mr-2" />
+        {canCancel ? 'Cancelar proteção' : 'Aguarde 5s...'}
+      </Button>
 
       {/* Cancel modal */}
       {showCancelModal && (
