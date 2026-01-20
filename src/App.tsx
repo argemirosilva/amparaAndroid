@@ -11,6 +11,7 @@ import { RecordingPage } from "./pages/Recording";
 import { PendingPage } from "./pages/Pending";
 import { UploadPage } from "./pages/Upload";
 import NotFound from "./pages/NotFound";
+import { PanicProvider } from "./contexts/PanicContext";
 
 const queryClient = new QueryClient();
 
@@ -54,14 +55,14 @@ const App = () => {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </>
             ) : (
-              <>
+              <PanicProvider>
                 <Route path="/" element={<HomePage onLogout={handleLogout} />} />
                 <Route path="/panic-active" element={<PanicActivePage />} />
                 <Route path="/recording" element={<RecordingPage />} />
                 <Route path="/pending" element={<PendingPage />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="*" element={<NotFound />} />
-              </>
+              </PanicProvider>
             )}
           </Routes>
         </BrowserRouter>
