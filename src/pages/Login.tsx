@@ -179,7 +179,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         className="absolute bottom-6 flex flex-col items-center gap-0.5"
       >
         <span className="text-[6px] text-muted-foreground/50">powered by</span>
-        <img src={orizonLogo} alt="Orizon Tech" className="h-[18px] object-contain opacity-80 mix-blend-multiply" />
+        <img src={orizonLogo} alt="Orizon Tech" className="h-[25px] object-contain opacity-80 mix-blend-multiply" />
       </motion.footer>
     </div>
   );
