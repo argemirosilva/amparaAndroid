@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { X, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { usePanicContext } from '@/contexts/PanicContext';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
 
+const HOLD_DURATION_MS = 2000;
+
 export function PanicActivePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const appState = useAppState();
   const panic = usePanicContext();
@@ -30,7 +32,41 @@ export function PanicActivePage() {
     setIsCancelling(false);
   };
 
+  const handleHoldStart = () => {
+    if (!panic.canCancel() || isCancelling) return;
+    
+    setHoldProgress(0);
+    
+    // Progress animation
+    const startTime = Date.now();
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min((elapsed / HOLD_DURATION_MS) * 100, 100);
+      setHoldProgress(progress);
+    }, 16);
+    
+    // Trigger cancel after hold duration
+    holdTimerRef.current = setTimeout(() => {
+      clearInterval(progressIntervalRef.current!);
+      setHoldProgress(100);
+      handleCancelPanic();
+    }, HOLD_DURATION_MS);
+  };
+
+  const handleHoldEnd = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setHoldProgress(0);
+  };
+
   const canCancel = panic.canCancel();
+  const isHolding = holdProgress > 0;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background safe-area-inset-top safe-area-inset-bottom p-6">
@@ -45,79 +81,69 @@ export function PanicActivePage() {
           repeat: Infinity, 
           ease: "easeInOut" 
         }}
-        className="text-8xl font-bold text-destructive mb-12"
+        className="text-4xl font-bold text-destructive mb-12"
       >
         {formatDuration(panic.panicDuration)}
       </motion.div>
 
-      {/* Cancel button */}
+      {/* Cancel button with hold-to-cancel */}
       <motion.button
-        onClick={() => setShowConfirmModal(true)}
-        disabled={!canCancel}
+        onMouseDown={handleHoldStart}
+        onMouseUp={handleHoldEnd}
+        onMouseLeave={handleHoldEnd}
+        onTouchStart={handleHoldStart}
+        onTouchEnd={handleHoldEnd}
+        disabled={!canCancel || isCancelling}
         className={`
-          w-40 h-40 rounded-full bg-gradient-safe 
+          relative w-40 h-40 rounded-full bg-gradient-safe 
           flex flex-col items-center justify-center 
-          ${canCancel ? 'pulse-safe' : 'opacity-50'}
+          ${canCancel && !isCancelling ? 'pulse-safe' : 'opacity-50'}
         `}
-        whileTap={canCancel ? { scale: 0.95 } : {}}
+        whileTap={canCancel && !isCancelling ? { scale: 0.95 } : {}}
       >
-        {canCancel ? (
+        {/* Progress ring */}
+        {isHolding && (
+          <svg
+            className="absolute inset-0 w-full h-full -rotate-90"
+            viewBox="0 0 160 160"
+          >
+            <circle
+              cx="80"
+              cy="80"
+              r="76"
+              fill="none"
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth="8"
+            />
+            <motion.circle
+              cx="80"
+              cy="80"
+              r="76"
+              fill="none"
+              stroke="white"
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 76}
+              strokeDashoffset={2 * Math.PI * 76 * (1 - holdProgress / 100)}
+            />
+          </svg>
+        )}
+
+        {canCancel && !isCancelling ? (
           <>
-            <span className="text-2xl font-bold text-white">Cancelar</span>
-            <span className="text-xs text-white/80 mt-1">Agora estou segura</span>
+            <span className="text-2xl font-bold text-white">
+              {isHolding ? 'Segure...' : 'Cancelar'}
+            </span>
+            <span className="text-xs text-white/80 mt-1">
+              {isHolding ? '' : 'Agora estou segura'}
+            </span>
           </>
+        ) : isCancelling ? (
+          <span className="text-lg font-bold text-white">Cancelando...</span>
         ) : (
           <span className="text-lg font-bold text-white">Aguarde 5s...</span>
         )}
       </motion.button>
-
-      {/* Confirm modal */}
-      {showConfirmModal && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6"
-          onClick={() => setShowConfirmModal(false)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-card rounded-2xl p-6 w-full max-w-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold">Cancelar proteção</h2>
-              <Button variant="ghost" size="icon" onClick={() => setShowConfirmModal(false)}>
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <p className="text-muted-foreground text-sm mb-6">
-              Tem certeza que deseja cancelar a proteção?
-            </p>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowConfirmModal(false)}
-                disabled={isCancelling}
-              >
-                Voltar
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleCancelPanic}
-                disabled={isCancelling}
-              >
-                {isCancelling && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {isCancelling ? 'Cancelando...' : 'Confirmar'}
-              </Button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
     </div>
   );
 }
