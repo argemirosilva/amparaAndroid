@@ -48,23 +48,23 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            {!isAuthenticated ? (
-              <>
-                <Route path="/" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </>
-            ) : (
-              <PanicProvider>
+          {!isAuthenticated ? (
+            <Routes>
+              <Route path="/" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          ) : (
+            <PanicProvider>
+              <Routes>
                 <Route path="/" element={<HomePage onLogout={handleLogout} />} />
                 <Route path="/panic-active" element={<PanicActivePage />} />
                 <Route path="/recording" element={<RecordingPage />} />
                 <Route path="/pending" element={<PendingPage />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="*" element={<NotFound />} />
-              </PanicProvider>
-            )}
-          </Routes>
+              </Routes>
+            </PanicProvider>
+          )}
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
