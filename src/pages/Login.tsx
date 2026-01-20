@@ -61,7 +61,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-white safe-area-inset-top safe-area-inset-bottom">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background/50 to-white safe-area-inset-top safe-area-inset-bottom">
       {/* Background gradient effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-primary opacity-20 blur-[120px] rounded-full" />
