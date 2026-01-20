@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { receberAudioMobile, reportarStatusGravacao } from '@/lib/api';
 import { addPendingUpload } from '@/lib/appState';
 import { encodeWAV, mergeBuffers } from '@/lib/wavEncoder';
+import { OrigemGravacao } from '@/lib/types';
 
 interface RecordingState {
   isRecording: boolean;
@@ -37,6 +38,7 @@ export function useRecording() {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPausedRef = useRef(false);
   const isRecordingRef = useRef(false);
+  const origemGravacaoRef = useRef<OrigemGravacao>('botao_manual');
 
   // Send segment function
   const sendSegment = useCallback(async () => {
@@ -58,7 +60,12 @@ export function useRecording() {
 
     setState((prev) => ({ ...prev, segmentsPending: prev.segmentsPending + 1 }));
 
-    const result = await receberAudioMobile(wavBlob, currentSegmentIndex, durationSeconds);
+    const result = await receberAudioMobile(
+      wavBlob, 
+      currentSegmentIndex, 
+      durationSeconds,
+      origemGravacaoRef.current
+    );
 
     if (!result.error) {
       setState((prev) => ({
@@ -76,6 +83,7 @@ export function useRecording() {
           type: 'audio',
           data: reader.result as string,
           durationSeconds,
+          origemGravacao: origemGravacaoRef.current,
         });
       };
       reader.readAsDataURL(wavBlob);
@@ -134,12 +142,17 @@ export function useRecording() {
     };
   }, [cleanup]);
 
-  const startRecording = useCallback(async (): Promise<boolean> => {
+  const startRecording = useCallback(async (
+    origemGravacao: OrigemGravacao = 'botao_manual'
+  ): Promise<boolean> => {
     // Prevent starting if already recording
     if (isRecordingRef.current) {
       console.warn('Recording already in progress');
       return false;
     }
+
+    // Store the origin for segment uploads
+    origemGravacaoRef.current = origemGravacao;
 
     try {
       // Request microphone permission
