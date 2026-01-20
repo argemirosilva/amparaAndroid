@@ -6,6 +6,7 @@ interface PanicButtonProps {
   onHoldEnd: () => void;
   isActivating: boolean;
   disabled?: boolean;
+  isLoading?: boolean;
 }
 
 export function PanicButton({
@@ -13,7 +14,9 @@ export function PanicButton({
   onHoldEnd,
   isActivating,
   disabled = false,
+  isLoading = false,
 }: PanicButtonProps) {
+  const isDisabled = disabled || isLoading;
   return (
     <div className="relative">
       {/* Outer pulsing rings */}
@@ -36,21 +39,21 @@ export function PanicButton({
 
       {/* Main button */}
       <motion.button
-        onTouchStart={disabled ? undefined : onHoldStart}
-        onTouchEnd={disabled ? undefined : onHoldEnd}
-        onMouseDown={disabled ? undefined : onHoldStart}
-        onMouseUp={disabled ? undefined : onHoldEnd}
-        onMouseLeave={disabled ? undefined : onHoldEnd}
-        disabled={disabled}
+        onTouchStart={isDisabled ? undefined : onHoldStart}
+        onTouchEnd={isDisabled ? undefined : onHoldEnd}
+        onMouseDown={isDisabled ? undefined : onHoldStart}
+        onMouseUp={isDisabled ? undefined : onHoldEnd}
+        onMouseLeave={isDisabled ? undefined : onHoldEnd}
+        disabled={isDisabled}
         className={`
           relative w-48 h-48 rounded-full
           bg-gradient-panic
           flex items-center justify-center
           transition-all duration-200
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
+          ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
           ${isActivating ? 'animate-pulse-glow scale-105' : 'glow-panic'}
         `}
-        whileTap={disabled ? undefined : { scale: 0.95 }}
+        whileTap={isDisabled ? undefined : { scale: 0.95 }}
       >
         {/* Progress ring during activation */}
         {isActivating && (
@@ -84,14 +87,22 @@ export function PanicButton({
 
         {/* Button content */}
         <div className="flex flex-col items-center justify-center text-white z-10">
-          <span className="text-4xl font-bold tracking-wider">PÂNICO</span>
-          <span className="text-sm mt-2 opacity-80">Segure por 2s</span>
+          {isLoading ? (
+            <>
+              <span className="text-2xl font-bold tracking-wider">Aguarde...</span>
+            </>
+          ) : (
+            <>
+              <span className="text-4xl font-bold tracking-wider">PÂNICO</span>
+              <span className="text-sm mt-2 opacity-80">Segure por 2s</span>
+            </>
+          )}
         </div>
       </motion.button>
 
       {/* Helper text */}
       <p className="text-center text-muted-foreground text-sm mt-6">
-        {isActivating ? 'Continue segurando...' : 'Segure para ativar proteção'}
+        {isLoading ? 'Carregando...' : isActivating ? 'Continue segurando...' : 'Segure para ativar proteção'}
       </p>
     </div>
   );
