@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Upload, Menu, LogOut, X } from 'lucide-react';
+import { Settings, Paperclip, Clock, Menu, LogOut, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
@@ -96,6 +96,15 @@ export function HomePage({ onLogout }: HomePageProps) {
           <Logo size="sm" />
         </div>
         <div className="flex items-center gap-2">
+          {/* Upload file button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/upload')}
+          >
+            <Paperclip className="w-5 h-5" />
+          </Button>
+
           {/* Pending uploads badge */}
           {appState.pendingUploads > 0 && (
             <Button
@@ -104,7 +113,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               onClick={() => navigate('/pending')}
               className="relative"
             >
-              <Upload className="w-5 h-5" />
+              <Clock className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-warning text-warning-foreground text-xs rounded-full flex items-center justify-center">
                 {appState.pendingUploads}
               </span>
@@ -211,14 +220,6 @@ export function HomePage({ onLogout }: HomePageProps) {
         <img src={orizonLogo} alt="Orizon Tech" className="h-6 object-contain" />
       </footer>
 
-      {/* Floating upload button */}
-      <Button
-        variant="outline"
-        className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg"
-        onClick={() => navigate('/upload')}
-      >
-        <Upload className="w-6 h-6" />
-      </Button>
 
       {/* Side menu */}
       {menuOpen && (
