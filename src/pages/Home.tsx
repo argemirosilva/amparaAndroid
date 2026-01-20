@@ -170,7 +170,7 @@ export function HomePage({ onLogout }: HomePageProps) {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center"
+            className="flex flex-col items-center gap-8"
           >
             <motion.div
               animate={{ 
@@ -182,17 +182,29 @@ export function HomePage({ onLogout }: HomePageProps) {
                 repeat: Infinity, 
                 ease: "easeInOut" 
               }}
-              className="text-7xl font-bold text-destructive mb-4"
+              className="text-7xl font-bold text-destructive"
             >
               {formatDuration(panic.panicDuration)}
             </motion.div>
-            <Button
-              variant="outline"
+            
+            <motion.button
               onClick={() => navigate('/panic-active')}
-              className="opacity-50"
+              className={`
+                w-40 h-40 rounded-full bg-gradient-safe 
+                flex flex-col items-center justify-center 
+                ${panic.canCancel() ? 'pulse-safe' : 'opacity-50'}
+              `}
+              whileTap={panic.canCancel() ? { scale: 0.95 } : {}}
             >
-              Cancelar (requer senha)
-            </Button>
+              {panic.canCancel() ? (
+                <>
+                  <span className="text-2xl font-bold text-white">Cancelar</span>
+                  <span className="text-xs text-white/80 mt-1">Agora estou segura</span>
+                </>
+              ) : (
+                <span className="text-lg font-bold text-white">Aguarde 5s...</span>
+              )}
+            </motion.button>
           </motion.div>
         )}
 
