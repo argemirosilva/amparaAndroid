@@ -95,11 +95,8 @@ export function HomePage({ onLogout }: HomePageProps) {
     <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
-        <div className="flex items-center gap-3">
-          <div className="mix-blend-multiply">
-            <Logo size="sm" />
-          </div>
-          <ConnectionStatus isOnline={isOnline} />
+        <div className="mix-blend-multiply">
+          <Logo size="sm" />
         </div>
         <div className="flex items-center gap-2">
           {/* Upload file button */}
@@ -226,9 +223,12 @@ export function HomePage({ onLogout }: HomePageProps) {
       </main>
 
       {/* Powered by footer */}
-      <footer className="py-4 flex flex-col items-center gap-1">
-        <span className="text-[8px] text-muted-foreground">powered by</span>
-        <img src={orizonLogo} alt="Orizon Tech" className="h-5 object-contain mix-blend-multiply" />
+      <footer className="py-4 px-4 flex items-center justify-between">
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-[8px] text-muted-foreground">powered by</span>
+          <img src={orizonLogo} alt="Orizon Tech" className="h-5 object-contain mix-blend-multiply" />
+        </div>
+        <ConnectionStatus isOnline={isOnline} />
       </footer>
 
 
