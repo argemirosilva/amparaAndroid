@@ -57,6 +57,7 @@ export interface PendingUpload {
   fileSize: number;
   type: 'audio' | 'file';
   data: string; // Base64 encoded
+  durationSeconds?: number; // Audio duration in seconds
   createdAt: number;
   status: 'pending' | 'uploading' | 'failed';
   retryCount: number;

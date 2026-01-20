@@ -47,6 +47,9 @@ export function useRecording() {
 
     if (samples.length === 0) return;
 
+    // Calculate duration in seconds from sample count
+    const durationSeconds = Math.round(samples.length / SAMPLE_RATE);
+
     const wavBuffer = encodeWAV(samples, SAMPLE_RATE);
     const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
 
@@ -55,7 +58,7 @@ export function useRecording() {
 
     setState((prev) => ({ ...prev, segmentsPending: prev.segmentsPending + 1 }));
 
-    const result = await receberAudioMobile(wavBlob, currentSegmentIndex);
+    const result = await receberAudioMobile(wavBlob, currentSegmentIndex, durationSeconds);
 
     if (!result.error) {
       setState((prev) => ({
@@ -72,6 +75,7 @@ export function useRecording() {
           fileSize: wavBlob.size,
           type: 'audio',
           data: reader.result as string,
+          durationSeconds,
         });
       };
       reader.readAsDataURL(wavBlob);
