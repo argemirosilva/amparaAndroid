@@ -147,6 +147,10 @@
     box-shadow: 0 0 40px hsla(38, 92%, 50%, 0.4);
   }
 
+  .glow-safe {
+    box-shadow: 0 0 40px hsla(142, 70%, 45%, 0.4);
+  }
+
   /* Pulse animations */
   .pulse-panic {
     animation: pulse-panic 1.5s ease-in-out infinite;

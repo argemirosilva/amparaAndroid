@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, Lock, X } from 'lucide-react';
+import { ArrowLeft, Mic, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRecording } from '@/hooks/useRecording';
@@ -121,15 +121,15 @@ export function RecordingPage() {
           )}
         </div>
 
-        {/* Cancel button */}
-        <Button
-          variant="outline"
+        {/* Cancel button - Green panic-style */}
+        <motion.button
           onClick={() => setShowCancelModal(true)}
-          className="opacity-60 hover:opacity-100"
+          className="w-40 h-40 rounded-full bg-gradient-safe flex flex-col items-center justify-center glow-safe"
+          whileTap={{ scale: 0.95 }}
         >
-          <Lock className="w-4 h-4 mr-2" />
-          Encerrar gravação
-        </Button>
+          <span className="text-2xl font-bold text-white">Cancelar</span>
+          <span className="text-xs text-white/80 mt-1">Agora estou segura</span>
+        </motion.button>
 
         <p className="text-xs text-muted-foreground mt-4 text-center max-w-xs">
           A gravação será encerrada automaticamente após 10 minutos de silêncio
@@ -192,6 +192,7 @@ export function RecordingPage() {
                 onClick={handleCancelRecording}
                 disabled={isValidating || recording.isStopping}
               >
+                {recording.isStopping && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {recording.isStopping ? 'Finalizando...' : isValidating ? 'Validando...' : 'Confirmar'}
               </Button>
             </div>
