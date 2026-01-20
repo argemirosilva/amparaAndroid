@@ -14,7 +14,7 @@ interface UseHeartbeatOptions {
   autoStart?: boolean;     // Start automatically on mount (default: false)
 }
 
-const DEFAULT_INTERVAL = 60 * 1000; // 1 minute
+const DEFAULT_INTERVAL = 30 * 1000; // 30 seconds
 const MAX_RETRIES = 5;
 
 export function useHeartbeat(options: UseHeartbeatOptions = {}) {
