@@ -145,11 +145,6 @@ export function HomePage({ onLogout }: HomePageProps) {
               gravacaoFim={monitoring.gravacaoFim}
               isLoading={isConfigLoading}
             />
-            <MonitoringPeriodsList
-              periodosHoje={monitoring.periodosHoje}
-              periodoAtualIndex={monitoring.periodoAtualIndex}
-              isLoading={isConfigLoading}
-            />
           </div>
         )}
 
