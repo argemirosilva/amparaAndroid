@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
+import orizonLogo from '@/assets/orizon-tech-logo.png';
 
 export function RecordingPage() {
   const navigate = useNavigate();
@@ -134,6 +135,12 @@ export function RecordingPage() {
           A gravação será encerrada automaticamente após 10 minutos de silêncio
         </p>
       </main>
+
+      {/* Powered by footer */}
+      <footer className="py-4 flex flex-col items-center gap-1">
+        <span className="text-[8px] text-muted-foreground">powered by</span>
+        <img src={orizonLogo} alt="Orizon Tech" className="h-5 object-contain mix-blend-multiply" />
+      </footer>
 
       {/* Cancel modal */}
       {showCancelModal && (
