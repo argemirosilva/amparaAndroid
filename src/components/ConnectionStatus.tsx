@@ -1,5 +1,4 @@
 import React from 'react';
-import { Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ConnectionStatusProps {
@@ -11,24 +10,20 @@ export function ConnectionStatus({ isOnline, className }: ConnectionStatusProps)
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors",
-        isOnline
-          ? "bg-success/20 text-success"
-          : "bg-destructive/20 text-destructive",
+        "flex items-center gap-1",
         className
       )}
+      title={isOnline ? "Conectado" : "Desconectado"}
     >
-      {isOnline ? (
-        <>
-          <Wifi className="w-3 h-3" />
-          <span>Online</span>
-        </>
-      ) : (
-        <>
-          <WifiOff className="w-3 h-3" />
-          <span>Offline</span>
-        </>
-      )}
+      <span
+        className={cn(
+          "w-2 h-2 rounded-full transition-colors",
+          isOnline ? "bg-success" : "bg-destructive animate-pulse"
+        )}
+      />
+      <span className="text-[10px] text-muted-foreground">
+        {isOnline ? "Online" : "Offline"}
+      </span>
     </div>
   );
 }
