@@ -18,7 +18,7 @@ export function ConnectionStatus({ isOnline, className }: ConnectionStatusProps)
       <span
         className={cn(
           "w-2 h-2 rounded-full transition-colors",
-          isOnline ? "bg-success" : "bg-destructive animate-pulse"
+          isOnline ? "bg-success animate-pulse" : "bg-destructive animate-pulse"
         )}
       />
       <span className="text-[10px] text-muted-foreground">
