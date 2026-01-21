@@ -305,19 +305,29 @@ export function useAudioTriggerController(
       // Start processing loop
       let frameCount = 0;
       const processLoop = () => {
-        if (!analyserRef.current || !audioContextRef.current) return;
+        if (!analyserRef.current || !audioContextRef.current) {
+          console.warn('[AudioTrigger] Loop stopped: refs are null', {
+            analyser: !!analyserRef.current,
+            audioContext: !!audioContextRef.current
+          });
+          return;
+        }
 
         analyserRef.current.getFloatTimeDomainData(dataArray);
         processAudioFrame(dataArray, audioContextRef.current.sampleRate);
         
         frameCount++;
-        if (frameCount % 250 === 0) { // Log every ~5 seconds
+        if (frameCount === 1) {
+          console.log('[AudioTrigger] First frame processed');
+        }
+        if (frameCount % 250 === 0) {
           console.log('[AudioTrigger] Processed', frameCount, 'frames');
         }
 
         animationFrameRef.current = requestAnimationFrame(processLoop);
       };
 
+      console.log('[AudioTrigger] Starting process loop');
       animationFrameRef.current = requestAnimationFrame(processLoop);
       setIsCapturing(true);
       console.log('[AudioTrigger] Audio capture started successfully');
