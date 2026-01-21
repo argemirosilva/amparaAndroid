@@ -12,6 +12,7 @@ import type {
   GenderClass,
   FrameMetrics,
 } from '@/types/audioTrigger';
+import type { ServerAudioTriggerConfig } from '@/lib/types';
 import { DEFAULT_CONFIG } from '@/types/audioTrigger';
 import { processFrame, updateNoiseFloor } from '@/services/dspService';
 import { estimateF0, getF0Median2s, resetPitchEstimator } from '@/services/pitchService';
@@ -19,7 +20,8 @@ import { classifyGender } from '@/services/genderClassifierService';
 import { discussionDetector } from '@/services/newDiscussionDetectorService';
 import { triggerStateMachine } from '@/services/triggerStateMachine';
 import { RingBuffer, calculateMedian } from '@/utils/ringBuffer';
-import { getFullConfig, saveConfig } from '@/utils/configStorage';
+import { getFullConfig, saveConfig, saveServerConfig } from '@/utils/configStorage';
+import { serverToClientConfig } from '@/utils/configConverter';
 
 // Buffer sizes
 const MAX_EVENTS = 100;
@@ -51,10 +53,19 @@ export interface AudioTriggerControllerReturn {
 }
 
 export function useAudioTriggerController(
-  initialConfig?: Partial<AudioTriggerConfig>
+  initialConfig?: Partial<AudioTriggerConfig>,
+  serverConfig?: ServerAudioTriggerConfig | null
 ): AudioTriggerControllerReturn {
-  // Config state
+  // Config state - prioritize server config
   const [config, setConfig] = useState<AudioTriggerConfig>(() => {
+    // 1. If server config is provided, use it
+    if (serverConfig) {
+      const converted = serverToClientConfig(serverConfig);
+      saveServerConfig(serverConfig); // Cache locally
+      return { ...converted, ...initialConfig };
+    }
+    
+    // 2. Fallback to cached config
     const stored = getFullConfig();
     return { ...stored, ...initialConfig };
   });
@@ -92,6 +103,15 @@ export function useAudioTriggerController(
   useEffect(() => {
     configRef.current = config;
   }, [config]);
+
+  // Update config when serverConfig changes
+  useEffect(() => {
+    if (serverConfig) {
+      const converted = serverToClientConfig(serverConfig);
+      setConfig(prev => ({ ...prev, ...converted }));
+      saveServerConfig(serverConfig);
+    }
+  }, [serverConfig]);
 
   // Add event helper
   const addEvent = useCallback((event: AudioTriggerEvent) => {

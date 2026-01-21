@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { syncConfigMobile, getCachedConfig } from '@/lib/api';
-import { UserConfig, SupportContact, MonitoringPeriod } from '@/lib/types';
+import { UserConfig, SupportContact, MonitoringPeriod, ServerAudioTriggerConfig, PeriodosSemana } from '@/lib/types';
+import type { AudioTriggerConfig } from '@/types/audioTrigger';
+import { saveServerConfig, loadServerConfig } from '@/utils/configStorage';
+import { getConfigFromServer } from '@/utils/configConverter';
 
 interface MonitoringState {
   dentroHorario: boolean;
@@ -15,6 +18,8 @@ interface MonitoringState {
 interface ConfigState {
   config: UserConfig | null;
   monitoring: MonitoringState;
+  audioTriggerConfig: ServerAudioTriggerConfig | null;
+  periodosSemana: PeriodosSemana | null;
   isLoading: boolean;
   lastSync: string | null;
   error: string | null;
@@ -34,6 +39,8 @@ export function useConfig() {
   const [state, setState] = useState<ConfigState>(() => ({
     config: getCachedConfig(),
     monitoring: initialMonitoringState,
+    audioTriggerConfig: loadServerConfig(),
+    periodosSemana: null,
     isLoading: false,
     lastSync: null,
     error: null,
@@ -54,6 +61,11 @@ export function useConfig() {
       return false;
     }
 
+    // Cache server audio config if present
+    if (result.data.audio_trigger_config) {
+      saveServerConfig(result.data.audio_trigger_config);
+    }
+
     setState({
       config: result.data.configuracoes,
       monitoring: {
@@ -65,6 +77,8 @@ export function useConfig() {
         periodosHoje: result.data.periodos_hoje ?? [],
         gravacaoDias: result.data.gravacao_dias ?? [],
       },
+      audioTriggerConfig: result.data.audio_trigger_config ?? null,
+      periodosSemana: result.data.periodos_semana ?? null,
       isLoading: false,
       lastSync: result.data.ultima_atualizacao || new Date().toISOString(),
       error: null,
@@ -72,6 +86,11 @@ export function useConfig() {
 
     return true;
   }, []);
+
+  // Get audio trigger config converted to client format
+  const getAudioTriggerConfig = useCallback((): AudioTriggerConfig => {
+    return getConfigFromServer(state.audioTriggerConfig);
+  }, [state.audioTriggerConfig]);
 
   // Get support contacts (guardians)
   const getGuardians = useCallback((): SupportContact[] => {
@@ -115,5 +134,6 @@ export function useConfig() {
     isVoiceTriggerEnabled,
     isManualTriggerEnabled,
     reloadFromCache,
+    getAudioTriggerConfig,
   };
 }
