@@ -203,7 +203,27 @@ export function AudioTriggerDebugPanel({
                     />
                     <span className="text-xs text-muted-foreground">Alta</span>
                   </div>
-                </div>
+                  </div>
+
+                  {/* Confirmation Time Slider */}
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-muted-foreground">Tempo de Confirmação</span>
+                    <Badge variant="outline" className="text-xs font-mono">
+                      {config.startHoldSeconds}s
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">4s</span>
+                    <Slider
+                      value={[config.startHoldSeconds]}
+                      min={4}
+                      max={15}
+                      step={1}
+                      onValueChange={(value) => updateConfig({ startHoldSeconds: value[0] })}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground">15s</span>
+                  </div>
 
                 {/* Advanced Settings (collapsible) */}
                 <AnimatePresence>
