@@ -59,31 +59,21 @@ export function HomePage({ onLogout }: HomePageProps) {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [syncConfig]);
 
-  // Auto-start audio monitoring when in monitoring period and voice trigger is enabled
+  // Auto-start audio monitoring when in monitoring period
   // Auto-stop when exiting the period (unless started manually via debug panel)
   useEffect(() => {
-    const shouldMonitor = 
-      monitoring.dentroHorario && 
-      isVoiceTriggerEnabled() &&
-      !panic.isPanicActive && 
-      !recording.isRecording;
-
-    if (shouldMonitor && !audioTrigger.isCapturing) {
+    if (monitoring.dentroHorario && !audioTrigger.isCapturing) {
       console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
       audioTrigger.start();
-    } else if (!shouldMonitor && audioTrigger.isCapturing && !manualAudioStartRef.current) {
-      // Only auto-stop if it wasn't started manually
+    } else if (!monitoring.dentroHorario && audioTrigger.isCapturing && !manualAudioStartRef.current) {
       console.log('[Home] Auto-stopping audio trigger (fora do período de monitoramento)');
       audioTrigger.stop();
     }
   }, [
     monitoring.dentroHorario, 
-    panic.isPanicActive, 
-    recording.isRecording,
     audioTrigger.isCapturing,
     audioTrigger.start,
     audioTrigger.stop,
-    isVoiceTriggerEnabled
   ]);
 
   // Auto-start recording when discussion is detected
