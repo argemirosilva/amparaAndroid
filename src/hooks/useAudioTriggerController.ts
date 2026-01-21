@@ -253,9 +253,11 @@ export function useAudioTriggerController(
 
   // Start audio capture
   const start = useCallback(async () => {
+    console.log('[AudioTrigger] start() called');
     try {
       setError(null);
 
+      console.log('[AudioTrigger] Requesting microphone permission...');
       // Request microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -265,12 +267,14 @@ export function useAudioTriggerController(
         },
       });
 
+      console.log('[AudioTrigger] Microphone permission granted');
       setHasPermission(true);
       mediaStreamRef.current = stream;
 
       // Create audio context
       const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       audioContextRef.current = audioContext;
+      console.log('[AudioTrigger] AudioContext created, sampleRate:', audioContext.sampleRate);
 
       // Create analyser node
       const analyser = audioContext.createAnalyser();
@@ -285,19 +289,27 @@ export function useAudioTriggerController(
       // Calculate frame size
       const frameSize = Math.floor((config.frameMs / 1000) * audioContext.sampleRate);
       const dataArray = new Float32Array(frameSize);
+      console.log('[AudioTrigger] Frame size:', frameSize, 'samples');
 
       // Start processing loop
+      let frameCount = 0;
       const processLoop = () => {
         if (!analyserRef.current || !audioContextRef.current) return;
 
         analyserRef.current.getFloatTimeDomainData(dataArray);
         processAudioFrame(dataArray, audioContextRef.current.sampleRate);
+        
+        frameCount++;
+        if (frameCount % 250 === 0) { // Log every ~5 seconds
+          console.log('[AudioTrigger] Processed', frameCount, 'frames');
+        }
 
         animationFrameRef.current = requestAnimationFrame(processLoop);
       };
 
       animationFrameRef.current = requestAnimationFrame(processLoop);
       setIsCapturing(true);
+      console.log('[AudioTrigger] Audio capture started successfully');
 
       addEvent({
         type: 'micStarted',
@@ -307,6 +319,7 @@ export function useAudioTriggerController(
 
     } catch (err: unknown) {
       const error = err as Error & { name?: string };
+      console.error('[AudioTrigger] Error starting capture:', err);
       setHasPermission(false);
       
       let errorMessage = 'Erro ao acessar microfone';

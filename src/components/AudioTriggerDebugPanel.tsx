@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Mic, MicOff, RotateCcw, Play, Square } from 'lucide-react';
+import { ChevronDown, ChevronUp, Mic, MicOff, RotateCcw, Play, Square, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -19,9 +19,11 @@ interface AudioTriggerDebugPanelProps {
 
 export function AudioTriggerDebugPanel({ audioTrigger }: AudioTriggerDebugPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
   
   const { 
-    isCapturing, 
+    isCapturing,
+    hasPermission, 
     metrics, 
     state, 
     isRecording, 
@@ -31,6 +33,16 @@ export function AudioTriggerDebugPanel({ audioTrigger }: AudioTriggerDebugPanelP
     reset,
     error
   } = audioTrigger;
+
+  const handleStart = async () => {
+    console.log('[DebugPanel] Start button clicked');
+    setIsStarting(true);
+    try {
+      await start();
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   // Calculate normalized values for progress bars
   const normalizedVolume = metrics 
@@ -105,9 +117,17 @@ export function AudioTriggerDebugPanel({ audioTrigger }: AudioTriggerDebugPanelP
               <div className="px-3 pb-3 space-y-3">
                 <Separator />
 
+                {/* Debug Status Line */}
+                <div className="text-xs text-muted-foreground font-mono bg-background/50 rounded px-2 py-1">
+                  capture: {isCapturing ? '✅' : '❌'} | 
+                  permission: {hasPermission === null ? '⏳' : hasPermission ? '✅' : '❌'} |
+                  starting: {isStarting ? '⏳' : '❌'}
+                </div>
+
                 {/* Error display */}
                 {error && (
-                  <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                  <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded">
+                    <AlertCircle className="w-3 h-3" />
                     {error}
                   </div>
                 )}
@@ -220,11 +240,21 @@ export function AudioTriggerDebugPanel({ audioTrigger }: AudioTriggerDebugPanelP
                     <Button 
                       size="sm" 
                       variant="default"
-                      onClick={start}
+                      onClick={handleStart}
+                      disabled={isStarting}
                       className="flex-1"
                     >
-                      <Play className="w-3 h-3 mr-1" />
-                      Iniciar
+                      {isStarting ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Iniciando...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3 h-3 mr-1" />
+                          Iniciar
+                        </>
+                      )}
                     </Button>
                   ) : (
                     <Button 
