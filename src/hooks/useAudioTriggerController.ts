@@ -85,6 +85,7 @@ export function useAudioTriggerController(
   const speechOnRef = useRef<boolean>(false);
   const loudOnRef = useRef<boolean>(false);
   const currentGenderRef = useRef<GenderClass>('UNKNOWN');
+  const discussionOnRef = useRef<boolean>(false);
   const configRef = useRef(config);
 
   // Keep config ref updated
@@ -105,10 +106,20 @@ export function useAudioTriggerController(
     triggerStateMachine.setEventCallback(addEvent);
   }, [addEvent]);
 
+  // Debug frame counter
+  const frameCountRef = useRef<number>(0);
+
   // Process audio frame
   const processAudioFrame = useCallback((samples: Float32Array, sampleRate: number) => {
     const cfg = configRef.current;
     const now = Date.now();
+
+    frameCountRef.current++;
+    
+    // Log every 250 frames (~5 seconds at 50fps)
+    if (frameCountRef.current % 250 === 0) {
+      console.log('[AudioTrigger] Processing frame #', frameCountRef.current);
+    }
 
     // Process frame for DSP metrics
     const frameResult = processFrame(samples, noiseFloorRef.current, cfg);
@@ -202,8 +213,8 @@ export function useAudioTriggerController(
         );
 
         // Detect discussion state changes
-        const prevDiscussion = metrics?.discussionOn ?? false;
-        if (discussionState.discussionOn !== prevDiscussion) {
+        if (discussionState.discussionOn !== discussionOnRef.current) {
+          discussionOnRef.current = discussionState.discussionOn;
           addEvent({
             type: discussionState.discussionOn ? 'discussionStarted' : 'discussionEnded',
             timestamp: now,
@@ -249,7 +260,7 @@ export function useAudioTriggerController(
         frameBufferRef.current.clear();
       }
     }
-  }, [addEvent, metrics]);
+  }, [addEvent]);
 
   // Start audio capture
   const start = useCallback(async () => {
