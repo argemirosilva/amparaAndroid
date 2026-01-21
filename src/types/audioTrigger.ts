@@ -156,7 +156,7 @@ export const DEFAULT_CONFIG: AudioTriggerConfig = {
   voicingConfidenceMin: 0.7,
   zcrMinVoice: 0.02,
   zcrMaxVoice: 0.25,
-  silenceDecaySeconds: 2,
+  silenceDecaySeconds: 4,
   silenceDecayRate: 1,
 };
 
