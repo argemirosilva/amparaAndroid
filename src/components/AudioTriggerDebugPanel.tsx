@@ -15,9 +15,15 @@ import { getGenderIcon, getGenderLabel } from '@/services/genderClassifierServic
 
 interface AudioTriggerDebugPanelProps {
   audioTrigger: AudioTriggerControllerReturn;
+  onManualStart?: () => void;
+  onManualStop?: () => void;
 }
 
-export function AudioTriggerDebugPanel({ audioTrigger }: AudioTriggerDebugPanelProps) {
+export function AudioTriggerDebugPanel({ 
+  audioTrigger, 
+  onManualStart, 
+  onManualStop 
+}: AudioTriggerDebugPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   
@@ -38,10 +44,16 @@ export function AudioTriggerDebugPanel({ audioTrigger }: AudioTriggerDebugPanelP
     console.log('[DebugPanel] Start button clicked');
     setIsStarting(true);
     try {
+      onManualStart?.();
       await start();
     } finally {
       setIsStarting(false);
     }
+  };
+
+  const handleStop = () => {
+    onManualStop?.();
+    stop();
   };
 
   // Calculate normalized values for progress bars
@@ -260,7 +272,7 @@ export function AudioTriggerDebugPanel({ audioTrigger }: AudioTriggerDebugPanelP
                     <Button 
                       size="sm" 
                       variant="destructive"
-                      onClick={stop}
+                      onClick={handleStop}
                       className="flex-1"
                     >
                       <Square className="w-3 h-3 mr-1" />
