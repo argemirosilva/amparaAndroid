@@ -36,6 +36,7 @@ class DiscussionDetector {
   private discussionStartConditionStartTime: number | null = null;
   private lastSpeechOnset: number | null = null;
   private previousSpeechState: boolean = false;
+  private lastSpeechTime: number | null = null;
 
   constructor() {
     this.aggregationBuffer = new RingBuffer<AggregatedMetrics>(AGGREGATIONS_PER_10S);
@@ -138,11 +139,30 @@ class DiscussionDetector {
     };
     this.aggregationBuffer.push(fullAggregation);
 
+    // Track last speech time for silence decay
+    if (currentSpeechOn) {
+      this.lastSpeechTime = now;
+    }
+
     // Calculate window metrics
     const windowMetrics = this.getWindowMetrics();
 
-    // Calculate score
-    const score = this.calculateScore(windowMetrics, gender, config);
+    // Calculate base score
+    let score = this.calculateScore(windowMetrics, gender, config);
+
+    // Apply silence decay penalty
+    if (this.lastSpeechTime !== null && !currentSpeechOn) {
+      const silenceDurationMs = now - this.lastSpeechTime;
+      const silenceSeconds = silenceDurationMs / 1000;
+      
+      // Only apply decay after silenceDecaySeconds
+      if (silenceSeconds > config.silenceDecaySeconds) {
+        const decaySeconds = silenceSeconds - config.silenceDecaySeconds;
+        const penalty = Math.floor(decaySeconds * config.silenceDecayRate);
+        score = Math.max(0, score - penalty);
+      }
+    }
+
     this._state.score = score;
 
     // Discussion start logic (with hysteresis)
@@ -200,6 +220,7 @@ class DiscussionDetector {
     this.discussionStartConditionStartTime = null;
     this.lastSpeechOnset = null;
     this.previousSpeechState = false;
+    this.lastSpeechTime = null;
   }
 
   /**
