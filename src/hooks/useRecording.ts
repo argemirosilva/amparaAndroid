@@ -13,7 +13,7 @@ interface RecordingState {
   segmentsPending: number;
 }
 
-const SEGMENT_DURATION_MS = 60000; // 60 seconds per segment
+const SEGMENT_DURATION_MS = 30000; // 30 seconds per segment
 const SILENCE_TIMEOUT_MS = 600000; // 10 minutes of silence
 const SAMPLE_RATE = 16000;
 
