@@ -32,9 +32,9 @@ export function HomePage({ onLogout }: HomePageProps) {
   const appState = useAppState();
   const panic = usePanicContext();
   const recording = useRecording();
-  const { monitoring, isLoading: isConfigLoading, syncConfig, isVoiceTriggerEnabled } = useConfig();
+  const { monitoring, audioTriggerConfig, isLoading: isConfigLoading, syncConfig, isVoiceTriggerEnabled } = useConfig();
   const { isOnline } = useHeartbeat({ autoStart: true });
-  const audioTrigger = useAudioTriggerController();
+  const audioTrigger = useAudioTriggerController(undefined, audioTriggerConfig);
   
   // Ref to track if we auto-started the recording (to avoid duplicate toasts)
   const autoRecordingStartedRef = useRef(false);

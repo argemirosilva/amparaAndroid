@@ -3,9 +3,12 @@
  */
 
 import type { AudioTriggerConfig } from '@/types/audioTrigger';
+import type { ServerAudioTriggerConfig } from '@/lib/types';
 import { DEFAULT_CONFIG } from '@/types/audioTrigger';
+import { serverToClientConfig } from '@/utils/configConverter';
 
 const STORAGE_KEY = 'ampara_trigger_config';
+const SERVER_CONFIG_KEY = 'ampara_server_audio_config';
 
 /**
  * Save config to localStorage
@@ -34,9 +37,41 @@ export function loadConfig(): Partial<AudioTriggerConfig> | null {
 }
 
 /**
- * Get full config with defaults
+ * Save server config to localStorage for offline fallback
+ */
+export function saveServerConfig(config: ServerAudioTriggerConfig): void {
+  try {
+    localStorage.setItem(SERVER_CONFIG_KEY, JSON.stringify(config));
+  } catch (error) {
+    console.error('Failed to save server config:', error);
+  }
+}
+
+/**
+ * Load server config from localStorage
+ */
+export function loadServerConfig(): ServerAudioTriggerConfig | null {
+  try {
+    const stored = localStorage.getItem(SERVER_CONFIG_KEY);
+    if (!stored) return null;
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error('Failed to load server config:', error);
+    return null;
+  }
+}
+
+/**
+ * Get full config with defaults, prioritizing server config
  */
 export function getFullConfig(): AudioTriggerConfig {
+  // 1. Try server config first (cached from last sync)
+  const serverConfig = loadServerConfig();
+  if (serverConfig) {
+    return serverToClientConfig(serverConfig);
+  }
+  
+  // 2. Fallback to local config
   const stored = loadConfig();
   return { ...DEFAULT_CONFIG, ...stored };
 }

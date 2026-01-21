@@ -85,6 +85,48 @@ export interface ConfigSyncResponse {
   gravacao_fim?: string | null;
   periodos_hoje?: MonitoringPeriod[];
   gravacao_dias?: string[];
+  // Novos campos do servidor
+  audio_trigger_config?: ServerAudioTriggerConfig;
+  periodos_semana?: PeriodosSemana;
+}
+
+// Configuração de áudio do servidor (snake_case)
+export interface ServerAudioTriggerConfig {
+  sample_rate: number;
+  frame_ms: number;
+  aggregation_ms: number;
+  discussion_window_seconds: number;
+  pre_trigger_seconds: number;
+  start_hold_seconds: number;
+  end_hold_seconds: number;
+  cooldown_seconds: number;
+  noise_floor_learning_rate: number;
+  loud_delta_db: number;
+  vad_delta_db: number;
+  speech_density_min: number;
+  loud_density_min: number;
+  turn_taking_min: number;
+  speech_density_end: number;
+  loud_density_end: number;
+  silence_decay_seconds: number;
+  silence_decay_rate: number;
+  male_bias_enabled: boolean;
+  f0_low_male: number;
+  f0_high_female: number;
+  voicing_confidence_min: number;
+  zcr_min_voice: number;
+  zcr_max_voice: number;
+}
+
+// Períodos da semana organizados por dia
+export interface PeriodosSemana {
+  seg: MonitoringPeriod[];
+  ter: MonitoringPeriod[];
+  qua: MonitoringPeriod[];
+  qui: MonitoringPeriod[];
+  sex: MonitoringPeriod[];
+  sab: MonitoringPeriod[];
+  dom: MonitoringPeriod[];
 }
 
 // Ping Response
