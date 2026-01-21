@@ -15,7 +15,7 @@ interface RecordingState {
 
 const SEGMENT_DURATION_MS = 60000; // 60 seconds per segment
 const SILENCE_TIMEOUT_MS = 600000; // 10 minutes of silence
-const SAMPLE_RATE = 44100;
+const SAMPLE_RATE = 16000;
 
 export function useRecording() {
   const [state, setState] = useState<RecordingState>({

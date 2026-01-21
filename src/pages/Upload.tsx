@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, File, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { ArrowLeft, Upload, File, CheckCircle, AlertCircle, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { getSessionToken, getUserEmail } from '@/lib/api';
@@ -9,8 +9,9 @@ import { getDeviceId } from '@/lib/deviceId';
 import { addPendingUpload } from '@/lib/appState';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
+import { isAudioFile, convertAudioTo16kWav, getConvertedFileName } from '@/lib/audioConverter';
 
-type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error' | 'converting';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 
   'https://ilikiajeduezvvanjejz.supabase.co/functions/v1/mobile-api';
@@ -22,20 +23,47 @@ export function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [convertedBlob, setConvertedBlob] = useState<Blob | null>(null);
+  const [originalSize, setOriginalSize] = useState<number>(0);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setUploadStatus('idle');
-      setUploadProgress(0);
+    if (!file) return;
+
+    setSelectedFile(file);
+    setOriginalSize(file.size);
+    setConvertedBlob(null);
+    setUploadStatus('idle');
+    setUploadProgress(0);
+
+    // If it's an audio file, convert to 16kHz WAV
+    if (isAudioFile(file)) {
+      setUploadStatus('converting');
+      try {
+        const converted = await convertAudioTo16kWav(file);
+        setConvertedBlob(converted);
+        setUploadStatus('idle');
+        toast({
+          title: 'Áudio otimizado',
+          description: `${formatSize(file.size)} → ${formatSize(converted.size)}`,
+        });
+      } catch (error) {
+        console.error('Failed to convert audio:', error);
+        setUploadStatus('idle');
+        toast({
+          title: 'Aviso',
+          description: 'Não foi possível otimizar o áudio. Será enviado no formato original.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
   const uploadFileWithProgress = async (
-    file: File,
+    file: File | Blob,
+    fileName: string,
     onProgress: (progress: number) => void
   ): Promise<{ success: boolean; error: string | null }> => {
     return new Promise((resolve) => {
@@ -47,7 +75,7 @@ export function UploadPage() {
       formData.append('device_id', getDeviceId());
       formData.append('email_usuario', getUserEmail() || '');
       formData.append('origem_gravacao', 'upload_arquivo');
-      formData.append('audio', file);
+      formData.append('audio', file, fileName);
       formData.append('timestamp', new Date().toISOString());
 
       xhr.upload.addEventListener('progress', (e) => {
@@ -80,8 +108,19 @@ export function UploadPage() {
     setUploadStatus('uploading');
     setUploadProgress(0);
 
+    // Use converted blob if available, otherwise use original file
+    let fileToUpload: File | Blob = selectedFile;
+    if (convertedBlob) {
+      fileToUpload = new Blob([convertedBlob], { type: 'audio/wav' });
+    }
+
+    const fileName = convertedBlob 
+      ? getConvertedFileName(selectedFile.name) 
+      : selectedFile.name;
+
     const { success } = await uploadFileWithProgress(
-      selectedFile,
+      fileToUpload,
+      fileName,
       (progress) => setUploadProgress(progress)
     );
 
@@ -117,6 +156,8 @@ export function UploadPage() {
 
   const handleReset = () => {
     setSelectedFile(null);
+    setConvertedBlob(null);
+    setOriginalSize(0);
     setUploadStatus('idle');
     setUploadProgress(0);
     if (fileInputRef.current) {
@@ -179,12 +220,24 @@ export function UploadPage() {
             <div className="bg-card rounded-2xl p-6 border border-border mb-6">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <File className="w-6 h-6 text-primary" />
+                  {uploadStatus === 'converting' ? (
+                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                  ) : (
+                    <File className="w-6 h-6 text-primary" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate mb-1">{selectedFile.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {formatSize(selectedFile.size)}
+                    {convertedBlob ? (
+                      <span>
+                        <span className="line-through">{formatSize(originalSize)}</span>
+                        {' → '}
+                        <span className="text-primary font-medium">{formatSize(convertedBlob.size)}</span>
+                      </span>
+                    ) : (
+                      formatSize(selectedFile.size)
+                    )}
                   </p>
                 </div>
                 {uploadStatus === 'idle' && (
@@ -193,6 +246,15 @@ export function UploadPage() {
                   </Button>
                 )}
               </div>
+
+              {/* Converting status */}
+              {uploadStatus === 'converting' && (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Otimizando áudio...
+                  </p>
+                </div>
+              )}
 
               {/* Progress bar */}
               {uploadStatus === 'uploading' && (
@@ -229,13 +291,18 @@ export function UploadPage() {
             </div>
 
             {/* Actions */}
-            {uploadStatus === 'idle' && (
+            {(uploadStatus === 'idle' || uploadStatus === 'converting') && (
               <Button
                 onClick={handleUpload}
+                disabled={uploadStatus === 'converting'}
                 className="w-full h-14 text-lg bg-gradient-primary"
               >
-                <Upload className="w-5 h-5 mr-2" />
-                Enviar arquivo
+                {uploadStatus === 'converting' ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="w-5 h-5 mr-2" />
+                )}
+                {uploadStatus === 'converting' ? 'Otimizando...' : 'Enviar arquivo'}
               </Button>
             )}
 
