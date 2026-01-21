@@ -5,11 +5,12 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Mic, MicOff, RotateCcw, Play, Square, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Mic, MicOff, RotateCcw, Play, Square, AlertCircle, Loader2, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
 import type { AudioTriggerControllerReturn } from '@/hooks/useAudioTriggerController';
 import { getGenderIcon, getGenderLabel } from '@/services/genderClassifierService';
 
@@ -26,6 +27,7 @@ export function AudioTriggerDebugPanel({
 }: AudioTriggerDebugPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   const { 
     isCapturing,
@@ -34,9 +36,11 @@ export function AudioTriggerDebugPanel({
     state, 
     isRecording, 
     discussionOn,
+    config,
     start,
     stop,
     reset,
+    updateConfig,
     error
   } = audioTrigger;
 
@@ -54,6 +58,41 @@ export function AudioTriggerDebugPanel({
   const handleStop = () => {
     onManualStop?.();
     stop();
+  };
+
+  // Sensitivity slider: 1 (low) to 10 (high)
+  // Maps to adjustments in thresholds
+  const getSensitivityLevel = () => {
+    // Calculate based on current thresholds - lower thresholds = higher sensitivity
+    const speechWeight = (0.70 - config.speechDensityMin) / 0.40; // 0.30-0.70 range
+    const loudWeight = (0.50 - config.loudDensityMin) / 0.40; // 0.10-0.50 range
+    const dbWeight = (20 - config.loudDeltaDb) / 12; // 8-20 range
+    
+    const avg = (speechWeight + loudWeight + dbWeight) / 3;
+    return Math.round(avg * 9 + 1); // 1-10
+  };
+
+  const handleSensitivityChange = (value: number[]) => {
+    const level = value[0];
+    // Map 1-10 to threshold adjustments
+    // Level 1 = least sensitive (high thresholds)
+    // Level 10 = most sensitive (low thresholds)
+    const factor = (level - 1) / 9; // 0 to 1
+    
+    const newConfig = {
+      // Speech density: 0.70 (level 1) to 0.30 (level 10)
+      speechDensityMin: 0.70 - (factor * 0.40),
+      // Loud density: 0.50 (level 1) to 0.10 (level 10)
+      loudDensityMin: 0.50 - (factor * 0.40),
+      // Loud delta: 20dB (level 1) to 8dB (level 10)
+      loudDeltaDb: 20 - (factor * 12),
+      // VAD delta: 14dB (level 1) to 5dB (level 10)
+      vadDeltaDb: 14 - (factor * 9),
+      // Turn taking: 10 (level 1) to 4 (level 10)
+      turnTakingMin: 10 - (factor * 6),
+    };
+    
+    updateConfig(newConfig);
   };
 
   // Calculate normalized values for progress bars
@@ -92,6 +131,8 @@ export function AudioTriggerDebugPanel({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const currentSensitivity = getSensitivityLevel();
+
   return (
     <div className="w-full max-w-sm mx-auto mb-4">
       <div className="bg-muted/50 backdrop-blur-sm border border-border rounded-lg overflow-hidden">
@@ -127,6 +168,76 @@ export function AudioTriggerDebugPanel({
               transition={{ duration: 0.2 }}
             >
               <div className="px-3 pb-3 space-y-3">
+                <Separator />
+
+                {/* Sensitivity Slider */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">Sensibilidade</span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs font-mono">
+                        {currentSensitivity}/10
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowSettings(!showSettings);
+                        }}
+                      >
+                        <Settings2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">Baixa</span>
+                    <Slider
+                      value={[currentSensitivity]}
+                      min={1}
+                      max={10}
+                      step={1}
+                      onValueChange={handleSensitivityChange}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground">Alta</span>
+                  </div>
+                </div>
+
+                {/* Advanced Settings (collapsible) */}
+                <AnimatePresence>
+                  {showSettings && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="text-xs space-y-1 bg-background/50 rounded p-2"
+                    >
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Speech Min:</span>
+                        <span className="font-mono">{(config.speechDensityMin * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Loud Min:</span>
+                        <span className="font-mono">{(config.loudDensityMin * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Loud Delta:</span>
+                        <span className="font-mono">{config.loudDeltaDb.toFixed(0)} dB</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">VAD Delta:</span>
+                        <span className="font-mono">{config.vadDeltaDb.toFixed(0)} dB</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Turn Taking:</span>
+                        <span className="font-mono">{config.turnTakingMin.toFixed(0)}</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <Separator />
 
                 {/* Debug Status Line */}
