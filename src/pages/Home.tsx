@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Settings, AlertTriangle, Menu, LogOut, X, Upload, Mic } from 'lucide-react';
+import { Settings, AlertTriangle, Menu, LogOut, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
@@ -11,6 +11,7 @@ import { RecordButton } from '@/components/RecordButton';
 
 import { MonitoringStatus } from '@/components/MonitoringStatus';
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
+import { AudioTriggerDebugPanel } from '@/components/AudioTriggerDebugPanel';
 import { usePanicContext } from '@/contexts/PanicContext';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
@@ -191,6 +192,11 @@ export function HomePage({ onLogout }: HomePageProps) {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 gap-8">
+
+        {/* Audio Trigger Debug Panel */}
+        {!panic.isPanicActive && !recording.isRecording && (
+          <AudioTriggerDebugPanel audioTrigger={audioTrigger} />
+        )}
 
         {/* Monitoring status */}
         {!panic.isPanicActive && !recording.isRecording && (
