@@ -127,6 +127,9 @@ export interface AudioTriggerConfig {
   // ZCR para VAD
   zcrMinVoice: number;
   zcrMaxVoice: number;
+  // Silence decay
+  silenceDecaySeconds: number;
+  silenceDecayRate: number;
 }
 
 // Configuração padrão
@@ -153,6 +156,8 @@ export const DEFAULT_CONFIG: AudioTriggerConfig = {
   voicingConfidenceMin: 0.7,
   zcrMinVoice: 0.02,
   zcrMaxVoice: 0.25,
+  silenceDecaySeconds: 2,
+  silenceDecayRate: 1,
 };
 
 // Tipo para erros
