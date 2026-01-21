@@ -38,6 +38,8 @@ export function HomePage({ onLogout }: HomePageProps) {
   
   // Ref to track if we auto-started the recording (to avoid duplicate toasts)
   const autoRecordingStartedRef = useRef(false);
+  // Ref to track if audio was started manually via debug panel
+  const manualAudioStartRef = useRef(false);
 
   // Sync config on mount and every 5 minutes
   useEffect(() => {
@@ -58,6 +60,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   }, [syncConfig]);
 
   // Auto-start audio monitoring when in monitoring period and voice trigger is enabled
+  // BUT don't stop if it was started manually via debug panel
   useEffect(() => {
     const shouldMonitor = 
       monitoring.dentroHorario && 
@@ -67,7 +70,8 @@ export function HomePage({ onLogout }: HomePageProps) {
 
     if (shouldMonitor && !audioTrigger.isCapturing) {
       audioTrigger.start();
-    } else if (!shouldMonitor && audioTrigger.isCapturing) {
+    } else if (!shouldMonitor && audioTrigger.isCapturing && !manualAudioStartRef.current) {
+      // Only auto-stop if it wasn't started manually
       audioTrigger.stop();
     }
   }, [
@@ -195,7 +199,11 @@ export function HomePage({ onLogout }: HomePageProps) {
 
         {/* Audio Trigger Debug Panel */}
         {!panic.isPanicActive && !recording.isRecording && (
-          <AudioTriggerDebugPanel audioTrigger={audioTrigger} />
+          <AudioTriggerDebugPanel 
+            audioTrigger={audioTrigger} 
+            onManualStart={() => { manualAudioStartRef.current = true; }}
+            onManualStop={() => { manualAudioStartRef.current = false; }}
+          />
         )}
 
         {/* Monitoring status */}
