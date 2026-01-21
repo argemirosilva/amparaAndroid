@@ -60,7 +60,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   }, [syncConfig]);
 
   // Auto-start audio monitoring when in monitoring period and voice trigger is enabled
-  // BUT don't stop if it was started manually via debug panel
+  // Auto-stop when exiting the period (unless started manually via debug panel)
   useEffect(() => {
     const shouldMonitor = 
       monitoring.dentroHorario && 
@@ -69,9 +69,11 @@ export function HomePage({ onLogout }: HomePageProps) {
       !recording.isRecording;
 
     if (shouldMonitor && !audioTrigger.isCapturing) {
+      console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
       audioTrigger.start();
     } else if (!shouldMonitor && audioTrigger.isCapturing && !manualAudioStartRef.current) {
       // Only auto-stop if it wasn't started manually
+      console.log('[Home] Auto-stopping audio trigger (fora do período de monitoramento)');
       audioTrigger.stop();
     }
   }, [
@@ -79,6 +81,8 @@ export function HomePage({ onLogout }: HomePageProps) {
     panic.isPanicActive, 
     recording.isRecording,
     audioTrigger.isCapturing,
+    audioTrigger.start,
+    audioTrigger.stop,
     isVoiceTriggerEnabled
   ]);
 
