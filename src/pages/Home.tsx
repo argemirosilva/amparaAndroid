@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Settings, AlertTriangle, Menu, LogOut, X, Upload } from 'lucide-react';
+import { Settings, AlertTriangle, Menu, LogOut, X, Upload, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
@@ -17,6 +17,7 @@ import { useAppState } from '@/hooks/useAppState';
 import { useConfig } from '@/hooks/useConfig';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useToast } from '@/hooks/use-toast';
+import { useAudioTriggerController } from '@/hooks/useAudioTriggerController';
 
 interface HomePageProps {
   onLogout: () => void;
@@ -30,8 +31,12 @@ export function HomePage({ onLogout }: HomePageProps) {
   const appState = useAppState();
   const panic = usePanicContext();
   const recording = useRecording();
-  const { monitoring, isLoading: isConfigLoading, syncConfig } = useConfig();
+  const { monitoring, isLoading: isConfigLoading, syncConfig, isVoiceTriggerEnabled } = useConfig();
   const { isOnline } = useHeartbeat({ autoStart: true });
+  const audioTrigger = useAudioTriggerController();
+  
+  // Ref to track if we auto-started the recording (to avoid duplicate toasts)
+  const autoRecordingStartedRef = useRef(false);
 
   // Sync config on mount and every 5 minutes
   useEffect(() => {
@@ -50,6 +55,56 @@ export function HomePage({ onLogout }: HomePageProps) {
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [syncConfig]);
+
+  // Auto-start audio monitoring when in monitoring period and voice trigger is enabled
+  useEffect(() => {
+    const shouldMonitor = 
+      monitoring.dentroHorario && 
+      isVoiceTriggerEnabled() &&
+      !panic.isPanicActive && 
+      !recording.isRecording;
+
+    if (shouldMonitor && !audioTrigger.isCapturing) {
+      audioTrigger.start();
+    } else if (!shouldMonitor && audioTrigger.isCapturing) {
+      audioTrigger.stop();
+    }
+  }, [
+    monitoring.dentroHorario, 
+    panic.isPanicActive, 
+    recording.isRecording,
+    audioTrigger.isCapturing,
+    isVoiceTriggerEnabled
+  ]);
+
+  // Auto-start recording when discussion is detected
+  useEffect(() => {
+    const shouldAutoRecord = 
+      audioTrigger.discussionOn && 
+      !recording.isRecording && 
+      !panic.isPanicActive &&
+      !autoRecordingStartedRef.current;
+
+    if (shouldAutoRecord) {
+      autoRecordingStartedRef.current = true;
+      recording.startRecording('automatico').then(success => {
+        if (success) {
+          appState.setStatus('recording');
+          toast({
+            title: 'Gravação automática iniciada',
+            description: 'Discussão detectada pelo monitoramento.',
+          });
+        } else {
+          autoRecordingStartedRef.current = false;
+        }
+      });
+    }
+    
+    // Reset the ref when discussion ends and recording stops
+    if (!audioTrigger.discussionOn && !recording.isRecording) {
+      autoRecordingStartedRef.current = false;
+    }
+  }, [audioTrigger.discussionOn, recording.isRecording, panic.isPanicActive, appState, toast]);
 
   const handleRecordToggle = async () => {
     if (recording.isRecording) {
@@ -147,6 +202,8 @@ export function HomePage({ onLogout }: HomePageProps) {
               gravacaoInicio={monitoring.gravacaoInicio}
               gravacaoFim={monitoring.gravacaoFim}
               isLoading={isConfigLoading}
+              isAudioMonitoring={audioTrigger.isCapturing}
+              audioScore={audioTrigger.metrics?.score}
             />
           </div>
         )}

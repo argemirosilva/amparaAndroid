@@ -10,6 +10,8 @@ interface MonitoringStatusProps {
   gravacaoInicio: string | null;
   gravacaoFim: string | null;
   isLoading?: boolean;
+  isAudioMonitoring?: boolean;
+  audioScore?: number;
 }
 
 export function MonitoringStatus({
@@ -19,6 +21,8 @@ export function MonitoringStatus({
   gravacaoInicio,
   gravacaoFim,
   isLoading = false,
+  isAudioMonitoring = false,
+  audioScore,
 }: MonitoringStatusProps) {
   const [now, setNow] = useState(new Date());
 
@@ -113,9 +117,17 @@ export function MonitoringStatus({
               <span className="text-sm font-medium text-emerald-500">Ativo</span>
               <span className="text-xs text-muted-foreground">{currentPeriod.inicio}-{currentPeriod.fim}</span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Termina em {formatTimeDiff(endTime)}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                Termina em {formatTimeDiff(endTime)}
+              </p>
+              {isAudioMonitoring && (
+                <span className="text-xs text-emerald-600 flex items-center gap-1">
+                  <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                  Áudio {audioScore !== undefined ? `${audioScore}/7` : ''}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
