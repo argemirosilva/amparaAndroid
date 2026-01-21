@@ -136,7 +136,7 @@ export const DEFAULT_CONFIG: AudioTriggerConfig = {
   aggregationMs: 500,
   discussionWindowSeconds: 10,
   preTriggerSeconds: 3,
-  startHoldSeconds: 6,
+  startHoldSeconds: 10,
   endHoldSeconds: 30,
   cooldownSeconds: 45,
   noiseFloorLearningRate: 0.01,
