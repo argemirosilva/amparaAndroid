@@ -10,6 +10,7 @@ import { PanicActivePage } from "./pages/PanicActive";
 import { RecordingPage } from "./pages/Recording";
 import { PendingPage } from "./pages/Pending";
 import { UploadPage } from "./pages/Upload";
+import { AudioTriggerDebugPage } from "./pages/AudioTriggerDebug";
 import NotFound from "./pages/NotFound";
 import { PanicProvider } from "./contexts/PanicContext";
 
@@ -61,6 +62,7 @@ const App = () => {
                 <Route path="/recording" element={<RecordingPage />} />
                 <Route path="/pending" element={<PendingPage />} />
                 <Route path="/upload" element={<UploadPage />} />
+                <Route path="/audio-trigger-debug" element={<AudioTriggerDebugPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </PanicProvider>
