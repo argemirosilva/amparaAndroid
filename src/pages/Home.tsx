@@ -368,7 +368,7 @@ export function HomePage({ onLogout }: HomePageProps) {
                   setMenuOpen(false);
                 }}
               >
-                <Upload className="w-5 h-5" />
+                <Triangle className="w-5 h-5 text-amber-400 fill-amber-400" />
                 Pendências
                 {appState.pendingUploads > 0 && (
                   <span className="ml-auto bg-warning text-warning-foreground text-xs px-2 py-0.5 rounded-full">
