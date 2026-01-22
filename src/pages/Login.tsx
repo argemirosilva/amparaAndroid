@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,17 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const { toast } = useToast();
   const auth = useAuth();
+
+  // Hide splash after delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,12 +76,36 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-primary/8 to-secondary/6 blur-[100px] rounded-full" />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative z-10 w-full max-w-xs bg-white rounded-2xl shadow-lg p-5"
-      >
+      <AnimatePresence mode="wait">
+        {showSplash ? (
+          /* Splash Screen - Logo only */
+          <motion.div
+            key="splash"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="relative z-10 flex flex-col items-center"
+          >
+            <LogoWithText size="lg" />
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              className="text-muted-foreground/60 text-sm mt-4"
+            >
+              Você não está sozinha
+            </motion.p>
+          </motion.div>
+        ) : (
+          /* Login Card */
+          <motion.div
+            key="login"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="relative z-10 w-full max-w-xs bg-white rounded-2xl shadow-lg p-5"
+          >
         {/* Logo with entrance animation */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
@@ -187,12 +220,14 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         >
           Proteção sempre que você precisar
         </motion.p>
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Powered by footer */}
+      {/* Powered by footer - always visible */}
       <motion.footer
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showSplash ? 0 : 1 }}
         transition={{ delay: 0.8, duration: 0.5 }}
         className="absolute bottom-6 flex flex-col items-center gap-0.5"
       >
