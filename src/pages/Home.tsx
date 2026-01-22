@@ -11,7 +11,7 @@ import { RecordButton } from '@/components/RecordButton';
 
 import { MonitoringStatus } from '@/components/MonitoringStatus';
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
-import { AudioTriggerDebugPanel } from '@/components/AudioTriggerDebugPanel';
+import { AudioTriggerMeter } from '@/components/AudioTriggerMeter';
 import { usePanicContext } from '@/contexts/PanicContext';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
@@ -191,12 +191,14 @@ export function HomePage({ onLogout }: HomePageProps) {
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 gap-8">
 
-        {/* Audio Trigger Debug Panel */}
+        {/* Audio Trigger Meter */}
         {!panic.isPanicActive && !recording.isRecording && (
-          <AudioTriggerDebugPanel 
-            audioTrigger={audioTrigger} 
-            onManualStart={() => { manualAudioStartRef.current = true; }}
-            onManualStop={() => { manualAudioStartRef.current = false; }}
+          <AudioTriggerMeter 
+            score={audioTrigger.metrics?.score ?? 0}
+            isCapturing={audioTrigger.isCapturing}
+            state={audioTrigger.state}
+            isRecording={audioTrigger.isRecording}
+            recordingDuration={audioTrigger.metrics?.recordingDuration}
           />
         )}
 
