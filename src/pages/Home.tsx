@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Triangle, Menu, LogOut, X, Upload } from 'lucide-react';
+import { Triangle, Menu, LogOut, X, Upload, Calendar } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
@@ -384,6 +384,18 @@ export function HomePage({ onLogout }: HomePageProps) {
               >
                 <Upload className="w-5 h-5" />
                 Enviar arquivo
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3"
+                onClick={() => {
+                  navigate('/schedule');
+                  setMenuOpen(false);
+                }}
+              >
+                <Calendar className="w-5 h-5" />
+                Agenda de monitoramento
               </Button>
 
               <div className="pt-4 border-t border-border mt-4">
