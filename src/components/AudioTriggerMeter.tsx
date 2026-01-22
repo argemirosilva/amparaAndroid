@@ -46,11 +46,11 @@ const getGradientColor = (score: number): string => {
   const ratio = Math.min(score / 7, 1);
   
   if (ratio <= 0.5) {
-    // Darker Green (#16a34a) → Yellow (#eab308)
-    return lerpColor('#16a34a', '#eab308', ratio * 2);
+    // Darker Green (#16a34a) → Darker Yellow (#ca8a04)
+    return lerpColor('#16a34a', '#ca8a04', ratio * 2);
   } else {
-    // Yellow (#eab308) → Red (#ef4444)
-    return lerpColor('#eab308', '#ef4444', (ratio - 0.5) * 2);
+    // Darker Yellow (#ca8a04) → Darker Red (#dc2626)
+    return lerpColor('#ca8a04', '#dc2626', (ratio - 0.5) * 2);
   }
 };
 
