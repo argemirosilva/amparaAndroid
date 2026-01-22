@@ -189,22 +189,21 @@ export function HomePage({ onLogout }: HomePageProps) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6 gap-8">
-
-        {/* Audio Trigger Meter */}
+      <main className="flex-1 flex flex-col items-center p-6">
+        
+        {/* Top section: Audio meter + monitoring status */}
         {!panic.isPanicActive && !recording.isRecording && (
-          <AudioTriggerMeter 
-            score={audioTrigger.metrics?.score ?? 0}
-            isCapturing={audioTrigger.isCapturing}
-            state={audioTrigger.state}
-            isRecording={audioTrigger.isRecording}
-            recordingDuration={audioTrigger.metrics?.recordingDuration}
-          />
-        )}
-
-        {/* Monitoring status */}
-        {!panic.isPanicActive && !recording.isRecording && (
-          <div className="w-full max-w-sm flex flex-col gap-2">
+          <div className="w-full max-w-sm flex flex-col items-center gap-3 mb-auto pt-4">
+            {/* Audio Trigger Meter */}
+            <AudioTriggerMeter 
+              score={audioTrigger.metrics?.score ?? 0}
+              isCapturing={audioTrigger.isCapturing}
+              state={audioTrigger.state}
+              isRecording={audioTrigger.isRecording}
+              recordingDuration={audioTrigger.metrics?.recordingDuration}
+            />
+            
+            {/* Monitoring status */}
             <MonitoringStatus
               dentroHorario={monitoring.dentroHorario}
               periodoAtualIndex={monitoring.periodoAtualIndex}
@@ -218,87 +217,91 @@ export function HomePage({ onLogout }: HomePageProps) {
           </div>
         )}
 
-        {/* Panic button */}
-        {!panic.isPanicActive ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <PanicButton
-              onHoldStart={handlePanicStart}
-              onHoldEnd={handlePanicEnd}
-              isActivating={panic.isActivating}
-              disabled={recording.isRecording}
-              isLoading={isConfigLoading}
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center gap-8"
-          >
+        {/* Center section: Panic button (main focus) */}
+        <div className="flex-1 flex items-center justify-center">
+          {!panic.isPanicActive ? (
             <motion.div
-              animate={{ 
-                scale: [1, 1.03, 1], 
-                opacity: [1, 0.8, 1] 
-              }}
-              transition={{ 
-                duration: 1.5, 
-                repeat: Infinity, 
-                ease: "easeInOut" 
-              }}
-              className="text-7xl font-bold text-destructive"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              {formatDuration(panic.panicDuration)}
+              <PanicButton
+                onHoldStart={handlePanicStart}
+                onHoldEnd={handlePanicEnd}
+                isActivating={panic.isActivating}
+                disabled={recording.isRecording}
+                isLoading={isConfigLoading}
+              />
             </motion.div>
-            
-            <motion.button
-              onClick={() => navigate('/panic-active')}
-              className={`
-                w-40 h-40 rounded-full bg-gradient-safe 
-                flex flex-col items-center justify-center 
-                ${panic.canCancel() ? 'pulse-safe' : 'opacity-50'}
-              `}
-              whileTap={panic.canCancel() ? { scale: 0.95 } : {}}
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center gap-6"
             >
-              {panic.canCancel() ? (
-                <>
-                  <span className="text-2xl font-bold text-white">Cancelar</span>
-                  <span className="text-xs text-white/80 mt-1">Agora estou segura</span>
-                </>
-              ) : (
-                <span className="text-lg font-bold text-white">Aguarde 5s...</span>
-              )}
-            </motion.button>
-          </motion.div>
-        )}
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.03, 1], 
+                  opacity: [1, 0.8, 1] 
+                }}
+                transition={{ 
+                  duration: 1.5, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+                className="text-6xl font-bold text-destructive"
+              >
+                {formatDuration(panic.panicDuration)}
+              </motion.div>
+              
+              <motion.button
+                onClick={() => navigate('/panic-active')}
+                className={`
+                  w-32 h-32 rounded-full bg-gradient-safe 
+                  flex flex-col items-center justify-center 
+                  ${panic.canCancel() ? 'pulse-safe' : 'opacity-50'}
+                `}
+                whileTap={panic.canCancel() ? { scale: 0.95 } : {}}
+              >
+                {panic.canCancel() ? (
+                  <>
+                    <span className="text-xl font-bold text-white">Cancelar</span>
+                    <span className="text-[10px] text-white/80 mt-1">Agora estou segura</span>
+                  </>
+                ) : (
+                  <span className="text-sm font-bold text-white">Aguarde 5s...</span>
+                )}
+              </motion.button>
+            </motion.div>
+          )}
+        </div>
 
-        {/* Recording button (only when not in panic mode) */}
+        {/* Bottom section: Recording button */}
         {!panic.isPanicActive && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-col items-center gap-4"
-          >
-            <RecordButton
-              onClick={handleRecordToggle}
-              isRecording={recording.isRecording}
-              disabled={panic.isActivating}
-            />
-            {recording.isRecording && (
-              <div className="text-center">
-                <p className="text-warning font-medium">
-                  {formatDuration(recording.duration)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {recording.segmentsSent} segmentos enviados
-                </p>
-              </div>
-            )}
-          </motion.div>
+          <div className="mt-auto pb-2">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <RecordButton
+                onClick={handleRecordToggle}
+                isRecording={recording.isRecording}
+                disabled={panic.isActivating}
+              />
+              {recording.isRecording && (
+                <div className="text-center">
+                  <p className="text-warning font-medium text-sm">
+                    {formatDuration(recording.duration)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {recording.segmentsSent} segmentos enviados
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </div>
         )}
       </main>
 
