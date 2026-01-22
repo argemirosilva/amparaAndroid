@@ -175,7 +175,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               transition={{ duration: 0.5, ease: 'easeOut' }}
               className="absolute"
             >
-              <Logo size="lg" className="!w-72 !h-72" />
+              <Logo size="lg" className="!w-[360px] !h-[360px]" />
             </motion.div>
             
             {/* Connecting text */}
