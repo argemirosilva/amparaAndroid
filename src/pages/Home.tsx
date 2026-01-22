@@ -237,6 +237,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               state={audioTrigger.state}
               isRecording={recording.isRecording}
               recordingDuration={recording.duration}
+              recordingOrigin={recording.origemGravacao}
               dentroHorario={monitoring.dentroHorario}
               periodoAtualIndex={monitoring.periodoAtualIndex}
               periodosHoje={monitoring.periodosHoje}

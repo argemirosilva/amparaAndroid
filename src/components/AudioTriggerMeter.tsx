@@ -6,9 +6,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Ear, EarOff } from 'lucide-react';
+import { Ear, EarOff, Mic, Sparkles } from 'lucide-react';
 import type { TriggerState } from '@/types/audioTrigger';
-import type { MonitoringPeriod, PeriodosSemana } from '@/lib/types';
+import type { MonitoringPeriod, PeriodosSemana, OrigemGravacao } from '@/lib/types';
 
 export type MonitoringStatusType = 'active' | 'next' | 'none' | 'loading';
 
@@ -18,6 +18,7 @@ interface AudioTriggerMeterProps {
   state: TriggerState;
   isRecording: boolean;
   recordingDuration?: number;
+  recordingOrigin?: OrigemGravacao | null;
   // Monitoring status props
   dentroHorario?: boolean;
   periodoAtualIndex?: number | null;
@@ -68,6 +69,7 @@ export function AudioTriggerMeter({
   state,
   isRecording,
   recordingDuration = 0,
+  recordingOrigin = null,
   dentroHorario = false,
   periodoAtualIndex = null,
   periodosHoje = [],
@@ -184,9 +186,15 @@ export function AudioTriggerMeter({
         ? 'next' 
         : 'none';
 
+  // Determine if recording is automatic
+  const isAutoRecording = recordingOrigin === 'automatico';
+  
   // Get status text for recording
   const getRecordingText = () => {
-    if (state === 'RECORDING') return `REC ${formatDuration(recordingDuration)}`;
+    if (isRecording) {
+      const prefix = isAutoRecording ? 'AUTO' : 'REC';
+      return `${prefix} ${formatDuration(recordingDuration)}`;
+    }
     return null;
   };
 
@@ -268,7 +276,7 @@ export function AudioTriggerMeter({
           )}
           
           <motion.div
-            animate={isCapturing ? {
+            animate={isCapturing || isRecording ? {
               scale: [1, 1.1, 1],
             } : {}}
             transition={{
@@ -278,16 +286,30 @@ export function AudioTriggerMeter({
             }}
             className={`p-1.5 rounded-full relative z-10 ${
               isRecording 
-                ? 'bg-destructive/10' 
+                ? isAutoRecording 
+                  ? 'bg-amber-500/20' 
+                  : 'bg-destructive/10' 
                 : isCapturing 
                   ? 'bg-success/10' 
                   : 'bg-muted/40'
             }`}
             style={isRecording ? {
-              boxShadow: `0 0 12px ${strokeColor}`,
+              boxShadow: isAutoRecording 
+                ? '0 0 12px rgb(245 158 11 / 0.5)' 
+                : `0 0 12px ${strokeColor}`,
             } : undefined}
           >
-            {isCapturing ? (
+            {isRecording ? (
+              isAutoRecording ? (
+                <Sparkles 
+                  className="w-3.5 h-3.5 text-amber-500" 
+                />
+              ) : (
+                <Mic 
+                  className="w-3.5 h-3.5 text-destructive" 
+                />
+              )
+            ) : isCapturing ? (
               <Ear 
                 className="w-3.5 h-3.5" 
                 style={{ color: strokeColor }}
@@ -301,14 +323,19 @@ export function AudioTriggerMeter({
       
       {/* Recording status text */}
       {recordingText && (
-        <motion.span
+        <motion.div
           key={recordingText}
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-xs font-medium text-destructive"
+          className="flex flex-col items-center gap-0.5"
         >
-          {recordingText}
-        </motion.span>
+          <span className={`text-xs font-medium ${isAutoRecording ? 'text-amber-500' : 'text-destructive'}`}>
+            {recordingText}
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            {isAutoRecording ? 'Discussão detectada' : 'Gravação manual'}
+          </span>
+        </motion.div>
       )}
 
       {/* Integrated monitoring status */}

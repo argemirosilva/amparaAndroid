@@ -11,6 +11,7 @@ interface RecordingState {
   duration: number;
   segmentsSent: number;
   segmentsPending: number;
+  origemGravacao: OrigemGravacao | null;
 }
 
 const SEGMENT_DURATION_MS = 30000; // 30 seconds per segment
@@ -25,6 +26,7 @@ export function useRecording() {
     duration: 0,
     segmentsSent: 0,
     segmentsPending: 0,
+    origemGravacao: null,
   });
 
   const streamRef = useRef<MediaStream | null>(null);
@@ -229,6 +231,7 @@ export function useRecording() {
         duration: 0,
         segmentsSent: 0,
         segmentsPending: 0,
+        origemGravacao: origemGravacao,
       });
 
       return true;
@@ -262,6 +265,7 @@ export function useRecording() {
       duration: 0,
       segmentsSent: 0,
       segmentsPending: 0,
+      origemGravacao: null,
     });
   }, [cleanup, sendSegment]);
 
