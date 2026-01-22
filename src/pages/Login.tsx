@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Lock, Mail, ExternalLink } from 'lucide-react';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
+import amparaCircleLogo from '@/assets/ampara-circle-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Logo, LogoWithText } from '@/components/Logo';
@@ -184,7 +185,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               }}
               className="absolute"
             >
-              <Logo size="lg" className="!w-[165px] !h-[165px]" />
+              <img src={amparaCircleLogo} alt="" className="w-[165px] h-[165px] object-contain" />
             </motion.div>
             
             {/* Connecting text */}
