@@ -4,7 +4,7 @@ import { Eye, EyeOff, Lock, Mail, ExternalLink } from 'lucide-react';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LogoWithText } from '@/components/Logo';
+import { Logo, LogoWithText } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -159,7 +159,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </motion.div>
           </motion.div>
         ) : showConnecting ? (
-          /* Connecting Screen - Centered text only */
+          /* Connecting Screen - Centered text with watermark logo */
           <motion.div
             key="connecting"
             initial={{ opacity: 0 }}
@@ -168,7 +168,18 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="relative z-10 flex flex-col items-center justify-center"
           >
-            <span className="text-base text-muted-foreground">Conectando...</span>
+            {/* Large watermark logo in background */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 0.08, scale: 1 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="absolute"
+            >
+              <Logo size="lg" className="!w-72 !h-72" />
+            </motion.div>
+            
+            {/* Connecting text */}
+            <span className="relative z-10 text-base text-muted-foreground">Conectando...</span>
           </motion.div>
         ) : (
           /* Login Card */
