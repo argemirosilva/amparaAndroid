@@ -46,7 +46,7 @@ export function PanicButton({
         onMouseLeave={isDisabled ? undefined : onHoldEnd}
         disabled={isDisabled}
         className={`
-          relative w-32 h-32 rounded-full
+          relative w-[166px] h-[166px] rounded-full
           bg-red-400/80
           flex items-center justify-center
           transition-all duration-200
@@ -59,26 +59,26 @@ export function PanicButton({
         {isActivating && (
           <svg className="absolute inset-0 w-full h-full -rotate-90">
             <circle
-              cx="64"
-              cy="64"
-              r="60"
+              cx="83"
+              cy="83"
+              r="78"
               fill="none"
               stroke="white"
               strokeWidth="3"
-              strokeDasharray="377"
+              strokeDasharray="490"
               strokeLinecap="round"
               className="opacity-30"
             />
             <motion.circle
-              cx="64"
-              cy="64"
-              r="60"
+              cx="83"
+              cy="83"
+              r="78"
               fill="none"
               stroke="white"
               strokeWidth="3"
-              strokeDasharray="377"
+              strokeDasharray="490"
               strokeLinecap="round"
-              initial={{ strokeDashoffset: 377 }}
+              initial={{ strokeDashoffset: 490 }}
               animate={{ strokeDashoffset: 0 }}
               transition={{ duration: 2, ease: 'linear' }}
             />
