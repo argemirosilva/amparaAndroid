@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Ear, EarOff } from 'lucide-react';
 import type { TriggerState } from '@/types/audioTrigger';
 import type { MonitoringPeriod, PeriodosSemana } from '@/lib/types';
@@ -73,6 +74,7 @@ export function AudioTriggerMeter({
   periodosSemana = null,
   isLoading = false,
 }: AudioTriggerMeterProps) {
+  const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
 
   // Update time every second for countdown
@@ -311,10 +313,11 @@ export function AudioTriggerMeter({
 
       {/* Integrated monitoring status */}
       {!recordingText && (
-        <motion.div
+        <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-0.5"
+          onClick={() => navigate('/schedule')}
+          className="flex flex-col items-center gap-0.5 hover:opacity-80 transition-opacity"
         >
           {monitoringStatus === 'loading' && (
             <div className="flex items-center gap-1.5">
@@ -362,7 +365,7 @@ export function AudioTriggerMeter({
               </span>
             </div>
           )}
-        </motion.div>
+        </motion.button>
       )}
     </div>
   );
