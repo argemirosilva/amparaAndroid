@@ -83,7 +83,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[hsl(210,20%,98%)] safe-area-inset-top safe-area-inset-bottom">
+    <div className={`min-h-screen flex flex-col items-center justify-center p-6 safe-area-inset-top safe-area-inset-bottom transition-colors duration-500 ${showSplash ? 'bg-white' : 'bg-[hsl(210,20%,98%)]'}`}>
       {/* Background gradient effect - subtle for ice white */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-primary/8 to-secondary/6 blur-[100px] rounded-full" />
