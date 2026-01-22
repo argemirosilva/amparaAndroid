@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { Mic, MicOff } from 'lucide-react';
+import { Ear, EarOff } from 'lucide-react';
 import type { TriggerState } from '@/types/audioTrigger';
 
 interface AudioTriggerMeterProps {
@@ -58,8 +58,8 @@ export function AudioTriggerMeter({
   isRecording,
   recordingDuration = 0,
 }: AudioTriggerMeterProps) {
-  const size = 80;
-  const strokeWidth = 6;
+  const size = 56;
+  const strokeWidth = 4;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   
@@ -71,12 +71,11 @@ export function AudioTriggerMeter({
   const strokeColor = getGradientColor(score);
   
   const getStatusText = () => {
-    if (!isCapturing) return 'Inativo';
     if (state === 'RECORDING') return `REC ${formatDuration(recordingDuration)}`;
-    if (state === 'PRE_TRIGGER') return 'Detectando...';
-    if (state === 'COOLDOWN') return 'Aguardando...';
-    return 'Monitorando';
+    return null;
   };
+
+  const statusText = getStatusText();
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -137,8 +136,8 @@ export function AudioTriggerMeter({
                   className="absolute rounded-full border"
                   style={{ 
                     borderColor: strokeColor,
-                    width: 24,
-                    height: 24,
+                  width: 18,
+                    height: 18,
                   }}
                   initial={{ scale: 0.8, opacity: 0.6 }}
                   animate={{ scale: 2, opacity: 0 }}
@@ -162,7 +161,7 @@ export function AudioTriggerMeter({
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-            className={`p-2 rounded-full relative z-10 ${
+            className={`p-1.5 rounded-full relative z-10 ${
               isRecording 
                 ? 'bg-destructive/20' 
                 : isCapturing 
@@ -170,36 +169,32 @@ export function AudioTriggerMeter({
                   : 'bg-muted'
             }`}
             style={isRecording ? {
-              boxShadow: `0 0 16px ${strokeColor}`,
+              boxShadow: `0 0 12px ${strokeColor}`,
             } : undefined}
           >
             {isCapturing ? (
-              <Mic 
-                className="w-4 h-4" 
+              <Ear 
+                className="w-3.5 h-3.5" 
                 style={{ color: strokeColor }}
               />
             ) : (
-              <MicOff className="w-4 h-4 text-muted-foreground" />
+              <EarOff className="w-3.5 h-3.5 text-muted-foreground" />
             )}
           </motion.div>
         </div>
       </div>
       
-      {/* Status text */}
-      <motion.span
-        key={getStatusText()}
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`text-xs font-medium ${
-          isRecording 
-            ? 'text-destructive' 
-            : isCapturing 
-              ? 'text-foreground' 
-              : 'text-muted-foreground'
-        }`}
-      >
-        {getStatusText()}
-      </motion.span>
+      {/* Status text - only when recording */}
+      {statusText && (
+        <motion.span
+          key={statusText}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xs font-medium text-destructive"
+        >
+          {statusText}
+        </motion.span>
+      )}
     </div>
   );
 }
