@@ -176,7 +176,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4 }}
-              className="relative w-[1600px] h-[1600px] flex items-center justify-center"
+              className="relative w-[800px] h-[800px] flex items-center justify-center"
             >
               {/* Logo as background */}
               <motion.img
