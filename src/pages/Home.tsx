@@ -313,9 +313,9 @@ export function HomePage({ onLogout }: HomePageProps) {
 
       {/* Powered by footer */}
       <footer className="py-4 px-4 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-[8px] text-muted-foreground">powered by</span>
-          <img src={orizonLogo} alt="Orizon Tech" className="h-5 object-contain mix-blend-multiply" />
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[6px] text-muted-foreground/60">powered by</span>
+          <img src={orizonLogo} alt="Orizon Tech" className="h-4 object-contain mix-blend-multiply opacity-70" />
         </div>
       </footer>
 
