@@ -93,8 +93,7 @@ export function PanicButton({
             </>
           ) : (
             <>
-              <span className="text-2xl font-bold tracking-wider">PÂNICO</span>
-              <span className="text-xs mt-1 opacity-80">Segure 2s</span>
+              <span className="text-2xl font-bold tracking-wider">SOCORRO</span>
             </>
           )}
         </div>
