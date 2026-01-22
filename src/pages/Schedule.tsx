@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Calendar } from 'lucide-react';
@@ -17,7 +17,34 @@ interface DayScheduleProps {
 }
 
 function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive, activePeriodIndex }: DayScheduleProps) {
+  const [now, setNow] = useState(new Date());
   const hasPeriods = periods.length > 0;
+  
+  // Update time every second for countdown
+  useEffect(() => {
+    if (!isActive) return;
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, [isActive]);
+  
+  // Calculate remaining time for active period
+  const formatTimeRemaining = (endTime: string): string => {
+    const [hours, minutes] = endTime.split(':').map(Number);
+    const endDate = new Date();
+    endDate.setHours(hours, minutes, 0, 0);
+    
+    const diff = endDate.getTime() - now.getTime();
+    if (diff <= 0) return 'Encerrando...';
+    
+    const totalMinutes = Math.floor(diff / (1000 * 60));
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    
+    if (h > 0) {
+      return `${h}h ${m}min restantes`;
+    }
+    return `${m}min restantes`;
+  };
   
   return (
     <motion.div
@@ -77,9 +104,14 @@ function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive, activePerio
                 <span className="text-muted-foreground">—</span>
                 <span className={`font-medium ${isCurrentPeriod ? 'text-emerald-600' : ''}`}>{period.fim}</span>
                 {isCurrentPeriod && (
-                  <span className="ml-auto text-[10px] text-emerald-500 font-medium">
-                    Ativo agora
-                  </span>
+                  <div className="ml-auto flex flex-col items-end">
+                    <span className="text-[10px] text-emerald-500 font-medium">
+                      Ativo agora
+                    </span>
+                    <span className="text-[10px] text-emerald-600/70">
+                      {formatTimeRemaining(period.fim)}
+                    </span>
+                  </div>
                 )}
               </div>
             );
