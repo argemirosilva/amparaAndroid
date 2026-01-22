@@ -169,7 +169,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="relative z-10 flex flex-col items-center justify-center"
+            className="relative z-10 flex flex-col items-center justify-center overflow-visible"
           >
             {/* Large watermark logo in background */}
             <motion.div
@@ -183,9 +183,15 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 ease: 'easeInOut',
                 repeat: Infinity,
               }}
-              className="absolute"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              style={{ width: '100vw', height: '100vh', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
             >
-              <img src={amparaCircleLogo} alt="" className="w-[3500px] h-[3500px] object-contain" />
+              <img 
+                src={amparaCircleLogo} 
+                alt="" 
+                className="max-w-none"
+                style={{ width: '150vw', height: '150vw' }}
+              />
             </motion.div>
             
             {/* Connecting text */}
