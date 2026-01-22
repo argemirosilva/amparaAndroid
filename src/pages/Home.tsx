@@ -160,7 +160,7 @@ export function HomePage({ onLogout }: HomePageProps) {
         <img 
           src={amparaCircleLogo} 
           alt="" 
-          className="w-[800px] h-[800px] object-contain opacity-20"
+          className="w-[1600px] h-[1600px] object-contain opacity-20"
         />
       </div>
       {/* Header */}
