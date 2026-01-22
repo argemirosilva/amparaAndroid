@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Menu, LogOut, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
-import { ConnectionStatus } from '@/components/ConnectionStatus';
+
 import orizonLogo from '@/assets/orizon-tech-logo.png';
 import amparaCircleLogo from '@/assets/ampara-circle-logo.png';
 import { PanicButton } from '@/components/PanicButton';
@@ -36,7 +36,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   const panic = usePanicContext();
   const recording = useRecording();
   const { monitoring, audioTriggerConfig, isLoading: isConfigLoading, syncConfig, isVoiceTriggerEnabled, periodosSemana } = useConfig();
-  const { isOnline } = useHeartbeat({ autoStart: true });
+  useHeartbeat({ autoStart: true });
   const audioTrigger = useAudioTriggerController(undefined, audioTriggerConfig);
   
   // Ref to track if we auto-started the recording (to avoid duplicate toasts)
@@ -312,12 +312,11 @@ export function HomePage({ onLogout }: HomePageProps) {
       </main>
 
       {/* Powered by footer */}
-      <footer className="py-4 px-4 flex items-center justify-between">
+      <footer className="py-4 px-4 flex items-center justify-center">
         <div className="flex flex-col items-center gap-1">
           <span className="text-[8px] text-muted-foreground">powered by</span>
           <img src={orizonLogo} alt="Orizon Tech" className="h-5 object-contain mix-blend-multiply" />
         </div>
-        <ConnectionStatus isOnline={isOnline} />
       </footer>
 
 
