@@ -217,22 +217,48 @@ export function HomePage({ onLogout }: HomePageProps) {
           </div>
         )}
 
-        {/* Center section: Panic button (main focus) */}
-        <div className="flex-1 flex items-center justify-center">
+        {/* Center section: Panic button + Record button */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-6">
           {!panic.isPanicActive ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <PanicButton
-                onHoldStart={handlePanicStart}
-                onHoldEnd={handlePanicEnd}
-                isActivating={panic.isActivating}
-                disabled={recording.isRecording}
-                isLoading={isConfigLoading}
-              />
-            </motion.div>
+            <>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <PanicButton
+                  onHoldStart={handlePanicStart}
+                  onHoldEnd={handlePanicEnd}
+                  isActivating={panic.isActivating}
+                  disabled={recording.isRecording}
+                  isLoading={isConfigLoading}
+                />
+              </motion.div>
+              
+              {/* Recording button */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex flex-col items-center gap-2"
+              >
+                <RecordButton
+                  onClick={handleRecordToggle}
+                  isRecording={recording.isRecording}
+                  disabled={panic.isActivating}
+                />
+                {recording.isRecording && (
+                  <div className="text-center">
+                    <p className="text-warning font-medium text-sm">
+                      {formatDuration(recording.duration)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {recording.segmentsSent} segmentos enviados
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            </>
           ) : (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -275,34 +301,6 @@ export function HomePage({ onLogout }: HomePageProps) {
             </motion.div>
           )}
         </div>
-
-        {/* Bottom section: Recording button */}
-        {!panic.isPanicActive && (
-          <div className="mt-auto pb-2">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-col items-center gap-2"
-            >
-              <RecordButton
-                onClick={handleRecordToggle}
-                isRecording={recording.isRecording}
-                disabled={panic.isActivating}
-              />
-              {recording.isRecording && (
-                <div className="text-center">
-                  <p className="text-warning font-medium text-sm">
-                    {formatDuration(recording.duration)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {recording.segmentsSent} segmentos enviados
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
       </main>
 
       {/* Powered by footer */}

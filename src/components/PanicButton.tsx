@@ -100,10 +100,6 @@ export function PanicButton({
         </div>
       </motion.button>
 
-      {/* Helper text */}
-      <p className="text-center text-muted-foreground text-xs mt-4">
-        {isLoading ? 'Carregando...' : isActivating ? 'Continue segurando...' : 'Segure para ativar proteção'}
-      </p>
     </div>
   );
 }
