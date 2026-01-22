@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Calendar } from 'lucide-react';
@@ -96,7 +96,12 @@ function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive, activePerio
 
 export function SchedulePage() {
   const navigate = useNavigate();
-  const { periodosSemana, monitoring, isLoading } = useConfig();
+  const { periodosSemana, monitoring, isLoading, syncConfig } = useConfig();
+  
+  // Sync config on mount to ensure we have the latest data
+  useEffect(() => {
+    syncConfig();
+  }, [syncConfig]);
   
   const dayLabels: Record<string, string> = {
     dom: 'Domingo',
