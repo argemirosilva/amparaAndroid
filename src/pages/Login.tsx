@@ -159,53 +159,16 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </motion.div>
           </motion.div>
         ) : showConnecting ? (
-          /* Connecting Screen */
+          /* Connecting Screen - Centered text only */
           <motion.div
             key="connecting"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="relative z-10 flex flex-col items-center"
+            className="relative z-10 flex flex-col items-center justify-center"
           >
-            <LogoWithText size="md" />
-            
-            {/* Connecting animation */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-              className="mt-8 flex flex-col items-center gap-4"
-            >
-              {/* Spinning circle */}
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                className="w-10 h-10 border-3 border-primary/20 border-t-primary rounded-full"
-              />
-              
-              <span className="text-sm text-muted-foreground">Conectando...</span>
-              
-              {/* Animated dots */}
-              <div className="flex gap-1">
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-primary/50"
-                    animate={{ 
-                      y: [0, -6, 0],
-                      opacity: [0.5, 1, 0.5]
-                    }}
-                    transition={{
-                      duration: 0.6,
-                      repeat: Infinity,
-                      delay: i * 0.1,
-                      ease: 'easeInOut'
-                    }}
-                  />
-                ))}
-              </div>
-            </motion.div>
+            <span className="text-base text-muted-foreground">Conectando...</span>
           </motion.div>
         ) : (
           /* Login Card */
