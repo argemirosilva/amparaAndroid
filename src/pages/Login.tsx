@@ -173,8 +173,15 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             {/* Large watermark logo in background */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 0.08, scale: 1 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
+              animate={{ 
+                opacity: [0.06, 0.1, 0.06], 
+                scale: [1, 1.03, 1] 
+              }}
+              transition={{ 
+                duration: 2.5, 
+                ease: 'easeInOut',
+                repeat: Infinity,
+              }}
               className="absolute"
             >
               <Logo size="lg" className="!w-[500px] !h-[500px]" />
