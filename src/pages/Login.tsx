@@ -175,7 +175,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ 
-                opacity: [0.06, 0.1, 0.06], 
+                opacity: [0.15, 0.25, 0.15], 
                 scale: [1, 1.03, 1] 
               }}
               transition={{ 
@@ -185,7 +185,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               }}
               className="absolute"
             >
-              <img src={amparaCircleLogo} alt="" className="w-[165px] h-[165px] object-contain" />
+              <img src={amparaCircleLogo} alt="" className="w-[200px] h-[200px] object-contain" />
             </motion.div>
             
             {/* Connecting text */}
