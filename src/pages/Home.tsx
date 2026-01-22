@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Menu, LogOut, X, Upload } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 
@@ -170,13 +171,20 @@ export function HomePage({ onLogout }: HomePageProps) {
         </div>
         <div className="flex items-center gap-2">
           {/* Upload file button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/upload')}
-          >
-            <Upload className="w-5 h-5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/upload')}
+              >
+                <Upload className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Enviar arquivo de áudio para análise</p>
+            </TooltipContent>
+          </Tooltip>
 
           {/* Pending uploads badge */}
           {appState.pendingUploads > 0 && (
