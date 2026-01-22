@@ -109,29 +109,38 @@ export function HomePage({ onLogout }: HomePageProps) {
     }
   }, [audioTrigger.discussionOn, recording.isRecording, panic.isPanicActive, appState, toast]);
 
+  const [isRecordLoading, setIsRecordLoading] = useState(false);
+
   const handleRecordToggle = async () => {
-    if (recording.isRecording) {
-      await recording.stopRecording();
-      appState.setStatus('normal');
-      toast({
-        title: 'Gravação encerrada',
-        description: `${recording.segmentsSent} segmentos enviados.`,
-      });
-    } else {
-      const success = await recording.startRecording();
-      if (success) {
-        appState.setStatus('recording');
+    if (isRecordLoading) return; // Prevent multiple clicks
+    
+    setIsRecordLoading(true);
+    try {
+      if (recording.isRecording) {
+        await recording.stopRecording();
+        appState.setStatus('normal');
         toast({
-          title: 'Gravação iniciada',
-          description: 'O áudio está sendo enviado em tempo real.',
+          title: 'Gravação encerrada',
+          description: `${recording.segmentsSent} segmentos enviados.`,
         });
       } else {
-        toast({
-          title: 'Erro ao iniciar gravação',
-          description: 'Verifique as permissões do microfone.',
-          variant: 'destructive',
-        });
+        const success = await recording.startRecording();
+        if (success) {
+          appState.setStatus('recording');
+          toast({
+            title: 'Gravação iniciada',
+            description: 'O áudio está sendo enviado em tempo real.',
+          });
+        } else {
+          toast({
+            title: 'Erro ao iniciar gravação',
+            description: 'Verifique as permissões do microfone.',
+            variant: 'destructive',
+          });
+        }
       }
+    } finally {
+      setIsRecordLoading(false);
     }
   };
 
@@ -266,6 +275,7 @@ export function HomePage({ onLogout }: HomePageProps) {
                   onClick={handleRecordToggle}
                   isRecording={recording.isRecording}
                   disabled={panic.isActivating}
+                  isLoading={isRecordLoading}
                 />
                 {recording.isRecording && (
                   <div className="text-center">
