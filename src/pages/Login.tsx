@@ -24,7 +24,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 1800);
+    }, 4000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -125,15 +125,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <LogoWithText size="md" />
         </motion.div>
 
-        {/* Tagline */}
-        <motion.p
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-          className="text-center text-muted-foreground/70 text-xs mb-4"
-        >
-          Você não está sozinha
-        </motion.p>
+        {/* Login Form */}
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -220,15 +212,6 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           </motion.div>
         </form>
 
-        {/* Footer Tagline */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.3 }}
-          className="text-center text-[10px] text-muted-foreground/60 mt-3"
-        >
-          Proteção sempre que você precisar
-        </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
