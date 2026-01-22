@@ -11,9 +11,10 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
+  onLogout?: () => void;
 }
 
-export function LoginPage({ onLoginSuccess }: LoginPageProps) {
+export function LoginPage({ onLoginSuccess, onLogout }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,6 +22,19 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [showConnecting, setShowConnecting] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+    // Clear any stored credentials
+    localStorage.removeItem('ampara_token');
+    localStorage.removeItem('ampara_user');
+    toast({
+      title: 'Sessão encerrada',
+      description: 'Você foi desconectado.',
+    });
+  };
 
   // Hide splash after delay
   useEffect(() => {
@@ -300,6 +314,23 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 'Entrar'
               )}
             </Button>
+          </motion.div>
+
+          {/* Logout option */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.3 }}
+            className="pt-3 text-center border-t border-border/50 mt-4"
+          >
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              disabled={auth.isLoading}
+            >
+              Sair do aplicativo
+            </button>
           </motion.div>
         </form>
 
