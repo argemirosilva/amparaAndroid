@@ -87,7 +87,16 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className="relative z-10 flex flex-col items-center"
           >
-            <LogoWithText size="lg" />
+            <motion.div
+              animate={{ scale: [1, 1.03, 1] }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity, 
+                ease: 'easeInOut' 
+              }}
+            >
+              <LogoWithText size="lg" />
+            </motion.div>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
