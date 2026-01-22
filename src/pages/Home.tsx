@@ -181,8 +181,8 @@ export function HomePage({ onLogout }: HomePageProps) {
                 <Upload className="w-5 h-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Enviar arquivo de áudio para análise</p>
+            <TooltipContent className="max-w-[200px] text-center">
+              <p>Enviar arquivo de áudio gravado fora do app para incluir no seu perfil e análise</p>
             </TooltipContent>
           </Tooltip>
 
