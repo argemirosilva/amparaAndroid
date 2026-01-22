@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Phone } from 'lucide-react';
 
 interface PanicButtonProps {
   onHoldStart: () => void;
@@ -93,6 +94,7 @@ export function PanicButton({
             </>
           ) : (
             <>
+              <Phone className="w-8 h-8 mb-1" />
               <span className="text-2xl font-bold tracking-wider">SOCORRO</span>
             </>
           )}
