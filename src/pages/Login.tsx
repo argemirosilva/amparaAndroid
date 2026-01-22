@@ -99,7 +99,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className="relative z-10 flex flex-col items-center"
           >
-            {/* Logo with pulse animation - white bg behind for blend */}
+            {/* Logo with pulse animation */}
             <motion.div
               animate={{ scale: [1, 1.03, 1] }}
               transition={{ 
@@ -107,7 +107,6 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 repeat: Infinity, 
                 ease: 'easeInOut' 
               }}
-              className="bg-white rounded-full p-4"
             >
               <LogoWithText size="lg" />
             </motion.div>
