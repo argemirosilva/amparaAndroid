@@ -62,9 +62,9 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[hsl(210,20%,98%)] safe-area-inset-top safe-area-inset-bottom">
-      {/* Background gradient effect */}
+      {/* Background gradient effect - subtle for ice white */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-primary opacity-20 blur-[120px] rounded-full" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-primary/8 to-secondary/6 blur-[100px] rounded-full" />
       </div>
 
       <motion.div
@@ -83,7 +83,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-center text-muted-foreground text-sm mb-4"
+          className="text-center text-muted-foreground/70 text-xs mb-4"
         >
           Você não está sozinha
         </motion.p>
@@ -165,7 +165,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="text-center text-xs text-muted-foreground mt-4"
+          className="text-center text-[10px] text-muted-foreground/60 mt-3"
         >
           Proteção sempre que você precisar
         </motion.p>
