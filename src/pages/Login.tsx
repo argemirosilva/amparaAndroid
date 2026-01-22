@@ -17,6 +17,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [showConnecting, setShowConnecting] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
 
@@ -40,9 +41,13 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       return;
     }
 
+    // Show connecting screen
+    setShowConnecting(true);
+
     const result = await auth.login(email, password);
 
     if (!result.success) {
+      setShowConnecting(false);
       toast({
         title: 'Erro ao entrar',
         description: result.error || 'Credenciais inválidas. Tente novamente.',
@@ -59,7 +64,10 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       description: 'Login realizado com sucesso.',
     });
 
-    onLoginSuccess();
+    // Small delay to show success before transitioning
+    setTimeout(() => {
+      onLoginSuccess();
+    }, 500);
   };
 
   const handleForgotPassword = () => {
@@ -148,6 +156,55 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 ))}
               </div>
               <span className="text-xs text-muted-foreground/50">Iniciando...</span>
+            </motion.div>
+          </motion.div>
+        ) : showConnecting ? (
+          /* Connecting Screen */
+          <motion.div
+            key="connecting"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="relative z-10 flex flex-col items-center"
+          >
+            <LogoWithText size="md" />
+            
+            {/* Connecting animation */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+              className="mt-8 flex flex-col items-center gap-4"
+            >
+              {/* Spinning circle */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                className="w-10 h-10 border-3 border-primary/20 border-t-primary rounded-full"
+              />
+              
+              <span className="text-sm text-muted-foreground">Conectando...</span>
+              
+              {/* Animated dots */}
+              <div className="flex gap-1">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-primary/50"
+                    animate={{ 
+                      y: [0, -6, 0],
+                      opacity: [0.5, 1, 0.5]
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: Infinity,
+                      delay: i * 0.1,
+                      ease: 'easeInOut'
+                    }}
+                  />
+                ))}
+              </div>
             </motion.div>
           </motion.div>
         ) : (
