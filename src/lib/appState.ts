@@ -64,10 +64,28 @@ export interface PendingUpload {
   retryCount: number;
 }
 
+const MAX_PENDING_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
+
 export function getPendingUploads(): PendingUpload[] {
   try {
     const saved = localStorage.getItem(PENDING_QUEUE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    
+    const uploads: PendingUpload[] = JSON.parse(saved);
+    const now = Date.now();
+    
+    // Filter out uploads older than 48 hours
+    const validUploads = uploads.filter((upload) => {
+      const age = now - upload.createdAt;
+      return age < MAX_PENDING_AGE_MS;
+    });
+    
+    // If we removed any, persist the cleaned list
+    if (validUploads.length !== uploads.length) {
+      localStorage.setItem(PENDING_QUEUE_KEY, JSON.stringify(validUploads));
+    }
+    
+    return validUploads;
   } catch {
     return [];
   }
