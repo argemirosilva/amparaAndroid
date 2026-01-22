@@ -184,7 +184,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 repeat: Infinity,
               }}
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              style={{ width: '100vw', height: '100vh', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+              style={{ width: '100vw', height: '100vh', left: '30%', top: '50%', transform: 'translate(-50%, -50%)' }}
             >
               <img 
                 src={amparaCircleLogo} 
