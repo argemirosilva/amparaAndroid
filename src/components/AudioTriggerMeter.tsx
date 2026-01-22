@@ -112,6 +112,20 @@ export function AudioTriggerMeter({
   // Day names for mapping
   const dayNames = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const;
 
+  // Get readable day label
+  const getDayLabel = (dayKey: string): string => {
+    const labels: Record<string, string> = {
+      dom: 'Dom',
+      seg: 'Seg',
+      ter: 'Ter',
+      qua: 'Qua',
+      qui: 'Qui',
+      sex: 'Sex',
+      sab: 'Sáb',
+    };
+    return labels[dayKey] || dayKey;
+  };
+
   // Get next period (today or future days)
   const nextPeriodInfo = useMemo((): { period: MonitoringPeriod; dayLabel: string } | null => {
     if (dentroHorario) return null;
@@ -143,21 +157,7 @@ export function AudioTriggerMeter({
     }
     
     return null;
-  }, [dentroHorario, periodosHoje, periodosSemana, now]);
-
-  // Get readable day label
-  const getDayLabel = (dayKey: string): string => {
-    const labels: Record<string, string> = {
-      dom: 'Dom',
-      seg: 'Seg',
-      ter: 'Ter',
-      qua: 'Qua',
-      qui: 'Qui',
-      sex: 'Sex',
-      sab: 'Sáb',
-    };
-    return labels[dayKey] || dayKey;
-  };
+  }, [dentroHorario, periodosHoje, periodosSemana, now, getDayLabel]);
 
   // Calculate time difference in readable format
   const formatTimeDiff = (targetTime: Date): string => {
