@@ -352,9 +352,14 @@ export function AudioTriggerMeter({
           )}
 
           {monitoringStatus === 'none' && (
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
-              <span className="text-xs text-muted-foreground">Sem monitoramento</span>
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+                <span className="text-xs text-muted-foreground">Sem monitoramento agendado</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground/70">
+                Nenhum período configurado esta semana
+              </span>
             </div>
           )}
         </motion.div>
