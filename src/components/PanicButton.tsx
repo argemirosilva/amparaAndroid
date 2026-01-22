@@ -47,11 +47,11 @@ export function PanicButton({
         disabled={isDisabled}
         className={`
           relative w-32 h-32 rounded-full
-          bg-neutral-600
+          bg-red-400/80
           flex items-center justify-center
           transition-all duration-200
           ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
-          ${isActivating ? 'animate-pulse-glow scale-105 !bg-destructive' : 'shadow-lg hover:bg-neutral-500'}
+          ${isActivating ? 'animate-pulse-glow scale-105 !bg-destructive' : 'shadow-lg hover:bg-red-400'}
         `}
         whileTap={isDisabled ? undefined : { scale: 0.95 }}
       >
