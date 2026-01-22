@@ -358,17 +358,6 @@ export function HomePage({ onLogout }: HomePageProps) {
                 Enviar arquivo
               </Button>
 
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3"
-                onClick={() => {
-                  setMenuOpen(false);
-                }}
-              >
-                <Settings className="w-5 h-5" />
-                Configurações
-              </Button>
-
               <div className="pt-4 border-t border-border mt-4">
                 <Button
                   variant="ghost"
