@@ -13,9 +13,10 @@ interface DayScheduleProps {
   periods: MonitoringPeriod[];
   isToday: boolean;
   isActive: boolean;
+  activePeriodIndex: number | null;
 }
 
-function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive }: DayScheduleProps) {
+function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive, activePeriodIndex }: DayScheduleProps) {
   const hasPeriods = periods.length > 0;
   
   return (
@@ -54,17 +55,35 @@ function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive }: DaySchedu
       
       {hasPeriods ? (
         <div className="space-y-2">
-          {periods.map((period, index) => (
-            <div 
-              key={index}
-              className="flex items-center gap-2 text-sm"
-            >
-              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="font-medium">{period.inicio}</span>
-              <span className="text-muted-foreground">—</span>
-              <span className="font-medium">{period.fim}</span>
-            </div>
-          ))}
+          {periods.map((period, index) => {
+            const isCurrentPeriod = isActive && activePeriodIndex === index;
+            
+            return (
+              <div 
+                key={index}
+                className={`
+                  flex items-center gap-2 text-sm rounded-lg px-3 py-2 -mx-3 transition-colors
+                  ${isCurrentPeriod 
+                    ? 'bg-emerald-500/10 border border-emerald-500/30' 
+                    : ''
+                  }
+                `}
+              >
+                {isCurrentPeriod && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                )}
+                <Clock className={`w-3.5 h-3.5 ${isCurrentPeriod ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+                <span className={`font-medium ${isCurrentPeriod ? 'text-emerald-600' : ''}`}>{period.inicio}</span>
+                <span className="text-muted-foreground">—</span>
+                <span className={`font-medium ${isCurrentPeriod ? 'text-emerald-600' : ''}`}>{period.fim}</span>
+                {isCurrentPeriod && (
+                  <span className="ml-auto text-[10px] text-emerald-500 font-medium">
+                    Ativo agora
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground/70">
@@ -169,6 +188,7 @@ export function SchedulePage() {
               const periods = periodosSemana?.[dayKey as keyof PeriodosSemana] || [];
               const isToday = dayKey === todayKey;
               const isActive = isToday && monitoring.dentroHorario;
+              const activePeriodIndex = isActive ? monitoring.periodoAtualIndex : null;
               
               return (
                 <DaySchedule
@@ -178,6 +198,7 @@ export function SchedulePage() {
                   periods={periods}
                   isToday={isToday}
                   isActive={isActive}
+                  activePeriodIndex={activePeriodIndex}
                 />
               );
             })
