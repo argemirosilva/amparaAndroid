@@ -130,6 +130,17 @@ export function PendingPage() {
 
       {/* Content */}
       <main className="flex-1 p-4">
+        {/* Explanation card */}
+        <div className="bg-muted/50 rounded-xl p-4 mb-4 border border-border">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Pendências</strong> são arquivos que não puderam ser enviados por falta de conexão. 
+            Eles serão reenviados automaticamente quando houver internet disponível.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            ⏱️ Itens com mais de 48 horas são removidos automaticamente.
+          </p>
+        </div>
+
         {uploads.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <Upload className="w-12 h-12 text-muted-foreground mb-4" />
