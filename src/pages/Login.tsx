@@ -70,14 +70,14 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
         className="relative z-10 w-full max-w-xs bg-white rounded-2xl shadow-lg p-5"
       >
         {/* Logo with entrance animation */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
           className="flex justify-center mb-3"
         >
           <LogoWithText size="md" />
@@ -85,24 +85,23 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
         {/* Tagline */}
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
           className="text-center text-muted-foreground/70 text-xs mb-4"
         >
           Você não está sozinha
         </motion.p>
 
         {/* Login Form */}
-        <motion.form
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          onSubmit={handleSubmit}
-          className="space-y-3"
-        >
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Email Field */}
-          <div className="relative">
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
+            className="relative"
+          >
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="email"
@@ -113,10 +112,15 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               autoComplete="email"
               disabled={auth.isLoading}
             />
-          </div>
+          </motion.div>
 
           {/* Password Field */}
-          <div className="relative">
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.3 }}
+            className="relative"
+          >
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type={showPassword ? 'text' : 'password'}
@@ -135,41 +139,50 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-          </div>
+          </motion.div>
 
           {/* Forgot Password */}
-          <button
+          <motion.button
             type="button"
             onClick={handleForgotPassword}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.3 }}
             className="text-xs text-primary hover:text-primary/80 transition-colors"
             disabled={auth.isLoading}
           >
             Esqueceu sua senha?
-          </button>
+          </motion.button>
 
           {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full h-11 text-base font-semibold bg-gradient-primary hover:opacity-90 transition-opacity rounded-lg"
-            disabled={auth.isLoading}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.3 }}
           >
-            {auth.isLoading ? (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-              />
-            ) : (
-              'Entrar'
-            )}
-          </Button>
-        </motion.form>
+            <Button
+              type="submit"
+              className="w-full h-11 text-base font-semibold bg-gradient-primary hover:opacity-90 transition-opacity rounded-lg"
+              disabled={auth.isLoading}
+            >
+              {auth.isLoading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                />
+              ) : (
+                'Entrar'
+              )}
+            </Button>
+          </motion.div>
+        </form>
 
         {/* Footer Tagline */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.7, duration: 0.3 }}
           className="text-center text-[10px] text-muted-foreground/60 mt-3"
         >
           Proteção sempre que você precisar
