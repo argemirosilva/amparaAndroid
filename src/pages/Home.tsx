@@ -229,14 +229,14 @@ export function HomePage({ onLogout }: HomePageProps) {
       <main className="flex-1 flex flex-col items-center p-6">
         
         {/* Top section: Audio meter with integrated monitoring status */}
-        {!panic.isPanicActive && !recording.isRecording && (
+        {!panic.isPanicActive && (
           <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
             <AudioTriggerMeter 
               score={audioTrigger.metrics?.score ?? 0}
               isCapturing={audioTrigger.isCapturing}
               state={audioTrigger.state}
-              isRecording={audioTrigger.isRecording}
-              recordingDuration={audioTrigger.metrics?.recordingDuration}
+              isRecording={recording.isRecording}
+              recordingDuration={recording.duration}
               dentroHorario={monitoring.dentroHorario}
               periodoAtualIndex={monitoring.periodoAtualIndex}
               periodosHoje={monitoring.periodosHoje}
