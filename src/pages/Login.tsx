@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ExternalLink } from 'lucide-react';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,9 +72,10 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             href="https://amparamulher.com.br" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-primary underline font-medium"
+            className="text-primary underline font-medium inline-flex items-center gap-1"
           >
             amparamulher.com.br
+            <ExternalLink className="w-3 h-3" />
           </a>
         </span>
       ),
