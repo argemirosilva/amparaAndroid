@@ -165,10 +165,7 @@ export function HomePage({ onLogout }: HomePageProps) {
         />
       </div>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
-        <div className="mix-blend-multiply">
-          <Logo size="sm" />
-        </div>
+      <header className="flex items-center justify-end px-4 py-2 border-b border-border bg-background">
         <div className="flex items-center gap-2">
           {/* Upload file button */}
           <Tooltip>
