@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
+import amparaCircleLogo from '@/assets/ampara-circle-logo.png';
 import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
 import { LogoutConfirmDialog } from '@/components/LogoutConfirmDialog';
@@ -153,7 +154,15 @@ export function HomePage({ onLogout }: HomePageProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom">
+    <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom relative overflow-hidden">
+      {/* Background watermark logo */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <img 
+          src={amparaCircleLogo} 
+          alt="" 
+          className="w-[800px] h-[800px] object-contain opacity-20"
+        />
+      </div>
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
         <div className="mix-blend-multiply">
