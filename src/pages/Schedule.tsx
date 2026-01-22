@@ -172,7 +172,7 @@ export function SchedulePage() {
                 )}
               </p>
               <p className="text-xs text-muted-foreground">
-                Os horários são definidos pelo seu guardião ou suporte.
+                Configure seus horários no <strong>Portal Ampara</strong>.
               </p>
             </div>
           </div>
