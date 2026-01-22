@@ -1,11 +1,15 @@
 /**
- * Audio Trigger Meter - Minimalist circular meter with gradient colors
- * Shows detection proximity without numbers, using color gradients only
+ * Audio Trigger Meter - Minimalist circular meter with integrated monitoring status
+ * Shows detection proximity and monitoring period info in a unified component
  */
 
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Ear, EarOff } from 'lucide-react';
 import type { TriggerState } from '@/types/audioTrigger';
+import type { MonitoringPeriod } from '@/lib/types';
+
+export type MonitoringStatusType = 'active' | 'next' | 'none' | 'loading';
 
 interface AudioTriggerMeterProps {
   score: number;
@@ -13,6 +17,11 @@ interface AudioTriggerMeterProps {
   state: TriggerState;
   isRecording: boolean;
   recordingDuration?: number;
+  // Monitoring status props
+  dentroHorario?: boolean;
+  periodoAtualIndex?: number | null;
+  periodosHoje?: MonitoringPeriod[];
+  isLoading?: boolean;
 }
 
 // Linear interpolation between two hex colors
@@ -57,7 +66,19 @@ export function AudioTriggerMeter({
   state,
   isRecording,
   recordingDuration = 0,
+  dentroHorario = false,
+  periodoAtualIndex = null,
+  periodosHoje = [],
+  isLoading = false,
 }: AudioTriggerMeterProps) {
+  const [now, setNow] = useState(new Date());
+
+  // Update time every second for countdown
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const size = 56;
   const strokeWidth = 4;
   const radius = (size - strokeWidth) / 2;
@@ -69,16 +90,72 @@ export function AudioTriggerMeter({
   const offset = arcLength * (1 - progress);
   
   const strokeColor = getGradientColor(score);
-  
-  const getStatusText = () => {
+
+  // Parse time string "HH:MM" to today's Date
+  const parseTime = (timeStr: string): Date => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+  // Get current period
+  const currentPeriod = useMemo(() => {
+    if (periodoAtualIndex !== null && periodosHoje[periodoAtualIndex]) {
+      return periodosHoje[periodoAtualIndex];
+    }
+    return null;
+  }, [periodoAtualIndex, periodosHoje]);
+
+  // Get next period
+  const nextPeriod = useMemo(() => {
+    if (dentroHorario || !periodosHoje.length) return null;
+    
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    for (const period of periodosHoje) {
+      const [hours, minutes] = period.inicio.split(':').map(Number);
+      const periodStart = hours * 60 + minutes;
+      if (periodStart > currentTime) {
+        return period;
+      }
+    }
+    return null;
+  }, [dentroHorario, periodosHoje, now]);
+
+  // Calculate time difference in readable format
+  const formatTimeDiff = (targetTime: Date): string => {
+    const diff = targetTime.getTime() - now.getTime();
+    if (diff <= 0) return '0min';
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}min`;
+    }
+    return `${minutes}min`;
+  };
+
+  // Determine monitoring status
+  const monitoringStatus: MonitoringStatusType = isLoading 
+    ? 'loading' 
+    : dentroHorario && currentPeriod 
+      ? 'active' 
+      : nextPeriod 
+        ? 'next' 
+        : 'none';
+
+  // Get status text for recording
+  const getRecordingText = () => {
     if (state === 'RECORDING') return `REC ${formatDuration(recordingDuration)}`;
     return null;
   };
 
-  const statusText = getStatusText();
+  const recordingText = getRecordingText();
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-2">
       {/* Circular meter */}
       <div className="relative" style={{ width: size, height: size }}>
         <svg
@@ -136,7 +213,7 @@ export function AudioTriggerMeter({
                   className="absolute rounded-full border"
                   style={{ 
                     borderColor: strokeColor,
-                  width: 18,
+                    width: 18,
                     height: 18,
                   }}
                   initial={{ scale: 0.8, opacity: 0.6 }}
@@ -184,16 +261,65 @@ export function AudioTriggerMeter({
         </div>
       </div>
       
-      {/* Status text - only when recording */}
-      {statusText && (
+      {/* Recording status text */}
+      {recordingText && (
         <motion.span
-          key={statusText}
+          key={recordingText}
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-xs font-medium text-destructive"
         >
-          {statusText}
+          {recordingText}
         </motion.span>
+      )}
+
+      {/* Integrated monitoring status */}
+      {!recordingText && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-0.5"
+        >
+          {monitoringStatus === 'loading' && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse" />
+              <span className="text-xs text-muted-foreground">Carregando...</span>
+            </div>
+          )}
+
+          {monitoringStatus === 'active' && currentPeriod && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-medium text-emerald-500">Ativo</span>
+                <span className="text-[10px] text-muted-foreground">{currentPeriod.inicio}-{currentPeriod.fim}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                Termina em {formatTimeDiff(parseTime(currentPeriod.fim))}
+              </span>
+            </>
+          )}
+
+          {monitoringStatus === 'next' && nextPeriod && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span className="text-xs font-medium text-primary">Próximo</span>
+                <span className="text-[10px] text-muted-foreground">{nextPeriod.inicio}-{nextPeriod.fim}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                Inicia em {formatTimeDiff(parseTime(nextPeriod.inicio))}
+              </span>
+            </>
+          )}
+
+          {monitoringStatus === 'none' && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+              <span className="text-xs text-muted-foreground">Sem monitoramento</span>
+            </div>
+          )}
+        </motion.div>
       )}
     </div>
   );
