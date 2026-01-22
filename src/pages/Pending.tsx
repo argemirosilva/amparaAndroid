@@ -92,6 +92,29 @@ export function PendingPage() {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatTimeRemaining = (createdAt: number) => {
+    const MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
+    const elapsed = Date.now() - createdAt;
+    const remaining = MAX_AGE_MS - elapsed;
+    
+    if (remaining <= 0) return 'Expirando...';
+    
+    const hours = Math.floor(remaining / (60 * 60 * 1000));
+    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+    
+    if (hours >= 24) {
+      const days = Math.floor(hours / 24);
+      const remainingHours = hours % 24;
+      return `Expira em ${days}d ${remainingHours}h`;
+    }
+    
+    if (hours > 0) {
+      return `Expira em ${hours}h ${minutes}min`;
+    }
+    
+    return `Expira em ${minutes}min`;
+  };
+
   const getStatusIcon = (status: PendingUpload['status']) => {
     switch (status) {
       case 'pending':
@@ -176,6 +199,9 @@ export function PendingPage() {
                           </span>
                         </>
                       )}
+                    </div>
+                    <div className="text-xs text-muted-foreground/70 mt-1">
+                      ⏱️ {formatTimeRemaining(upload.createdAt)}
                     </div>
                   </div>
 
