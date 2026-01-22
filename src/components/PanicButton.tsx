@@ -46,12 +46,12 @@ export function PanicButton({
         onMouseLeave={isDisabled ? undefined : onHoldEnd}
         disabled={isDisabled}
         className={`
-          relative w-48 h-48 rounded-full
-          bg-gradient-panic
+          relative w-32 h-32 rounded-full
+          bg-neutral-600
           flex items-center justify-center
           transition-all duration-200
           ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
-          ${isActivating ? 'animate-pulse-glow scale-105' : 'glow-panic'}
+          ${isActivating ? 'animate-pulse-glow scale-105 !bg-destructive' : 'shadow-lg hover:bg-neutral-500'}
         `}
         whileTap={isDisabled ? undefined : { scale: 0.95 }}
       >
@@ -59,26 +59,26 @@ export function PanicButton({
         {isActivating && (
           <svg className="absolute inset-0 w-full h-full -rotate-90">
             <circle
-              cx="96"
-              cy="96"
-              r="92"
+              cx="64"
+              cy="64"
+              r="60"
               fill="none"
               stroke="white"
-              strokeWidth="4"
-              strokeDasharray="578"
+              strokeWidth="3"
+              strokeDasharray="377"
               strokeLinecap="round"
               className="opacity-30"
             />
             <motion.circle
-              cx="96"
-              cy="96"
-              r="92"
+              cx="64"
+              cy="64"
+              r="60"
               fill="none"
               stroke="white"
-              strokeWidth="4"
-              strokeDasharray="578"
+              strokeWidth="3"
+              strokeDasharray="377"
               strokeLinecap="round"
-              initial={{ strokeDashoffset: 578 }}
+              initial={{ strokeDashoffset: 377 }}
               animate={{ strokeDashoffset: 0 }}
               transition={{ duration: 2, ease: 'linear' }}
             />
@@ -89,19 +89,19 @@ export function PanicButton({
         <div className="flex flex-col items-center justify-center text-white z-10">
           {isLoading ? (
             <>
-              <span className="text-2xl font-bold tracking-wider">Aguarde...</span>
+              <span className="text-lg font-bold tracking-wider">Aguarde...</span>
             </>
           ) : (
             <>
-              <span className="text-4xl font-bold tracking-wider">PÂNICO</span>
-              <span className="text-sm mt-2 opacity-80">Segure por 2s</span>
+              <span className="text-2xl font-bold tracking-wider">PÂNICO</span>
+              <span className="text-xs mt-1 opacity-80">Segure 2s</span>
             </>
           )}
         </div>
       </motion.button>
 
       {/* Helper text */}
-      <p className="text-center text-muted-foreground text-sm mt-6">
+      <p className="text-center text-muted-foreground text-xs mt-4">
         {isLoading ? 'Carregando...' : isActivating ? 'Continue segurando...' : 'Segure para ativar proteção'}
       </p>
     </div>
