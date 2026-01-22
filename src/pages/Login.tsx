@@ -162,40 +162,42 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </motion.div>
           </motion.div>
         ) : showConnecting ? (
-          /* Connecting Screen - Centered text with watermark logo */
+          /* Connecting Screen - Centered container with logo background */
           <motion.div
             key="connecting"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="relative z-10 flex flex-col items-center justify-center overflow-visible"
+            className="relative z-10 flex items-center justify-center"
           >
-            {/* Large watermark logo in background */}
+            {/* Container with logo background */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ 
-                opacity: [0.15, 0.25, 0.15], 
-                scale: [1, 1.03, 1] 
-              }}
-              transition={{ 
-                duration: 2.5, 
-                ease: 'easeInOut',
-                repeat: Infinity,
-              }}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              style={{ width: '100vw', height: '100vh', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="relative w-72 h-72 flex items-center justify-center"
             >
-              <img 
-                src={amparaCircleLogo} 
-                alt="" 
-                className="max-w-none"
-                style={{ width: '90vw', height: '90vw' }}
+              {/* Logo as background */}
+              <motion.img
+                src={amparaCircleLogo}
+                alt=""
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ 
+                  opacity: [0.25, 0.4, 0.25], 
+                  scale: [1, 1.02, 1] 
+                }}
+                transition={{ 
+                  duration: 2.5, 
+                  ease: 'easeInOut',
+                  repeat: Infinity,
+                }}
+                className="absolute inset-0 w-full h-full object-contain"
               />
+              
+              {/* Connecting text centered over logo */}
+              <span className="relative z-10 text-base font-medium text-muted-foreground">Conectando...</span>
             </motion.div>
-            
-            {/* Connecting text */}
-            <span className="relative z-10 text-base text-muted-foreground">Conectando...</span>
           </motion.div>
         ) : (
           /* Login Card */
