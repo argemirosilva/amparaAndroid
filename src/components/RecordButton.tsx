@@ -1,32 +1,35 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mic } from 'lucide-react';
+import { Mic, Loader2 } from 'lucide-react';
 
 interface RecordButtonProps {
   onClick: () => void;
   isRecording: boolean;
   disabled?: boolean;
+  isLoading?: boolean;
 }
 
-export function RecordButton({ onClick, isRecording, disabled = false }: RecordButtonProps) {
+export function RecordButton({ onClick, isRecording, disabled = false, isLoading = false }: RecordButtonProps) {
+  const isDisabled = disabled || isLoading;
+  
   return (
     <motion.button
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled}
+      onClick={isDisabled ? undefined : onClick}
+      disabled={isDisabled}
       className={`
         relative w-24 h-24 rounded-full
         flex items-center justify-center
         transition-all duration-200
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
+        ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
         ${isRecording 
           ? 'bg-gradient-recording pulse-recording' 
           : 'bg-card border-2 border-primary hover:bg-primary/10'
         }
       `}
-      whileTap={disabled ? undefined : { scale: 0.95 }}
+      whileTap={isDisabled ? undefined : { scale: 0.95 }}
     >
       {/* Recording pulse effect */}
-      {isRecording && (
+      {isRecording && !isLoading && (
         <>
           <motion.div
             className="absolute inset-0 rounded-full bg-warning/30"
@@ -38,11 +41,15 @@ export function RecordButton({ onClick, isRecording, disabled = false }: RecordB
       )}
 
       {/* Icon */}
-      <Mic
-        className={`w-10 h-10 z-10 ${
-          isRecording ? 'text-white' : 'text-primary'
-        }`}
-      />
+      {isLoading ? (
+        <Loader2 className="w-10 h-10 z-10 text-primary animate-spin" />
+      ) : (
+        <Mic
+          className={`w-10 h-10 z-10 ${
+            isRecording ? 'text-white' : 'text-primary'
+          }`}
+        />
+      )}
     </motion.button>
   );
 }
