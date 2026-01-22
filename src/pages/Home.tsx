@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Settings, AlertTriangle, Menu, LogOut, X, Upload } from 'lucide-react';
+import { AlertTriangle, Menu, LogOut, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import orizonLogo from '@/assets/orizon-tech-logo.png';
 import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
+import { LogoutConfirmDialog } from '@/components/LogoutConfirmDialog';
 
 // MonitoringStatus is now integrated into AudioTriggerMeter
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
@@ -28,6 +29,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   
   const appState = useAppState();
   const panic = usePanicContext();
@@ -139,10 +141,15 @@ export function HomePage({ onLogout }: HomePageProps) {
     panic.cancelHold();
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('ampara_token');
-    onLogout();
+  const handleLogoutRequest = () => {
     setMenuOpen(false);
+    setLogoutDialogOpen(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    localStorage.removeItem('ampara_token');
+    setLogoutDialogOpen(false);
+    onLogout();
   };
 
   return (
@@ -362,7 +369,7 @@ export function HomePage({ onLogout }: HomePageProps) {
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-3 text-destructive hover:text-destructive"
-                  onClick={handleLogout}
+                  onClick={handleLogoutRequest}
                 >
                   <LogOut className="w-5 h-5" />
                   Sair
@@ -372,6 +379,13 @@ export function HomePage({ onLogout }: HomePageProps) {
           </motion.div>
         </motion.div>
       )}
+
+      {/* Logout confirmation dialog */}
+      <LogoutConfirmDialog
+        isOpen={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+        onConfirm={handleLogoutConfirm}
+      />
     </div>
   );
 }
