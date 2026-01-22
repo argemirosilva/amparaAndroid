@@ -270,7 +270,6 @@ export function HomePage({ onLogout }: HomePageProps) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="flex flex-col items-center gap-2"
               >
                 <RecordButton
                   onClick={handleRecordToggle}
@@ -278,16 +277,6 @@ export function HomePage({ onLogout }: HomePageProps) {
                   disabled={panic.isActivating}
                   isLoading={isRecordLoading}
                 />
-                {recording.isRecording && (
-                  <div className="text-center">
-                    <p className="text-warning font-medium text-sm">
-                      {formatDuration(recording.duration)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {recording.segmentsSent} segmentos enviados
-                    </p>
-                  </div>
-                )}
               </motion.div>
             </>
           ) : (

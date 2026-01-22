@@ -324,7 +324,7 @@ export function AudioTriggerMeter({
       {/* Recording status text */}
       {recordingText && (
         <motion.div
-          key={recordingText}
+          key={isRecording ? 'recording' : 'idle'}
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center gap-0.5"
