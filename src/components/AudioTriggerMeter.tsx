@@ -164,13 +164,13 @@ export function AudioTriggerMeter({
           viewBox={`0 0 ${size} ${size}`}
           className="transform -rotate-[135deg]"
         >
-          {/* Background arc */}
+          {/* Background arc - more transparent */}
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="hsl(var(--muted))"
+            stroke="hsl(var(--muted) / 0.4)"
             strokeWidth={strokeWidth}
             strokeDasharray={arcLength}
             strokeDashoffset={0}
@@ -240,10 +240,10 @@ export function AudioTriggerMeter({
             }}
             className={`p-1.5 rounded-full relative z-10 ${
               isRecording 
-                ? 'bg-destructive/20' 
+                ? 'bg-destructive/10' 
                 : isCapturing 
-                  ? 'bg-success/20' 
-                  : 'bg-muted'
+                  ? 'bg-success/10' 
+                  : 'bg-muted/40'
             }`}
             style={isRecording ? {
               boxShadow: `0 0 12px ${strokeColor}`,
