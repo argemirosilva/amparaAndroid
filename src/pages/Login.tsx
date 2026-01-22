@@ -190,7 +190,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 src={amparaCircleLogo} 
                 alt="" 
                 className="max-w-none"
-                style={{ width: '150vw', height: '150vw' }}
+                style={{ width: '90vw', height: '90vw' }}
               />
             </motion.div>
             
