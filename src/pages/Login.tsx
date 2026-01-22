@@ -73,10 +73,15 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-xs bg-white rounded-2xl shadow-lg p-5"
       >
-        {/* Logo */}
-        <div className="flex justify-center mb-3">
+        {/* Logo with entrance animation */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="flex justify-center mb-3"
+        >
           <LogoWithText size="md" />
-        </div>
+        </motion.div>
 
         {/* Tagline */}
         <motion.p
