@@ -87,6 +87,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className="relative z-10 flex flex-col items-center"
           >
+            {/* Logo with pulse animation - white bg behind for blend */}
             <motion.div
               animate={{ scale: [1, 1.03, 1] }}
               transition={{ 
@@ -94,9 +95,12 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 repeat: Infinity, 
                 ease: 'easeInOut' 
               }}
+              className="bg-white rounded-full p-4"
             >
               <LogoWithText size="lg" />
             </motion.div>
+            
+            {/* Tagline */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -105,6 +109,34 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             >
               Você não está sozinha
             </motion.p>
+
+            {/* Loading indicator */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.4 }}
+              className="mt-8 flex flex-col items-center gap-3"
+            >
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-2 h-2 rounded-full bg-primary/60"
+                    animate={{ 
+                      scale: [1, 1.3, 1],
+                      opacity: [0.5, 1, 0.5]
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: i * 0.15,
+                      ease: 'easeInOut'
+                    }}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground/50">Iniciando...</span>
+            </motion.div>
           </motion.div>
         ) : (
           /* Login Card */
