@@ -38,7 +38,6 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         title: 'Campos obrigatórios',
         description: 'Por favor, preencha todos os campos.',
         variant: 'destructive',
-        duration: 5000,
       });
       return;
     }
@@ -54,7 +53,6 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         title: 'Erro ao entrar',
         description: result.error || 'Credenciais inválidas. Tente novamente.',
         variant: 'destructive',
-        duration: 5000,
       });
       return;
     }
