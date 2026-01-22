@@ -65,7 +65,19 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const handleForgotPassword = () => {
     toast({
       title: 'Recuperação de senha',
-      description: 'Função em desenvolvimento.',
+      description: (
+        <span>
+          Para recuperar sua senha acesse{' '}
+          <a 
+            href="https://amparamulher.com.br" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary underline font-medium"
+          >
+            amparamulher.com.br
+          </a>
+        </span>
+      ),
     });
   };
 
