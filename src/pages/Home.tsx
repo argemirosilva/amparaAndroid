@@ -9,7 +9,7 @@ import orizonLogo from '@/assets/orizon-tech-logo.png';
 import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
 
-import { MonitoringStatus } from '@/components/MonitoringStatus';
+// MonitoringStatus is now integrated into AudioTriggerMeter
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
 import { AudioTriggerMeter } from '@/components/AudioTriggerMeter';
 import { usePanicContext } from '@/contexts/PanicContext';
@@ -191,28 +191,19 @@ export function HomePage({ onLogout }: HomePageProps) {
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center p-6">
         
-        {/* Top section: Audio meter + monitoring status */}
+        {/* Top section: Audio meter with integrated monitoring status */}
         {!panic.isPanicActive && !recording.isRecording && (
-          <div className="w-full max-w-sm flex flex-col items-center gap-3 mb-auto pt-4">
-            {/* Audio Trigger Meter */}
+          <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
             <AudioTriggerMeter 
               score={audioTrigger.metrics?.score ?? 0}
               isCapturing={audioTrigger.isCapturing}
               state={audioTrigger.state}
               isRecording={audioTrigger.isRecording}
               recordingDuration={audioTrigger.metrics?.recordingDuration}
-            />
-            
-            {/* Monitoring status */}
-            <MonitoringStatus
               dentroHorario={monitoring.dentroHorario}
               periodoAtualIndex={monitoring.periodoAtualIndex}
               periodosHoje={monitoring.periodosHoje}
-              gravacaoInicio={monitoring.gravacaoInicio}
-              gravacaoFim={monitoring.gravacaoFim}
               isLoading={isConfigLoading}
-              isAudioMonitoring={audioTrigger.isCapturing}
-              audioScore={audioTrigger.metrics?.score}
             />
           </div>
         )}
