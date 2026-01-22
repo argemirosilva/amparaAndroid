@@ -183,6 +183,13 @@ export function UploadPage() {
 
       {/* Content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6">
+        {/* Description */}
+        <div className="w-full max-w-sm mb-6">
+          <p className="text-sm text-muted-foreground text-center">
+            Envie arquivos de áudio gravados fora do app para incluir no seu perfil e análise.
+          </p>
+        </div>
+
         <input
           ref={fileInputRef}
           type="file"
