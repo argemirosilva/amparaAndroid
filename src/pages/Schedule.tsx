@@ -46,6 +46,24 @@ function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive, activePerio
     return `${m}min restantes`;
   };
   
+  // Calculate progress percentage for active period
+  const calculateProgress = (startTime: string, endTime: string): number => {
+    const [startH, startM] = startTime.split(':').map(Number);
+    const [endH, endM] = endTime.split(':').map(Number);
+    
+    const startDate = new Date();
+    startDate.setHours(startH, startM, 0, 0);
+    
+    const endDate = new Date();
+    endDate.setHours(endH, endM, 0, 0);
+    
+    const totalDuration = endDate.getTime() - startDate.getTime();
+    const elapsed = now.getTime() - startDate.getTime();
+    
+    if (totalDuration <= 0) return 0;
+    return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
+  };
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -89,28 +107,51 @@ function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive, activePerio
               <div 
                 key={index}
                 className={`
-                  flex items-center gap-2 text-sm rounded-lg px-3 py-2 -mx-3 transition-colors
+                  rounded-lg px-3 py-2 -mx-3 transition-colors
                   ${isCurrentPeriod 
                     ? 'bg-emerald-500/10 border border-emerald-500/30' 
                     : ''
                   }
                 `}
               >
+                <div className="flex items-center gap-2 text-sm">
+                  {isCurrentPeriod && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                  )}
+                  <Clock className={`w-3.5 h-3.5 ${isCurrentPeriod ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+                  <span className={`font-medium ${isCurrentPeriod ? 'text-emerald-600' : ''}`}>{period.inicio}</span>
+                  <span className="text-muted-foreground">—</span>
+                  <span className={`font-medium ${isCurrentPeriod ? 'text-emerald-600' : ''}`}>{period.fim}</span>
+                  {isCurrentPeriod && (
+                    <div className="ml-auto flex flex-col items-end">
+                      <span className="text-[10px] text-emerald-500 font-medium">
+                        Ativo agora
+                      </span>
+                      <span className="text-[10px] text-emerald-600/70">
+                        {formatTimeRemaining(period.fim)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Progress bar for active period */}
                 {isCurrentPeriod && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                )}
-                <Clock className={`w-3.5 h-3.5 ${isCurrentPeriod ? 'text-emerald-500' : 'text-muted-foreground'}`} />
-                <span className={`font-medium ${isCurrentPeriod ? 'text-emerald-600' : ''}`}>{period.inicio}</span>
-                <span className="text-muted-foreground">—</span>
-                <span className={`font-medium ${isCurrentPeriod ? 'text-emerald-600' : ''}`}>{period.fim}</span>
-                {isCurrentPeriod && (
-                  <div className="ml-auto flex flex-col items-end">
-                    <span className="text-[10px] text-emerald-500 font-medium">
-                      Ativo agora
-                    </span>
-                    <span className="text-[10px] text-emerald-600/70">
-                      {formatTimeRemaining(period.fim)}
-                    </span>
+                  <div className="mt-2">
+                    <div className="h-1.5 bg-emerald-500/20 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-emerald-500 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${calculateProgress(period.inicio, period.fim)}%` }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-[9px] text-emerald-600/50">{period.inicio}</span>
+                      <span className="text-[9px] text-emerald-600/70 font-medium">
+                        {Math.round(calculateProgress(period.inicio, period.fim))}%
+                      </span>
+                      <span className="text-[9px] text-emerald-600/50">{period.fim}</span>
+                    </div>
                   </div>
                 )}
               </div>
