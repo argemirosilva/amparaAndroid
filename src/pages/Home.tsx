@@ -34,7 +34,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   const appState = useAppState();
   const panic = usePanicContext();
   const recording = useRecording();
-  const { monitoring, audioTriggerConfig, isLoading: isConfigLoading, syncConfig, isVoiceTriggerEnabled } = useConfig();
+  const { monitoring, audioTriggerConfig, isLoading: isConfigLoading, syncConfig, isVoiceTriggerEnabled, periodosSemana } = useConfig();
   const { isOnline } = useHeartbeat({ autoStart: true });
   const audioTrigger = useAudioTriggerController(undefined, audioTriggerConfig);
   
@@ -210,6 +210,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               dentroHorario={monitoring.dentroHorario}
               periodoAtualIndex={monitoring.periodoAtualIndex}
               periodosHoje={monitoring.periodosHoje}
+              periodosSemana={periodosSemana}
               isLoading={isConfigLoading}
             />
           </div>

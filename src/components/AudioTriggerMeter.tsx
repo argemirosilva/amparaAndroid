@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Ear, EarOff } from 'lucide-react';
 import type { TriggerState } from '@/types/audioTrigger';
-import type { MonitoringPeriod } from '@/lib/types';
+import type { MonitoringPeriod, PeriodosSemana } from '@/lib/types';
 
 export type MonitoringStatusType = 'active' | 'next' | 'none' | 'loading';
 
@@ -21,6 +21,7 @@ interface AudioTriggerMeterProps {
   dentroHorario?: boolean;
   periodoAtualIndex?: number | null;
   periodosHoje?: MonitoringPeriod[];
+  periodosSemana?: PeriodosSemana | null;
   isLoading?: boolean;
 }
 
@@ -69,6 +70,7 @@ export function AudioTriggerMeter({
   dentroHorario = false,
   periodoAtualIndex = null,
   periodosHoje = [],
+  periodosSemana = null,
   isLoading = false,
 }: AudioTriggerMeterProps) {
   const [now, setNow] = useState(new Date());
@@ -107,21 +109,55 @@ export function AudioTriggerMeter({
     return null;
   }, [periodoAtualIndex, periodosHoje]);
 
-  // Get next period
-  const nextPeriod = useMemo(() => {
-    if (dentroHorario || !periodosHoje.length) return null;
+  // Day names for mapping
+  const dayNames = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const;
+
+  // Get next period (today or future days)
+  const nextPeriodInfo = useMemo((): { period: MonitoringPeriod; dayLabel: string } | null => {
+    if (dentroHorario) return null;
     
     const currentTime = now.getHours() * 60 + now.getMinutes();
+    const currentDayIndex = now.getDay(); // 0 = Sunday
     
+    // First, check remaining periods today
     for (const period of periodosHoje) {
       const [hours, minutes] = period.inicio.split(':').map(Number);
       const periodStart = hours * 60 + minutes;
       if (periodStart > currentTime) {
-        return period;
+        return { period, dayLabel: 'Hoje' };
       }
     }
+    
+    // If no periods left today, look at future days
+    if (periodosSemana) {
+      for (let i = 1; i <= 7; i++) {
+        const futureDayIndex = (currentDayIndex + i) % 7;
+        const dayKey = dayNames[futureDayIndex];
+        const periods = periodosSemana[dayKey];
+        
+        if (periods && periods.length > 0) {
+          const dayLabel = i === 1 ? 'Amanhã' : getDayLabel(dayKey);
+          return { period: periods[0], dayLabel };
+        }
+      }
+    }
+    
     return null;
-  }, [dentroHorario, periodosHoje, now]);
+  }, [dentroHorario, periodosHoje, periodosSemana, now]);
+
+  // Get readable day label
+  const getDayLabel = (dayKey: string): string => {
+    const labels: Record<string, string> = {
+      dom: 'Dom',
+      seg: 'Seg',
+      ter: 'Ter',
+      qua: 'Qua',
+      qui: 'Qui',
+      sex: 'Sex',
+      sab: 'Sáb',
+    };
+    return labels[dayKey] || dayKey;
+  };
 
   // Calculate time difference in readable format
   const formatTimeDiff = (targetTime: Date): string => {
@@ -142,7 +178,7 @@ export function AudioTriggerMeter({
     ? 'loading' 
     : dentroHorario && currentPeriod 
       ? 'active' 
-      : nextPeriod 
+      : nextPeriodInfo 
         ? 'next' 
         : 'none';
 
@@ -300,16 +336,18 @@ export function AudioTriggerMeter({
             </>
           )}
 
-          {monitoringStatus === 'next' && nextPeriod && (
+          {monitoringStatus === 'next' && nextPeriodInfo && (
             <>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span className="text-xs font-medium text-primary">Próximo</span>
-                <span className="text-[10px] text-muted-foreground">{nextPeriod.inicio}-{nextPeriod.fim}</span>
+                <span className="text-xs font-medium text-primary">{nextPeriodInfo.dayLabel}</span>
+                <span className="text-[10px] text-muted-foreground">{nextPeriodInfo.period.inicio}-{nextPeriodInfo.period.fim}</span>
               </div>
-              <span className="text-[10px] text-muted-foreground">
-                Inicia em {formatTimeDiff(parseTime(nextPeriod.inicio))}
-              </span>
+              {nextPeriodInfo.dayLabel === 'Hoje' && (
+                <span className="text-[10px] text-muted-foreground">
+                  Inicia em {formatTimeDiff(parseTime(nextPeriodInfo.period.inicio))}
+                </span>
+              )}
             </>
           )}
 
