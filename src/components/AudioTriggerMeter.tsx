@@ -58,8 +58,8 @@ export function AudioTriggerMeter({
   isRecording,
   recordingDuration = 0,
 }: AudioTriggerMeterProps) {
-  const size = 120;
-  const strokeWidth = 10;
+  const size = 80;
+  const strokeWidth = 6;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   
@@ -79,7 +79,7 @@ export function AudioTriggerMeter({
   };
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1">
       {/* Circular meter */}
       <div className="relative" style={{ width: size, height: size }}>
         <svg
@@ -121,13 +121,38 @@ export function AudioTriggerMeter({
               stroke: { duration: 0.3 },
             }}
             style={{
-              filter: isRecording ? `drop-shadow(0 0 8px ${strokeColor})` : 'none',
+              filter: isRecording ? `drop-shadow(0 0 6px ${strokeColor})` : 'none',
             }}
           />
         </svg>
         
-        {/* Center icon */}
+        {/* Center icon with sound waves */}
         <div className="absolute inset-0 flex items-center justify-center">
+          {/* Sound wave animations */}
+          {isCapturing && (
+            <>
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full border"
+                  style={{ 
+                    borderColor: strokeColor,
+                    width: 24,
+                    height: 24,
+                  }}
+                  initial={{ scale: 0.8, opacity: 0.6 }}
+                  animate={{ scale: 2, opacity: 0 }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    delay: i * 0.5,
+                    ease: 'easeOut',
+                  }}
+                />
+              ))}
+            </>
+          )}
+          
           <motion.div
             animate={isCapturing ? {
               scale: [1, 1.1, 1],
@@ -137,7 +162,7 @@ export function AudioTriggerMeter({
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-            className={`p-3 rounded-full ${
+            className={`p-2 rounded-full relative z-10 ${
               isRecording 
                 ? 'bg-destructive/20' 
                 : isCapturing 
@@ -145,16 +170,16 @@ export function AudioTriggerMeter({
                   : 'bg-muted'
             }`}
             style={isRecording ? {
-              boxShadow: `0 0 20px ${strokeColor}`,
+              boxShadow: `0 0 16px ${strokeColor}`,
             } : undefined}
           >
             {isCapturing ? (
               <Mic 
-                className="w-6 h-6" 
+                className="w-4 h-4" 
                 style={{ color: strokeColor }}
               />
             ) : (
-              <MicOff className="w-6 h-6 text-muted-foreground" />
+              <MicOff className="w-4 h-4 text-muted-foreground" />
             )}
           </motion.div>
         </div>
@@ -165,7 +190,7 @@ export function AudioTriggerMeter({
         key={getStatusText()}
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`text-sm font-medium ${
+        className={`text-xs font-medium ${
           isRecording 
             ? 'text-destructive' 
             : isCapturing 
