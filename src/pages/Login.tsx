@@ -184,7 +184,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               }}
               className="absolute"
             >
-              <Logo size="lg" className="!w-[500px] !h-[500px]" />
+              <Logo size="lg" className="!w-[165px] !h-[165px]" />
             </motion.div>
             
             {/* Connecting text */}
