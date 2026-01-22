@@ -18,7 +18,7 @@ export function Logo({ className = '', size = 'md' }: LogoProps) {
       <img 
         src={amparaLogo} 
         alt="Ampara" 
-        className="w-full h-full object-contain"
+        className="w-full h-full object-contain mix-blend-multiply"
       />
     </div>
   );
