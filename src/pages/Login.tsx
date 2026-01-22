@@ -185,7 +185,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               }}
               className="absolute"
             >
-              <img src={amparaCircleLogo} alt="" className="w-[200px] h-[200px] object-contain" />
+              <img src={amparaCircleLogo} alt="" className="w-[700px] h-[700px] object-contain" />
             </motion.div>
             
             {/* Connecting text */}
