@@ -22,6 +22,7 @@ import { useConfig } from '@/hooks/useConfig';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioTriggerController } from '@/hooks/useAudioTriggerController';
+import { useStealthNotification } from '@/hooks/useStealthNotification';
 
 interface HomePageProps {
   onLogout: () => void;
@@ -39,6 +40,9 @@ export function HomePage({ onLogout }: HomePageProps) {
   const { monitoring, audioTriggerConfig, isLoading: isConfigLoading, syncConfig, isVoiceTriggerEnabled, periodosSemana } = useConfig();
   useHeartbeat({ autoStart: true });
   const audioTrigger = useAudioTriggerController(undefined, audioTriggerConfig);
+  
+  // Stealth notification - shows "Bem-estar Ativo" when monitoring is active
+  useStealthNotification(audioTrigger.isCapturing);
   
   // Ref to track if we auto-started the recording (to avoid duplicate toasts)
   const autoRecordingStartedRef = useRef(false);
