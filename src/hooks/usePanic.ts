@@ -75,8 +75,8 @@ export function usePanic() {
 
     // Get current location
     const position = await location.getCurrentPosition();
-    const lat = position?.coords.latitude ?? 0;
-    const lng = position?.coords.longitude ?? 0;
+    const lat = position?.latitude ?? 0;
+    const lng = position?.longitude ?? 0;
     
     // Start recording with panic origin
     await startRecording('botao_panico');
