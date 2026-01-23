@@ -3,6 +3,7 @@ import { receberAudioMobile, reportarStatusGravacao } from '@/lib/api';
 import { addPendingUpload } from '@/lib/appState';
 import { encodeWAV, mergeBuffers } from '@/lib/wavEncoder';
 import { OrigemGravacao } from '@/lib/types';
+import { permissionsService } from '@/services/permissionsService';
 
 interface RecordingState {
   isRecording: boolean;
@@ -169,6 +170,7 @@ export function useRecording() {
 
       streamRef.current = stream;
       isRecordingRef.current = true;
+      permissionsService.updateMicrophonePermission('granted');
 
       // Report recording started
       await reportarStatusGravacao('iniciada');
@@ -237,6 +239,7 @@ export function useRecording() {
       return true;
     } catch (error) {
       console.error('Failed to start recording:', error);
+      permissionsService.updateMicrophonePermission('denied');
       cleanup();
       return false;
     }

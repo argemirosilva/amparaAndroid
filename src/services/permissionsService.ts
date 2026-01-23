@@ -10,6 +10,25 @@ export interface PermissionsState {
 
 class PermissionsService {
   private isNative = Capacitor.isNativePlatform();
+  private microphoneCacheKey = 'ampara_microphone_permission';
+
+  private getCachedMicrophonePermission(): PermissionStatus | null {
+    const cached = localStorage.getItem(this.microphoneCacheKey);
+    if (cached === 'granted' || cached === 'denied' || cached === 'prompt') {
+      return cached;
+    }
+    return null;
+  }
+
+  private setCachedMicrophonePermission(status: PermissionStatus) {
+    localStorage.setItem(this.microphoneCacheKey, status);
+  }
+
+  updateMicrophonePermission(status: PermissionStatus) {
+    if (this.isNative) {
+      this.setCachedMicrophonePermission(status);
+    }
+  }
 
   /**
    * Check all required permissions
@@ -28,13 +47,34 @@ class PermissionsService {
    */
   async checkMicrophone(): Promise<PermissionStatus> {
     try {
+      if (this.isNative) {
+        const cached = this.getCachedMicrophonePermission();
+        if (cached) {
+          return cached;
+        }
+        if (navigator.mediaDevices?.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const hasLabeledInput = devices.some(
+            (device) => device.kind === 'audioinput' && device.label
+          );
+          if (hasLabeledInput) {
+            this.setCachedMicrophonePermission('granted');
+            return 'granted';
+          }
+        }
+      }
+
       if (!navigator.permissions) {
         // Fallback: try to access microphone to check permission
         return 'prompt';
       }
 
       const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-      return this.mapPermissionState(result.state);
+      const mapped = this.mapPermissionState(result.state);
+      if (this.isNative) {
+        this.setCachedMicrophonePermission(mapped);
+      }
+      return mapped;
     } catch (error) {
       console.warn('Error checking microphone permission:', error);
       return 'prompt';
@@ -72,9 +112,15 @@ class PermissionsService {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       // Stop tracks immediately after getting permission
       stream.getTracks().forEach(track => track.stop());
+      if (this.isNative) {
+        this.setCachedMicrophonePermission('granted');
+      }
       return true;
     } catch (error) {
       console.error('Microphone permission denied:', error);
+      if (this.isNative) {
+        this.setCachedMicrophonePermission('denied');
+      }
       return false;
     }
   }
