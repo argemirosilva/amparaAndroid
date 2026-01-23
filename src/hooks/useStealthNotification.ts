@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { stealthNotificationService } from '@/services/stealthNotificationService';
+import { backgroundService } from '@/services/backgroundService';
+import { Capacitor } from '@capacitor/core';
 
 interface UseStealthNotificationOptions {
   /** Se true, exibe a notificação automaticamente */
@@ -8,9 +9,7 @@ interface UseStealthNotificationOptions {
 
 /**
  * Hook para gerenciar a notificação persistente disfarçada
- * 
- * A notificação aparece como "Bem-estar Ativo - Monitorando sua saúde"
- * para disfarçar o verdadeiro propósito do app.
+ * Usa ForegroundService para manter o app ativo em background no Android
  */
 export function useStealthNotification(
   isMonitoring: boolean,
@@ -20,29 +19,38 @@ export function useStealthNotification(
   const wasMonitoringRef = useRef(false);
 
   const show = useCallback(async () => {
-    await stealthNotificationService.showMonitoringNotification();
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+    await backgroundService.start();
   }, []);
 
   const hide = useCallback(async () => {
-    await stealthNotificationService.hideMonitoringNotification();
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+    await backgroundService.stop();
   }, []);
 
   const updateText = useCallback(async (title?: string, body?: string) => {
-    await stealthNotificationService.updateNotificationText(title, body);
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+    await backgroundService.updateText(title, body);
   }, []);
 
-  // Auto-gerencia a notificação baseado no status de monitoramento
+  // Auto-manage notification based on monitoring status
   useEffect(() => {
     if (!autoShow) return;
 
     const handleMonitoringChange = async () => {
       if (isMonitoring && !wasMonitoringRef.current) {
-        // Monitoramento iniciou
-        console.log('[useStealthNotification] Monitoring started, showing notification');
+        // Monitoring started
+        console.log('[useStealthNotification] Monitoring started, starting foreground service');
         await show();
       } else if (!isMonitoring && wasMonitoringRef.current) {
-        // Monitoramento parou
-        console.log('[useStealthNotification] Monitoring stopped, hiding notification');
+        // Monitoring stopped
+        console.log('[useStealthNotification] Monitoring stopped, stopping foreground service');
         await hide();
       }
       wasMonitoringRef.current = isMonitoring;
@@ -51,12 +59,12 @@ export function useStealthNotification(
     handleMonitoringChange();
   }, [isMonitoring, autoShow, show, hide]);
 
-  // Limpa a notificação quando o componente desmonta
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (wasMonitoringRef.current) {
-        console.log('[useStealthNotification] Cleanup: hiding notification');
-        stealthNotificationService.hideMonitoringNotification();
+        console.log('[useStealthNotification] Cleanup: stopping foreground service');
+        backgroundService.stop();
       }
     };
   }, []);
@@ -65,6 +73,6 @@ export function useStealthNotification(
     show,
     hide,
     updateText,
-    isShowing: stealthNotificationService.isNotificationShowing(),
+    isShowing: backgroundService.isServiceRunning(),
   };
 }
