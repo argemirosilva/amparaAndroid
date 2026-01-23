@@ -11,6 +11,7 @@ import amparaCircleLogo from '@/assets/ampara-circle-logo.png';
 import { PanicButton } from '@/components/PanicButton';
 import { RecordButton } from '@/components/RecordButton';
 import { LogoutConfirmDialog } from '@/components/LogoutConfirmDialog';
+import { PermissionsRequest } from '@/components/PermissionsRequest';
 
 // MonitoringStatus is now integrated into AudioTriggerMeter
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
@@ -23,6 +24,7 @@ import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioTriggerController } from '@/hooks/useAudioTriggerController';
 import { useStealthNotification } from '@/hooks/useStealthNotification';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface HomePageProps {
   onLogout: () => void;
@@ -33,6 +35,9 @@ export function HomePage({ onLogout }: HomePageProps) {
   const { toast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  
+  // Permissions check
+  const { permissions, isLoading: isPermissionsLoading, hasAllRequired, requestAll } = usePermissions();
   
   const appState = useAppState();
   const panic = usePanicContext();
@@ -67,9 +72,11 @@ export function HomePage({ onLogout }: HomePageProps) {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [syncConfig]);
 
-  // Auto-start audio monitoring when in monitoring period
+  // Auto-start audio monitoring when in monitoring period (only if permissions granted)
   // Auto-stop when exiting the period (unless started manually via debug panel)
   useEffect(() => {
+    if (!hasAllRequired) return; // Don't start monitoring without permissions
+    
     if (monitoring.dentroHorario && !audioTrigger.isCapturing) {
       console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
       audioTrigger.start();
@@ -78,6 +85,7 @@ export function HomePage({ onLogout }: HomePageProps) {
       audioTrigger.stop();
     }
   }, [
+    hasAllRequired,
     monitoring.dentroHorario, 
     audioTrigger.isCapturing,
     audioTrigger.start,
@@ -166,6 +174,16 @@ export function HomePage({ onLogout }: HomePageProps) {
     setLogoutDialogOpen(false);
     onLogout();
   };
+
+  // Show permissions request screen if permissions are not granted
+  if (!isPermissionsLoading && !hasAllRequired) {
+    return (
+      <PermissionsRequest
+        permissions={permissions}
+        onRequestAll={requestAll}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom relative overflow-hidden">
