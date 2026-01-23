@@ -22,6 +22,7 @@ import { triggerStateMachine } from '@/services/triggerStateMachine';
 import { RingBuffer, calculateMedian } from '@/utils/ringBuffer';
 import { getFullConfig, saveConfig, saveServerConfig } from '@/utils/configStorage';
 import { serverToClientConfig } from '@/utils/configConverter';
+import { backgroundService } from '@/services/backgroundService';
 
 // Buffer sizes
 const MAX_EVENTS = 100;
@@ -288,6 +289,10 @@ export function useAudioTriggerController(
     try {
       setError(null);
 
+      // Start background service for persistent monitoring (Android)
+      console.log('[AudioTrigger] Starting background service...');
+      await backgroundService.start();
+
       console.log('[AudioTrigger] Requesting microphone permission...');
       // Request microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -363,6 +368,9 @@ export function useAudioTriggerController(
       console.error('[AudioTrigger] Error starting capture:', err);
       setHasPermission(false);
       
+      // Stop background service if capture failed
+      await backgroundService.stop();
+      
       let errorMessage = 'Erro ao acessar microfone';
       if (error.name === 'NotAllowedError') {
         errorMessage = 'Permissão negada para acessar o microfone';
@@ -381,7 +389,7 @@ export function useAudioTriggerController(
   }, [config.frameMs, addEvent, processAudioFrame]);
 
   // Stop audio capture
-  const stop = useCallback(() => {
+  const stop = useCallback(async () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -404,6 +412,10 @@ export function useAudioTriggerController(
 
     analyserRef.current = null;
     setIsCapturing(false);
+
+    // Stop background service
+    console.log('[AudioTrigger] Stopping background service...');
+    await backgroundService.stop();
 
     addEvent({
       type: 'micStopped',
