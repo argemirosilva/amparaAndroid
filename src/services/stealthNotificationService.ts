@@ -7,7 +7,7 @@ const STEALTH_NOTIFICATION_ID = 9999;
 const STEALTH_CONFIG = {
   title: 'Bem-estar Ativo',
   body: 'Monitorando sua saúde',
-  smallIcon: 'ic_stat_heart', // Ícone pequeno para Android
+  smallIcon: 'ic_stat_hearing', // Ícone pequeno para Android
   largeIcon: 'ic_launcher', // Ícone grande
   ongoing: true, // Não pode ser dispensada pelo usuário
   autoCancel: false,
@@ -100,7 +100,7 @@ class StealthNotificationService {
             ongoing: true,
             autoCancel: false,
             silent: true,
-            smallIcon: 'ic_stat_heart',
+            smallIcon: 'ic_stat_hearing',
             // Android: mantém a notificação fixa
             extra: {
               ongoing: true,
@@ -164,7 +164,7 @@ class StealthNotificationService {
             ongoing: true,
             autoCancel: false,
             silent: true,
-            smallIcon: 'ic_stat_heart',
+            smallIcon: 'ic_stat_hearing',
           },
         ],
       };
