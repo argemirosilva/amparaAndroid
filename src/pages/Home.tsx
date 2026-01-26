@@ -47,15 +47,21 @@ export function HomePage({ onLogout }: HomePageProps) {
   const recording = useRecording();
   
   // Extract monitoring config from the new config service
+  // Ensure monitoring_periods is a valid array with proper structure
+  const rawPeriods = config.currentConfig?.monitoring_periods || [];
+  const validPeriods = Array.isArray(rawPeriods) 
+    ? rawPeriods.filter(p => p && typeof p.inicio === 'string' && typeof p.fim === 'string')
+    : [];
+  
   const monitoring = {
     dentroHorario: config.currentConfig?.monitoring_enabled ?? false,
     periodoAtualIndex: 0,
-    periodosHoje: config.currentConfig?.monitoring_periods || []
+    periodosHoje: validPeriods
   };
   
   const audioTriggerConfig = config.currentConfig?.audio_trigger;
   const isConfigLoading = config.isLoading;
-  const periodosSemana = config.currentConfig?.monitoring_periods || [];
+  const periodosSemana = validPeriods;
   
   const audioTrigger = useAudioTriggerController(undefined, audioTriggerConfig);
   
