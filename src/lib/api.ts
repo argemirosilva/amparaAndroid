@@ -77,7 +77,11 @@ async function mobileApi<T>(
   if (requiresAuth) {
     const token = getSessionToken();
     const email = getUserEmail();
+    
+    console.log('[API] Token check for', action, '- Has token:', !!token, 'In background:', document.visibilityState === 'hidden');
+    
     if (!token) {
+      console.error('[API] No token available for', action);
       return { data: null, error: 'Sessão expirada. Faça login novamente.' };
     }
     body.session_token = token;

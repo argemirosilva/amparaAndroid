@@ -9,6 +9,7 @@ import { HomePage } from "./pages/Home";
 import { initializeSession, isAuthenticated, reloadSession, clearSession } from '@/services/sessionService';
 import { initializeConfigService } from '@/services/configService';
 import { startPingService, stopPingService } from '@/services/connectivityService';
+import { initializeBackgroundStateManager } from '@/services/backgroundStateManager';
 import { PanicActivePage } from "./pages/PanicActive";
 import { RecordingPage } from "./pages/Recording";
 import { PendingPage } from "./pages/Pending";
@@ -34,6 +35,9 @@ const App = () => {
         
         // Initialize the session service (loads from native storage)
         await initializeSession();
+        
+        // Initialize background state manager (monitors app visibility)
+        initializeBackgroundStateManager();
         
         // Check if authenticated
         const authenticated = isAuthenticated();

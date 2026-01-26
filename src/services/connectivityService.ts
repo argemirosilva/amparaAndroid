@@ -4,6 +4,7 @@
  */
 
 import { pingMobile } from '@/lib/api';
+import { ensureCriticalDataAvailable, isAppInBackground } from './backgroundStateManager';
 
 // ============================================
 // Types
@@ -70,6 +71,18 @@ async function executePing(): Promise<void> {
   
   console.log('[ConnectivityService] Executing ping...');
   metrics.totalPings++;
+  
+  // Ensure critical data (token, config) is loaded before ping
+  // This is crucial when app is in background and memory may be cleared
+  if (isAppInBackground()) {
+    console.log('[ConnectivityService] App in background, ensuring data available...');
+    const dataAvailable = await ensureCriticalDataAvailable();
+    if (!dataAvailable) {
+      console.error('[ConnectivityService] Critical data not available, skipping ping');
+      handlePingFailure('Critical data not available (background)', Date.now() - startTime);
+      return;
+    }
+  }
   
   try {
     // Create a timeout promise
