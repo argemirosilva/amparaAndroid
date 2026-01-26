@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -42,7 +43,8 @@
         <!-- Foreground Service for background operation -->
         <service
             android:name="com.capawesome.capacitor.android.foregroundservice.ForegroundService"
-            android:foregroundServiceType="location"
+            android:foregroundServiceType="location|microphone"
+            android:stopWithTask="false"
             android:exported="false" />
 
         <provider

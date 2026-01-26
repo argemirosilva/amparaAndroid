@@ -76,7 +76,7 @@ class BackgroundService {
         body: variation.body,
         smallIcon: FOREGROUND_CONFIG.smallIcon,
         silent: true,
-        foregroundServiceTypes: ['location'], // Use location type to keep app alive
+        foregroundServiceTypes: ['location', 'microphone'], // Use location + microphone to keep app alive
       });
 
       this.isRunning = true;
@@ -136,7 +136,7 @@ class BackgroundService {
         body: body || FOREGROUND_CONFIG.body,
         smallIcon: FOREGROUND_CONFIG.smallIcon,
         silent: true,
-        foregroundServiceTypes: ['location'],
+        foregroundServiceTypes: ['location', 'microphone'],
       });
       console.log('[BackgroundService] Updated notification text');
     } catch (error) {

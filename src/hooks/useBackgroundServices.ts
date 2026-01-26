@@ -48,7 +48,14 @@ export function useBackgroundServices() {
 
     const init = async () => {
       try {
-        // Initialize config service first (loads from cache immediately)
+        // Start foreground service FIRST (critical for background survival)
+        console.log('[useBackgroundServices] Starting foreground service...');
+        await backgroundService.start();
+        console.log('[useBackgroundServices] Foreground service started successfully');
+
+        if (!mounted) return;
+
+        // Initialize config service (loads from cache immediately)
         await initializeConfigService();
 
         if (!mounted) return;
@@ -58,10 +65,6 @@ export function useBackgroundServices() {
 
         // Start periodic config sync (every 1 hour)
         startConfigSync(3600000);
-
-        // Start foreground service (location type) to keep app alive
-        console.log('[useBackgroundServices] Starting foreground service...');
-        await backgroundService.start();
 
         // Start passive location tracking (justifies foreground service)
         startLocationTracking();
