@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { getUserData } from '@/services/sessionService';
 import { 
   loginCustomizado, 
   logoutMobile, 
@@ -24,17 +25,21 @@ export function useAuth() {
     config: getCachedConfig(),
   });
 
-  // Load user info from storage on mount
+  // Load user info from session service on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('ampara_user');
-    if (storedUser) {
+    const loadUser = () => {
       try {
-        const user = JSON.parse(storedUser);
-        setState(prev => ({ ...prev, user }));
-      } catch {
-        // Ignore parse errors
+        const userData = getUserData();
+        if (userData) {
+          const user = JSON.parse(userData);
+          setState(prev => ({ ...prev, user }));
+        }
+      } catch (e) {
+        console.error('[useAuth] Error loading user data:', e);
       }
-    }
+    };
+    
+    loadUser();
   }, []);
 
   const login = useCallback(async (
@@ -50,9 +55,8 @@ export function useAuth() {
       return { success: false, error: result.error || 'Falha no login' };
     }
 
-    // Store user info
-    localStorage.setItem('ampara_user', JSON.stringify(result.data.usuario));
-
+    // Note: loginCustomizado already stores user info in Preferences and localStorage
+    
     setState({
       isAuthenticated: true,
       isLoading: false,
@@ -76,9 +80,8 @@ export function useAuth() {
     const result = await logoutMobile();
 
     // Clear local state regardless of API result
-    localStorage.removeItem('ampara_user');
-    localStorage.removeItem(STORAGE_KEYS.USER_CONFIG);
-    clearSessionToken();
+    // Note: logoutMobile in api.ts now handles clearing all storage
+    await clearSessionToken();
 
     setState({
       isAuthenticated: false,

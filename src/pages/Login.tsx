@@ -27,9 +27,7 @@ export function LoginPage({ onLoginSuccess, onLogout }: LoginPageProps) {
     if (onLogout) {
       onLogout();
     }
-    // Clear any stored credentials
-    localStorage.removeItem('ampara_token');
-    localStorage.removeItem('ampara_user');
+    // Note: Token cleanup is now handled by App.tsx and api.ts
     toast({
       title: 'Sessão encerrada',
       description: 'Você foi desconectado.',

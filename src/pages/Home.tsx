@@ -16,6 +16,7 @@ import { PermissionsRequest } from '@/components/PermissionsRequest';
 // MonitoringStatus is now integrated into AudioTriggerMeter
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
 import { AudioTriggerMeter } from '@/components/AudioTriggerMeter';
+import { AudioTriggerDebugPanel } from '@/components/AudioTriggerDebugPanel';
 import { usePanicContext } from '@/contexts/PanicContext';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
@@ -54,6 +55,14 @@ export function HomePage({ onLogout }: HomePageProps) {
   // Ref to track if audio was started manually via debug panel
   const manualAudioStartRef = useRef(false);
 
+  const handleManualAudioStart = () => {
+    manualAudioStartRef.current = true;
+  };
+
+  const handleManualAudioStop = () => {
+    manualAudioStartRef.current = false;
+  };
+
   // Sync config on mount and every 5 minutes
   useEffect(() => {
     syncConfig();
@@ -81,24 +90,25 @@ export function HomePage({ onLogout }: HomePageProps) {
   }, [hasAllRequired, isPermissionsLoading, requestAll]);
 
   // Auto-start audio monitoring when in monitoring period (only if permissions granted)
-  // Auto-stop when exiting the period (unless started manually via debug panel)
-  useEffect(() => {
-    if (!hasAllRequired) return; // Don't start monitoring without permissions
-    
-    if (monitoring.dentroHorario && !audioTrigger.isCapturing) {
-      console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
-      audioTrigger.start();
-    } else if (!monitoring.dentroHorario && audioTrigger.isCapturing && !manualAudioStartRef.current) {
-      console.log('[Home] Auto-stopping audio trigger (fora do período de monitoramento)');
-      audioTrigger.stop();
-    }
-  }, [
-    hasAllRequired,
-    monitoring.dentroHorario, 
-    audioTrigger.isCapturing,
-    audioTrigger.start,
-    audioTrigger.stop,
-  ]);
+	  // Auto-stop when exiting the period (unless started manually via debug panel)
+	  useEffect(() => {
+	    if (!hasAllRequired) return; // Don't start monitoring without permissions
+	    
+	    if (monitoring.dentroHorario && !audioTrigger.isCapturing) {
+	      console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
+	      audioTrigger.start();
+	    } else if (!monitoring.dentroHorario && audioTrigger.isCapturing && !manualAudioStartRef.current) {
+	      console.log('[Home] Auto-stopping audio trigger (fora do período de monitoramento)');
+	      audioTrigger.stop();
+	    }
+	  }, [
+	    hasAllRequired,
+	    monitoring.dentroHorario, 
+	    audioTrigger.isCapturing,
+	    audioTrigger.start,
+	    audioTrigger.stop,
+	    manualAudioStartRef.current, // Add dependency
+	  ]);
 
   // Auto-start recording when discussion is detected
   useEffect(() => {
@@ -177,8 +187,8 @@ export function HomePage({ onLogout }: HomePageProps) {
     setLogoutDialogOpen(true);
   };
 
-  const handleLogoutConfirm = () => {
-    localStorage.removeItem('ampara_token');
+  const handleLogoutConfirm = async () => {
+    // Note: onLogout in App.tsx now handles clearing all storage via Preferences
     setLogoutDialogOpen(false);
     onLogout();
   };
@@ -207,8 +217,9 @@ export function HomePage({ onLogout }: HomePageProps) {
         />
       </div>
       {/* Header */}
-      <header className="flex items-center justify-end px-4 py-2 bg-background">
-        <div className="flex items-center gap-2">
+	      <header className="flex items-center justify-between px-4 py-2 bg-background">
+	        <Logo size="sm" />
+	        <div className="flex items-center gap-2">
           {/* Upload file button */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -261,24 +272,29 @@ export function HomePage({ onLogout }: HomePageProps) {
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center p-6">
         
-        {/* Top section: Audio meter with integrated monitoring status */}
-        {!panic.isPanicActive && (
-          <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
-            <AudioTriggerMeter 
-              score={audioTrigger.metrics?.score ?? 0}
-              isCapturing={audioTrigger.isCapturing}
-              state={audioTrigger.state}
-              isRecording={recording.isRecording}
-              recordingDuration={recording.duration}
-              recordingOrigin={recording.origemGravacao}
-              dentroHorario={monitoring.dentroHorario}
-              periodoAtualIndex={monitoring.periodoAtualIndex}
-              periodosHoje={monitoring.periodosHoje}
-              periodosSemana={periodosSemana}
-              isLoading={isConfigLoading}
-            />
-          </div>
-        )}
+	        {/* Top section: Audio meter with integrated monitoring status */}
+	        {!panic.isPanicActive && (
+	          <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
+	            <AudioTriggerDebugPanel 
+	              audioTrigger={audioTrigger}
+	              onManualStart={handleManualAudioStart}
+	              onManualStop={handleManualAudioStop}
+	            />
+	            <AudioTriggerMeter 
+	              score={audioTrigger.metrics?.score ?? 0}
+	              isCapturing={audioTrigger.isCapturing}
+	              state={audioTrigger.state}
+	              isRecording={recording.isRecording}
+	              recordingDuration={recording.duration}
+	              recordingOrigin={recording.origemGravacao}
+	              dentroHorario={monitoring.dentroHorario}
+	              periodoAtualIndex={monitoring.periodoAtualIndex}
+	              periodosHoje={monitoring.periodosHoje}
+	              periodosSemana={periodosSemana}
+	              isLoading={isConfigLoading}
+	            />
+	          </div>
+	        )}
 
         {/* Center section: Panic button + Record button */}
         <div className="flex-1 flex flex-col items-center justify-center gap-6">

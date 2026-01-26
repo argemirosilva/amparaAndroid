@@ -3,6 +3,7 @@
 // ============================================
 
 import { getDeviceId } from './deviceId';
+import { setSessionToken as saveSessionToken, setUserData, clearSession, getSessionToken as getToken, getUserData } from '@/services/sessionService';
 import {
   ApiResponse,
   LoginResponse,
@@ -27,22 +28,22 @@ const API_URL = import.meta.env.VITE_API_BASE_URL ||
 // ============================================
 
 export function getSessionToken(): string | null {
-  return localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
+  return getToken();
 }
 
-export function setSessionToken(token: string): void {
-  localStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, token);
+export async function setSessionToken(token: string): Promise<void> {
+  await saveSessionToken(token);
 }
 
-export function clearSessionToken(): void {
-  localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
+export async function clearSessionToken(): Promise<void> {
+  await clearSession();
 }
 
 export function getUserEmail(): string | null {
-  const user = localStorage.getItem('ampara_user');
-  if (user) {
+  const userData = getUserData();
+  if (userData) {
     try {
-      return JSON.parse(user).email;
+      return JSON.parse(userData).email;
     } catch {
       return null;
     }
@@ -129,10 +130,11 @@ export async function loginCustomizado(
   );
 
   if (result.data) {
-    // Store session token
-    setSessionToken(result.data.session.token);
+    // Store session token and user data using session service
+    await setSessionToken(result.data.session.token);
+    await setUserData(JSON.stringify(result.data.usuario));
     
-    // Store user config
+    // Store user config in localStorage (not critical for auth)
     localStorage.setItem(
       STORAGE_KEYS.USER_CONFIG,
       JSON.stringify(result.data.configuracoes)
@@ -154,7 +156,7 @@ export async function logoutMobile(): Promise<ApiResponse<{ success: boolean }>>
   const result = await mobileApi<{ success: boolean }>('logoutMobile');
   
   // Clear local session even if API fails
-  clearSessionToken();
+  await clearSessionToken();
   localStorage.removeItem(STORAGE_KEYS.USER_CONFIG);
   
   return result;

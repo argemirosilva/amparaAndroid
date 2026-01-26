@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "./pages/Login";
 import { HomePage } from "./pages/Home";
+import { initializeSession, isAuthenticated, reloadSession, clearSession } from '@/services/sessionService';
 import { PanicActivePage } from "./pages/PanicActive";
 import { RecordingPage } from "./pages/Recording";
 import { PendingPage } from "./pages/Pending";
@@ -19,40 +20,64 @@ import { PermissionGuard } from "./components/PermissionGuard";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  // Start with null to indicate "loading" state
+  const [authState, setAuthState] = useState<boolean | null>(null);
 
-  // Check auth on mount and listen for storage changes
+  // Initialize session service and check auth
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('ampara_token');
-      console.log('[App] Checking auth, token value:', token ? 'EXISTS' : 'NULL');
-      setIsAuthenticated(!!token);
+    const initAuth = async () => {
+      try {
+        console.log('[App] Initializing session service...');
+        
+        // Initialize the session service (loads from native storage)
+        await initializeSession();
+        
+        // Check if authenticated
+        const authenticated = isAuthenticated();
+        console.log('[App] Authentication status:', authenticated);
+        
+        setAuthState(authenticated);
+      } catch (e) {
+        console.error('[App] Session initialization failed:', e);
+        setAuthState(false);
+      }
     };
     
-    // Give WebView some time to initialize storage on Android 15
-    const timer = setTimeout(() => {
-      console.log('[App] Running delayed auth check...');
-      checkAuth();
-    }, 800);
-    
-    window.addEventListener('storage', checkAuth);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('storage', checkAuth);
+    initAuth();
+  }, []);
+
+  // Reload session when app becomes visible (Android lifecycle)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[App] App became visible, reloading session...');
+        const authenticated = await reloadSession();
+        console.log('[App] Reload result:', authenticated, 'Current state:', authState);
+        
+        // Always update state to force re-render, even if value seems the same
+        // This handles cases where Android killed and restarted the WebView
+        console.log('[App] Force updating auth state to:', authenticated);
+        setAuthState(authenticated);
+      }
     };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
+    console.log('[App] Login success, updating auth state');
+    setAuthState(true);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('ampara_token');
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    console.log('[App] Logout requested, clearing session');
+    await clearSession();
+    setAuthState(false);
   };
 
   // Loading state while checking auth
-  if (isAuthenticated === null) {
+  if (authState === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -67,7 +92,7 @@ const App = () => {
         <Sonner />
         <PermissionGuard>
           <BrowserRouter>
-            {!isAuthenticated ? (
+            {!authState ? (
             <Routes>
               <Route path="/" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
