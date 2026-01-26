@@ -21,6 +21,11 @@ import {
   reloadConfigFromCache,
   type ConfigState 
 } from '@/services/configService';
+import { 
+  startLocationTracking, 
+  stopLocationTracking 
+} from '@/services/locationService';
+import { backgroundService } from '@/services/backgroundService';
 
 export interface BackgroundServicesState {
   connectivity: ConnectivityState;
@@ -54,6 +59,13 @@ export function useBackgroundServices() {
         // Start periodic config sync (every 1 hour)
         startConfigSync(3600000);
 
+        // Start foreground service (location type) to keep app alive
+        console.log('[useBackgroundServices] Starting foreground service...');
+        await backgroundService.start();
+
+        // Start passive location tracking (justifies foreground service)
+        startLocationTracking();
+
         setState(prev => ({ ...prev, isInitialized: true }));
         console.log('[useBackgroundServices] Services initialized');
 
@@ -84,6 +96,8 @@ export function useBackgroundServices() {
       console.log('[useBackgroundServices] Cleaning up services...');
       stopPingService();
       stopConfigSync();
+      stopLocationTracking();
+      backgroundService.stop();
       unsubConnectivity();
       unsubConfig();
     };

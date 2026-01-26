@@ -108,10 +108,11 @@ export function HomePage({ onLogout }: HomePageProps) {
         });
       }, 500);
       return () => clearTimeout(timer);
-    } else if (!monitoring.dentroHorario && audioTrigger.isCapturing && !manualAudioStartRef.current) {
-      console.log('[Home] Auto-stopping audio trigger (fora do período de monitoramento)');
-      audioTrigger.stop();
     }
+    // NOTE: We no longer auto-stop AudioTrigger outside monitoring period
+    // The foreground service (location type) keeps the app alive instead
+    // AudioTrigger only starts during monitoring period, but once started,
+    // it stays active to maintain app responsiveness
   }, [
     hasAllRequired,
     monitoring.dentroHorario, 

@@ -76,6 +76,7 @@ class BackgroundService {
         body: variation.body,
         smallIcon: FOREGROUND_CONFIG.smallIcon,
         silent: true,
+        foregroundServiceTypes: ['location'], // Use location type to keep app alive
       });
 
       this.isRunning = true;
@@ -135,6 +136,7 @@ class BackgroundService {
         body: body || FOREGROUND_CONFIG.body,
         smallIcon: FOREGROUND_CONFIG.smallIcon,
         silent: true,
+        foregroundServiceTypes: ['location'],
       });
       console.log('[BackgroundService] Updated notification text');
     } catch (error) {

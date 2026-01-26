@@ -361,15 +361,8 @@ export function useAudioTriggerController(
       setIsCapturing(true);
       console.log('[AudioTrigger] Audio capture started successfully');
 
-      // Start background service ONLY AFTER audio is successfully capturing
-      // This is critical for Android 15 foreground service rules
-      try {
-        console.log('[AudioTrigger] Starting background service...');
-        await backgroundService.start();
-        console.log('[AudioTrigger] Background service started successfully');
-      } catch (bgErr) {
-        console.warn('[AudioTrigger] Background service failed to start, but audio is capturing:', bgErr);
-      }
+      // Background service is now managed by useBackgroundServices
+      // No need to start/stop here
 
       addEvent({
         type: 'micStarted',
@@ -382,8 +375,7 @@ export function useAudioTriggerController(
       console.error('[AudioTrigger] Error starting capture:', err);
       setHasPermission(false);
       
-      // Stop background service if capture failed
-      await backgroundService.stop();
+      // Background service is managed independently, no need to stop here
       
       let errorMessage = 'Erro ao acessar microfone';
       if (error.name === 'NotAllowedError') {
@@ -427,9 +419,7 @@ export function useAudioTriggerController(
     analyserRef.current = null;
     setIsCapturing(false);
 
-    // Stop background service
-    console.log('[AudioTrigger] Stopping background service...');
-    await backgroundService.stop();
+    // Background service is managed independently, no need to stop here
 
     addEvent({
       type: 'micStopped',
