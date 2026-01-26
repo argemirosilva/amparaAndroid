@@ -14,6 +14,7 @@ import { SchedulePage } from "./pages/Schedule";
 import { AudioTriggerDebugPage } from "./pages/AudioTriggerDebug";
 import NotFound from "./pages/NotFound";
 import { PanicProvider } from "./contexts/PanicContext";
+import { PermissionGuard } from "./components/PermissionGuard";
 
 const queryClient = new QueryClient();
 
@@ -49,8 +50,9 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          {!isAuthenticated ? (
+        <PermissionGuard>
+          <BrowserRouter>
+            {!isAuthenticated ? (
             <Routes>
               <Route path="/" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -69,7 +71,8 @@ const App = () => {
               </Routes>
             </PanicProvider>
           )}
-        </BrowserRouter>
+          </BrowserRouter>
+        </PermissionGuard>
       </TooltipProvider>
     </QueryClientProvider>
   );
