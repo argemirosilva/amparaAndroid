@@ -16,6 +16,7 @@ import { PendingPage } from "./pages/Pending";
 import { UploadPage } from "./pages/Upload";
 import { SchedulePage } from "./pages/Schedule";
 import { AudioTriggerDebugPage } from "./pages/AudioTriggerDebug";
+import IconSelector from "./pages/IconSelector";
 import NotFound from "./pages/NotFound";
 import { PanicProvider } from "./contexts/PanicContext";
 import { PermissionGuard } from "./components/PermissionGuard";
@@ -143,6 +144,7 @@ const App = () => {
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/schedule" element={<SchedulePage />} />
                 <Route path="/audio-trigger-debug" element={<AudioTriggerDebugPage />} />
+                <Route path="/icon-selector" element={<IconSelector />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </PanicProvider>

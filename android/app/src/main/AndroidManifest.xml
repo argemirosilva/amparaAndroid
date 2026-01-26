@@ -32,13 +32,149 @@
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
             android:exported="true">
+            <!-- Intent filter removido da MainActivity principal -->
+        </activity>
 
+        <!-- Activity Aliases para troca de ícone -->
+        <!-- Ícone 1: Ampara Original -->
+        <activity-alias
+            android:name=".MainActivityAmpara"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_ampara"
+            android:label="Ampara"
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity-alias>
 
-        </activity>
+        <!-- Ícone 2: Treino Fitness -->
+        <activity-alias
+            android:name=".MainActivityWorkout"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_workout"
+            android:label="Treino Fitness"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Ícone 3: Contador de Passos -->
+        <activity-alias
+            android:name=".MainActivitySteps"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_steps"
+            android:label="Contador de Passos"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Ícone 4: Yoga & Meditação -->
+        <activity-alias
+            android:name=".MainActivityYoga"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_yoga"
+            android:label="Yoga & Meditação"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Ícone 5: Calendário Feminino -->
+        <activity-alias
+            android:name=".MainActivityCycle"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_cycle"
+            android:label="Calendário Feminino"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Ícone 6: Beleza & Makeup -->
+        <activity-alias
+            android:name=".MainActivityBeauty"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_beauty"
+            android:label="Beleza & Makeup"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Ícone 7: Meu Guarda-Roupa -->
+        <activity-alias
+            android:name=".MainActivityFashion"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_fashion"
+            android:label="Meu Guarda-Roupa"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Ícone 8: Quebra-Cabeça -->
+        <activity-alias
+            android:name=".MainActivityPuzzle"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_puzzle"
+            android:label="Quebra-Cabeça"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Ícone 9: Jogo de Cartas -->
+        <activity-alias
+            android:name=".MainActivityCards"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_cards"
+            android:label="Jogo de Cartas"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Ícone 10: Jogo Casual -->
+        <activity-alias
+            android:name=".MainActivityCasual"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_casual"
+            android:label="Jogo Casual"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- Foreground Service for background operation -->
         <service

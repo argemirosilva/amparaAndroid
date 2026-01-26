@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Triangle, Menu, LogOut, X, Upload, Calendar, Wifi, WifiOff } from 'lucide-react';
+import { Triangle, Menu, LogOut, X, Upload, Calendar, Wifi, WifiOff, Palette } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
@@ -495,6 +495,18 @@ export function HomePage({ onLogout }: HomePageProps) {
               >
                 <Calendar className="w-5 h-5" />
                 Agenda de monitoramento
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3"
+                onClick={() => {
+                  navigate('/icon-selector');
+                  setMenuOpen(false);
+                }}
+              >
+                <Palette className="w-5 h-5" />
+                Alterar ícone do app
               </Button>
 
               <div className="pt-4 border-t border-border mt-4">
