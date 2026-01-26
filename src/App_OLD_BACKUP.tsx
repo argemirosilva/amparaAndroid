@@ -7,8 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "./pages/Login";
 import { HomePage } from "./pages/Home";
 import { initializeSession, isAuthenticated, reloadSession, clearSession } from '@/services/sessionService';
-import { initializeConfigService } from '@/services/configService';
-import { startPingService, stopPingService } from '@/services/connectivityService';
 import { PanicActivePage } from "./pages/PanicActive";
 import { RecordingPage } from "./pages/Recording";
 import { PendingPage } from "./pages/Pending";
@@ -24,7 +22,6 @@ const queryClient = new QueryClient();
 const App = () => {
   // Start with null to indicate "loading" state
   const [authState, setAuthState] = useState<boolean | null>(null);
-  const [servicesInitialized, setServicesInitialized] = useState(false);
 
   // Initialize session service and check auth
   useEffect(() => {
@@ -48,35 +45,6 @@ const App = () => {
     
     initAuth();
   }, []);
-
-  // Initialize background services after authentication
-  useEffect(() => {
-    if (authState === true && !servicesInitialized) {
-      console.log('[App] User authenticated, initializing background services...');
-      
-      const initServices = async () => {
-        try {
-          // Initialize config service (loads from cache immediately)
-          await initializeConfigService();
-          
-          // Start connectivity monitoring
-          startPingService();
-          
-          setServicesInitialized(true);
-          console.log('[App] Background services initialized');
-        } catch (error) {
-          console.error('[App] Failed to initialize background services:', error);
-        }
-      };
-      
-      initServices();
-    } else if (authState === false && servicesInitialized) {
-      // User logged out, stop services
-      console.log('[App] User logged out, stopping background services...');
-      stopPingService();
-      setServicesInitialized(false);
-    }
-  }, [authState, servicesInitialized]);
 
   // Reload session when app becomes visible (Android lifecycle)
   useEffect(() => {
