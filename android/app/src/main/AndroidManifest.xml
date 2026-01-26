@@ -84,7 +84,7 @@
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_yoga"
-            android:label="Yoga & Meditação"
+            android:label="Yoga e Meditação"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -112,7 +112,7 @@
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_beauty"
-            android:label="Beleza & Makeup"
+            android:label="Beleza e Makeup"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
