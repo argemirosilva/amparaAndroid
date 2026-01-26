@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Triangle, Menu, LogOut, X, Upload, Calendar, Wifi, WifiOff } from 'lucide-react';
+import { Triangle, Menu, LogOut, X, Upload, Calendar } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
@@ -20,11 +20,12 @@ import { AudioTriggerDebugPanel } from '@/components/AudioTriggerDebugPanel';
 import { usePanicContext } from '@/contexts/PanicContext';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
+import { useConfig } from '@/hooks/useConfig';
+import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioTriggerController } from '@/hooks/useAudioTriggerController';
 import { useStealthNotification } from '@/hooks/useStealthNotification';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useBackgroundServices } from '@/hooks/useBackgroundServices';
 
 interface HomePageProps {
   onLogout: () => void;
@@ -39,24 +40,11 @@ export function HomePage({ onLogout }: HomePageProps) {
   // Permissions check
   const { permissions, isLoading: isPermissionsLoading, hasAllRequired, requestAll } = usePermissions();
   
-  // Background services (connectivity + config)
-  const { connectivity, config, isInitialized } = useBackgroundServices();
-  
   const appState = useAppState();
   const panic = usePanicContext();
   const recording = useRecording();
-  
-  // Extract monitoring config from the new config service
-  const monitoring = {
-    dentroHorario: config.currentConfig?.monitoring_enabled ?? false,
-    periodoAtualIndex: 0,
-    periodosHoje: config.currentConfig?.monitoring_periods || []
-  };
-  
-  const audioTriggerConfig = config.currentConfig?.audio_trigger;
-  const isConfigLoading = config.isLoading;
-  const periodosSemana = config.currentConfig?.monitoring_periods || [];
-  
+  const { monitoring, audioTriggerConfig, isLoading: isConfigLoading, syncConfig, isVoiceTriggerEnabled, periodosSemana } = useConfig();
+  useHeartbeat({ autoStart: true });
   const audioTrigger = useAudioTriggerController(undefined, audioTriggerConfig);
   
   // Stealth notification - shows "Bem-estar Ativo" when monitoring is active
@@ -75,6 +63,24 @@ export function HomePage({ onLogout }: HomePageProps) {
     manualAudioStartRef.current = false;
   };
 
+  // Sync config on mount and every 5 minutes
+  useEffect(() => {
+    syncConfig();
+    const interval = setInterval(syncConfig, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [syncConfig]);
+
+  // Re-sync when app becomes visible
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncConfig();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [syncConfig]);
+
   // Auto-request native permissions on mount
   useEffect(() => {
     if (!hasAllRequired && !isPermissionsLoading) {
@@ -84,25 +90,25 @@ export function HomePage({ onLogout }: HomePageProps) {
   }, [hasAllRequired, isPermissionsLoading, requestAll]);
 
   // Auto-start audio monitoring when in monitoring period (only if permissions granted)
-  // Auto-stop when exiting the period (unless started manually via debug panel)
-  useEffect(() => {
-    if (!hasAllRequired) return; // Don't start monitoring without permissions
-    
-    if (monitoring.dentroHorario && !audioTrigger.isCapturing) {
-      console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
-      audioTrigger.start();
-    } else if (!monitoring.dentroHorario && audioTrigger.isCapturing && !manualAudioStartRef.current) {
-      console.log('[Home] Auto-stopping audio trigger (fora do período de monitoramento)');
-      audioTrigger.stop();
-    }
-  }, [
-    hasAllRequired,
-    monitoring.dentroHorario, 
-    audioTrigger.isCapturing,
-    audioTrigger.start,
-    audioTrigger.stop,
-    manualAudioStartRef.current,
-  ]);
+	  // Auto-stop when exiting the period (unless started manually via debug panel)
+	  useEffect(() => {
+	    if (!hasAllRequired) return; // Don't start monitoring without permissions
+	    
+	    if (monitoring.dentroHorario && !audioTrigger.isCapturing) {
+	      console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
+	      audioTrigger.start();
+	    } else if (!monitoring.dentroHorario && audioTrigger.isCapturing && !manualAudioStartRef.current) {
+	      console.log('[Home] Auto-stopping audio trigger (fora do período de monitoramento)');
+	      audioTrigger.stop();
+	    }
+	  }, [
+	    hasAllRequired,
+	    monitoring.dentroHorario, 
+	    audioTrigger.isCapturing,
+	    audioTrigger.start,
+	    audioTrigger.stop,
+	    manualAudioStartRef.current, // Add dependency
+	  ]);
 
   // Auto-start recording when discussion is detected
   useEffect(() => {
@@ -211,39 +217,9 @@ export function HomePage({ onLogout }: HomePageProps) {
         />
       </div>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-2 bg-background">
-        <Logo size="sm" />
-        <div className="flex items-center gap-2">
-          {/* Connectivity indicator */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50">
-                {connectivity.isOnline ? (
-                  <Wifi className="w-4 h-4 text-success" />
-                ) : (
-                  <WifiOff className="w-4 h-4 text-destructive" />
-                )}
-                {connectivity.lastLatencyMs > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {connectivity.lastLatencyMs}ms
-                  </span>
-                )}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {connectivity.isOnline 
-                  ? `Online - Última resposta: ${connectivity.lastLatencyMs}ms` 
-                  : 'Offline - Sem conexão com o servidor'}
-              </p>
-              {connectivity.lastSuccessfulPing && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Último ping: {new Date(connectivity.lastSuccessfulPing).toLocaleTimeString()}
-                </p>
-              )}
-            </TooltipContent>
-          </Tooltip>
-
+	      <header className="flex items-center justify-between px-4 py-2 bg-background">
+	        <Logo size="sm" />
+	        <div className="flex items-center gap-2">
           {/* Upload file button */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -296,29 +272,29 @@ export function HomePage({ onLogout }: HomePageProps) {
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center p-6">
         
-        {/* Top section: Audio meter with integrated monitoring status */}
-        {!panic.isPanicActive && (
-          <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
-            <AudioTriggerDebugPanel 
-              audioTrigger={audioTrigger}
-              onManualStart={handleManualAudioStart}
-              onManualStop={handleManualAudioStop}
-            />
-            <AudioTriggerMeter 
-              score={audioTrigger.metrics?.score ?? 0}
-              isCapturing={audioTrigger.isCapturing}
-              state={audioTrigger.state}
-              isRecording={recording.isRecording}
-              recordingDuration={recording.duration}
-              recordingOrigin={recording.origemGravacao}
-              dentroHorario={monitoring.dentroHorario}
-              periodoAtualIndex={monitoring.periodoAtualIndex}
-              periodosHoje={monitoring.periodosHoje}
-              periodosSemana={periodosSemana}
-              isLoading={isConfigLoading}
-            />
-          </div>
-        )}
+	        {/* Top section: Audio meter with integrated monitoring status */}
+	        {!panic.isPanicActive && (
+	          <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
+	            <AudioTriggerDebugPanel 
+	              audioTrigger={audioTrigger}
+	              onManualStart={handleManualAudioStart}
+	              onManualStop={handleManualAudioStop}
+	            />
+	            <AudioTriggerMeter 
+	              score={audioTrigger.metrics?.score ?? 0}
+	              isCapturing={audioTrigger.isCapturing}
+	              state={audioTrigger.state}
+	              isRecording={recording.isRecording}
+	              recordingDuration={recording.duration}
+	              recordingOrigin={recording.origemGravacao}
+	              dentroHorario={monitoring.dentroHorario}
+	              periodoAtualIndex={monitoring.periodoAtualIndex}
+	              periodosHoje={monitoring.periodosHoje}
+	              periodosSemana={periodosSemana}
+	              isLoading={isConfigLoading}
+	            />
+	          </div>
+	        )}
 
         {/* Center section: Panic button + Record button */}
         <div className="flex-1 flex flex-col items-center justify-center gap-6">
