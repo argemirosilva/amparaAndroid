@@ -16,7 +16,7 @@ import { PermissionsRequest } from '@/components/PermissionsRequest';
 // MonitoringStatus is now integrated into AudioTriggerMeter
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
 import { AudioTriggerMeter } from '@/components/AudioTriggerMeter';
-import { AudioTriggerDebugPanel } from '@/components/AudioTriggerDebugPanel';
+// AudioTriggerDebugPanel removed - AudioTrigger now starts automatically
 import { usePanicContext } from '@/contexts/PanicContext';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
@@ -89,30 +89,41 @@ export function HomePage({ onLogout }: HomePageProps) {
     }
   }, [hasAllRequired, isPermissionsLoading, requestAll]);
 
-  // Auto-start audio monitoring when in monitoring period (only if permissions granted)
-  // Auto-stop when exiting the period (unless started manually via debug panel)
+  // Auto-start audio monitoring on login (keeps app alive 24/7)
+  // Only stops on logout
   useEffect(() => {
     if (!hasAllRequired) return; // Don't start monitoring without permissions
     
-    if (monitoring.dentroHorario && !audioTrigger.isCapturing) {
-      console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
+    // Start AudioTrigger automatically if not already running
+    if (!audioTrigger.isCapturing) {
+      console.log('[Home] Auto-starting audio trigger (keeps app alive)');
       // Add small delay to ensure permission context is ready
       const timer = setTimeout(() => {
         audioTrigger.start().catch(err => {
           console.error('[Home] Failed to auto-start audio trigger:', err);
           toast({
             title: "Erro ao iniciar monitoramento",
-            description: "Toque no botão de debug para iniciar manualmente.",
+            description: "Reinicie o app para tentar novamente.",
             variant: "destructive"
           });
         });
       }, 500);
       return () => clearTimeout(timer);
     }
-    // NOTE: We no longer auto-stop AudioTrigger outside monitoring period
-    // The foreground service (location type) keeps the app alive instead
-    // AudioTrigger only starts during monitoring period, but once started,
-    // it stays active to maintain app responsiveness
+  }, [hasAllRequired, audioTrigger, toast]);
+
+  // Switch AudioTrigger processing mode based on monitoring period
+  // FULL mode: inside monitoring period (full analysis)
+  // LIGHT mode: outside monitoring period (minimal processing for battery saving)
+  useEffect(() => {
+    if (!audioTrigger.isCapturing) return;
+    
+    const newMode = monitoring.dentroHorario ? 'FULL' : 'LIGHT';
+    
+    if (audioTrigger.config.processingMode !== newMode) {
+      console.log('[Home] Switching AudioTrigger mode:', newMode, '| dentroHorario:', monitoring.dentroHorario);
+      audioTrigger.setProcessingMode(newMode);
+    }
   }, [
     hasAllRequired,
     monitoring.dentroHorario, 
@@ -318,11 +329,7 @@ export function HomePage({ onLogout }: HomePageProps) {
         {/* Top section: Audio meter with integrated monitoring status */}
         {!panic.isPanicActive && (
           <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
-            <AudioTriggerDebugPanel 
-              audioTrigger={audioTrigger}
-              onManualStart={handleManualAudioStart}
-              onManualStop={handleManualAudioStop}
-            />
+            {/* AudioTriggerDebugPanel removed - AudioTrigger starts automatically on login */}
             <AudioTriggerMeter 
               score={audioTrigger.metrics?.score ?? 0}
               isCapturing={audioTrigger.isCapturing}

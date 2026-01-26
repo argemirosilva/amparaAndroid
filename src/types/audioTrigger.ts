@@ -6,6 +6,9 @@
 // Estados da máquina de estados
 export type TriggerState = 'IDLE' | 'PRE_TRIGGER' | 'RECORDING' | 'COOLDOWN';
 
+// Modos de processamento (para economia de bateria)
+export type ProcessingMode = 'FULL' | 'LIGHT';
+
 // Classificação de gênero (com viés masculino)
 export type GenderClass = 'MALE' | 'FEMALE' | 'UNKNOWN';
 
@@ -97,6 +100,8 @@ export interface AudioTriggerMetrics {
 
 // Configuração unificada
 export interface AudioTriggerConfig {
+  // Modo de processamento
+  processingMode?: ProcessingMode;
   // Captura
   sampleRate: number;
   frameMs: number;

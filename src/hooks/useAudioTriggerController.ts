@@ -48,6 +48,7 @@ export interface AudioTriggerControllerReturn {
   start: () => Promise<void>;
   stop: () => void;
   reset: () => void;
+  setProcessingMode: (mode: 'FULL' | 'LIGHT') => void;
   updateConfig: (config: Partial<AudioTriggerConfig>) => void;
   clearEvents: () => void;
   copyEvents: () => void;
@@ -134,6 +135,7 @@ export function useAudioTriggerController(
   const processAudioFrame = useCallback((samples: Float32Array, sampleRate: number) => {
     const cfg = configRef.current;
     const now = Date.now();
+    const mode = cfg.processingMode || 'FULL';
 
     frameCountRef.current++;
     
@@ -176,10 +178,10 @@ export function useAudioTriggerController(
       });
     }
 
-    // Estimate pitch (only when speech detected)
+    // Estimate pitch (only when speech detected AND in FULL mode)
     let f0Current: number | null = null;
     let voicingConfidence = 0;
-    if (frameResult.isSpeech) {
+    if (mode === 'FULL' && frameResult.isSpeech) {
       const pitchResult = estimateF0(samples, sampleRate);
       f0Current = pitchResult.f0;
       voicingConfidence = pitchResult.confidence;
@@ -195,8 +197,11 @@ export function useAudioTriggerController(
       isLoud: frameResult.isLoud,
     });
 
-    // Check if it's time for aggregation (every 500ms)
-    if (now - lastAggregationTimeRef.current >= cfg.aggregationMs) {
+    // In LIGHT mode, aggregate every 5000ms instead of 1000ms (80% less processing)
+    const aggregationInterval = mode === 'LIGHT' ? 5000 : cfg.aggregationMs;
+    
+    // Check if it's time for aggregation
+    if (now - lastAggregationTimeRef.current >= aggregationInterval) {
       lastAggregationTimeRef.current = now;
 
       const frames = frameBufferRef.current.toArray();
@@ -488,6 +493,12 @@ export function useAudioTriggerController(
     };
   }, []);
 
+  // Set processing mode (FULL or LIGHT)
+  const setProcessingMode = useCallback((mode: 'FULL' | 'LIGHT') => {
+    console.log('[AudioTrigger] Setting processing mode:', mode);
+    setConfig(prev => ({ ...prev, processingMode: mode }));
+  }, []);
+
   return {
     isCapturing,
     hasPermission,
@@ -501,6 +512,7 @@ export function useAudioTriggerController(
     start,
     stop,
     reset,
+    setProcessingMode,
     updateConfig: updateConfigFn,
     clearEvents,
     copyEvents,
