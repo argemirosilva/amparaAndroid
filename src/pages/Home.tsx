@@ -72,6 +72,14 @@ export function HomePage({ onLogout }: HomePageProps) {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [syncConfig]);
 
+  // Auto-request native permissions on mount
+  useEffect(() => {
+    if (!hasAllRequired && !isPermissionsLoading) {
+      console.log('[Home] Requesting native permissions...');
+      requestAll();
+    }
+  }, [hasAllRequired, isPermissionsLoading, requestAll]);
+
   // Auto-start audio monitoring when in monitoring period (only if permissions granted)
   // Auto-stop when exiting the period (unless started manually via debug panel)
   useEffect(() => {
@@ -176,6 +184,8 @@ export function HomePage({ onLogout }: HomePageProps) {
   };
 
   // Show permissions request screen if permissions are not granted
+  // Desativado temporariamente para permitir pop-ups nativos diretos
+  /*
   if (!isPermissionsLoading && !hasAllRequired) {
     return (
       <PermissionsRequest
@@ -184,6 +194,7 @@ export function HomePage({ onLogout }: HomePageProps) {
       />
     );
   }
+  */
 
   return (
     <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom relative overflow-hidden">
