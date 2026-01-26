@@ -2,10 +2,13 @@
  * Background State Manager
  * Ensures critical data is available when app is in background
  * Prevents data loss due to Android memory management
+ * Uses WakeLock to keep JavaScript executing in background
  */
 
 import { reloadSession } from './sessionService';
 import { reloadConfigFromCache } from './configService';
+import { KeepAwake } from '@capacitor-community/keep-awake';
+import { Capacitor } from '@capacitor/core';
 
 // ============================================
 // State Tracking
@@ -36,15 +39,33 @@ export function initializeBackgroundStateManager(): void {
 /**
  * Handle visibility change
  */
-function handleVisibilityChange(): void {
+async function handleVisibilityChange(): Promise<void> {
   const wasInBackground = isInBackground;
   isInBackground = document.visibilityState === 'hidden';
   
   if (wasInBackground !== isInBackground) {
     console.log('[BackgroundStateManager] State changed:', isInBackground ? 'background' : 'foreground');
     
-    // When coming back to foreground, force reload immediately
-    if (!isInBackground) {
+    if (isInBackground) {
+      // Going to background - acquire WakeLock to keep JavaScript running
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await KeepAwake.keepAwake();
+          console.log('[BackgroundStateManager] WakeLock acquired - JavaScript will stay active');
+        } catch (error) {
+          console.error('[BackgroundStateManager] Failed to acquire WakeLock:', error);
+        }
+      }
+    } else {
+      // Coming back to foreground - release WakeLock and force reload
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await KeepAwake.allowSleep();
+          console.log('[BackgroundStateManager] WakeLock released');
+        } catch (error) {
+          console.error('[BackgroundStateManager] Failed to release WakeLock:', error);
+        }
+      }
       console.log('[BackgroundStateManager] Returning to foreground, forcing reload...');
       ensureCriticalDataAvailable(true);
     }
