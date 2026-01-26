@@ -207,6 +207,11 @@ async function fetchFromRemote(currentVersion: number): Promise<AppConfig | null
  * Transform API response to AppConfig format
  */
 function transformApiConfigToAppConfig(apiResponse: ConfigSyncResponse): AppConfig {
+  // ===== DEBUG: LOG COMPLETO DA RESPOSTA DA API =====
+  console.log('🔍 [ConfigService] API RESPONSE COMPLETA:', JSON.stringify(apiResponse, null, 2));
+  console.log('🎯 [ConfigService] audio_trigger_config da API:', JSON.stringify(apiResponse.audio_trigger_config, null, 2));
+  // ==================================================
+  
   // Use fields directly from apiResponse (not from configuracoes)
   // periodos_hoje already has { inicio, fim } format
   const periods = apiResponse.periodos_hoje || [];
