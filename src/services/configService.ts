@@ -15,12 +15,14 @@ export interface AppConfig {
   version: number; // Timestamp of config creation
   ttl_seconds: number;
   monitoring_enabled: boolean;
-  monitoring_periods: Array<{ start: string; end: string }>;
+  monitoring_periods: Array<{ inicio: string; fim: string }>;
+  periodos_semana?: import('@/lib/types').PeriodosSemana;
+  dentro_horario?: boolean;
+  periodo_atual_index?: number | null;
   audio_trigger?: {
     sensitivity: 'low' | 'medium' | 'high';
     min_score: number;
   };
-  // Add more config fields as needed
 }
 
 export interface ConfigState {
@@ -40,7 +42,7 @@ const DEFAULT_CONFIG: AppConfig = {
   ttl_seconds: 3600, // 1 hour
   monitoring_enabled: true,
   monitoring_periods: [
-    { start: '08:00', end: '18:00' }
+    { inicio: '08:00', fim: '18:00' }
   ],
   audio_trigger: {
     sensitivity: 'medium',
@@ -205,14 +207,22 @@ async function fetchFromRemote(currentVersion: number): Promise<AppConfig | null
  * Transform API response to AppConfig format
  */
 function transformApiConfigToAppConfig(apiResponse: ConfigSyncResponse): AppConfig {
-  const config = apiResponse.configuracoes;
+  // Use fields directly from apiResponse (not from configuracoes)
+  // periodos_hoje already has { inicio, fim } format
+  const periods = apiResponse.periodos_hoje || [];
   
   return {
-    version: config.version || Date.now(),
-    ttl_seconds: config.ttl_seconds || 3600,
-    monitoring_enabled: config.monitoramento_ativo ?? true,
-    monitoring_periods: config.periodos_monitoramento || [],
-    audio_trigger: config.audio_trigger || DEFAULT_CONFIG.audio_trigger
+    version: Date.now(),
+    ttl_seconds: 3600,
+    monitoring_enabled: true, // Always enabled, dentro_horario controls active state
+    monitoring_periods: periods,
+    periodos_semana: apiResponse.periodos_semana,
+    dentro_horario: apiResponse.dentro_horario ?? false,
+    periodo_atual_index: apiResponse.periodo_atual_index ?? null,
+    audio_trigger: apiResponse.audio_trigger_config ? {
+      sensitivity: 'medium',
+      min_score: 5
+    } : DEFAULT_CONFIG.audio_trigger
   };
 }
 

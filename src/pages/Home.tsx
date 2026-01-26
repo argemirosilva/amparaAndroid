@@ -54,14 +54,14 @@ export function HomePage({ onLogout }: HomePageProps) {
     : [];
   
   const monitoring = {
-    dentroHorario: config.currentConfig?.monitoring_enabled ?? false,
-    periodoAtualIndex: 0,
+    dentroHorario: config.currentConfig?.dentro_horario ?? false,
+    periodoAtualIndex: config.currentConfig?.periodo_atual_index ?? null,
     periodosHoje: validPeriods
   };
   
   const audioTriggerConfig = config.currentConfig?.audio_trigger;
   const isConfigLoading = config.isLoading;
-  const periodosSemana = validPeriods;
+  const periodosSemana = config.currentConfig?.periodos_semana ?? null;
   
   const audioTrigger = useAudioTriggerController(undefined, audioTriggerConfig);
   
