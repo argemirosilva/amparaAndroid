@@ -21,10 +21,17 @@ const queryClient = new QueryClient();
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  // Check auth on mount
+  // Check auth on mount and listen for storage changes
   useEffect(() => {
-    const token = localStorage.getItem('ampara_token');
-    setIsAuthenticated(!!token);
+    const checkAuth = () => {
+      const token = localStorage.getItem('ampara_token');
+      console.log('[App] Checking auth, token exists:', !!token);
+      setIsAuthenticated(!!token);
+    };
+    
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
   }, []);
 
   const handleLoginSuccess = () => {
