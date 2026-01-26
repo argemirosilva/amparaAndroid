@@ -89,6 +89,7 @@ export async function initializeSession(): Promise<void> {
  * Get the current session token (synchronous)
  */
 export function getSessionToken(): string | null {
+  console.log('[SessionService] getSessionToken called - Has token:', !!cachedToken, '| Token length:', cachedToken?.length || 0);
   return cachedToken;
 }
 

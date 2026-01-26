@@ -78,7 +78,8 @@ async function mobileApi<T>(
     const token = getSessionToken();
     const email = getUserEmail();
     
-    console.log('[API] Token check for', action, '- Has token:', !!token, 'In background:', document.visibilityState === 'hidden');
+    const tokenPreview = token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'null';
+    console.log('[API] Token check for', action, '- Has token:', !!token, '| Token preview:', tokenPreview, '| In background:', document.visibilityState === 'hidden');
     
     if (!token) {
       console.error('[API] No token available for', action);

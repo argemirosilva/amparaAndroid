@@ -92,8 +92,13 @@ export async function ensureCriticalDataAvailable(force = false): Promise<boolea
   try {
     console.log('[BackgroundStateManager] Reloading critical data from storage...');
     
+    // Import getSessionToken for logging
+    const { getSessionToken } = await import('./sessionService');
+    console.log('[BackgroundStateManager] Before reload - Has token:', !!getSessionToken());
+    
     // Reload session (token + user data)
     const sessionReloaded = await reloadSession();
+    console.log('[BackgroundStateManager] After reload - Session reloaded:', sessionReloaded, '| Has token:', !!getSessionToken());
     if (!sessionReloaded) {
       console.warn('[BackgroundStateManager] Failed to reload session');
       return false;
