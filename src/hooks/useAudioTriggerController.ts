@@ -137,9 +137,10 @@ export function useAudioTriggerController(
 
     frameCountRef.current++;
     
-    // Log every 250 frames (~5 seconds at 50fps)
-    if (frameCountRef.current % 250 === 0) {
-      console.log('[AudioTrigger] Processing frame #', frameCountRef.current);
+    // Log every 50 frames (~1 second at 50fps) for better diagnostics
+    if (frameCountRef.current % 50 === 0) {
+      const maxSample = Math.max(...Array.from(samples).map(Math.abs));
+      console.log('[AudioTrigger] Frame #', frameCountRef.current, '| Max sample:', maxSample.toFixed(4));
     }
 
     // Process frame for DSP metrics
@@ -311,6 +312,13 @@ export function useAudioTriggerController(
       const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       audioContextRef.current = audioContext;
       console.log('[AudioTrigger] AudioContext created, sampleRate:', audioContext.sampleRate);
+
+      // Force resume for Android 15 compatibility
+      if (audioContext.state === 'suspended') {
+        console.log('[AudioTrigger] AudioContext is suspended, resuming...');
+        await audioContext.resume();
+        console.log('[AudioTrigger] AudioContext resumed, state:', audioContext.state);
+      }
 
       // Create analyser node
       const analyser = audioContext.createAnalyser();
