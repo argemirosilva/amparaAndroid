@@ -25,13 +25,21 @@ const App = () => {
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem('ampara_token');
-      console.log('[App] Checking auth, token exists:', !!token);
+      console.log('[App] Checking auth, token value:', token ? 'EXISTS' : 'NULL');
       setIsAuthenticated(!!token);
     };
     
-    checkAuth();
+    // Give WebView some time to initialize storage on Android 15
+    const timer = setTimeout(() => {
+      console.log('[App] Running delayed auth check...');
+      checkAuth();
+    }, 800);
+    
     window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('storage', checkAuth);
+    };
   }, []);
 
   const handleLoginSuccess = () => {
