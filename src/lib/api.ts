@@ -298,16 +298,51 @@ export async function reportarStatusGravacao(
  * Sync user configuration
  */
 export async function syncConfigMobile(): Promise<ApiResponse<ConfigSyncResponse>> {
-  const result = await mobileApi<ConfigSyncResponse>('syncConfigMobile');
+  console.log('[API] Calling syncConfigMobile...');
   
-  if (result.data?.configuracoes) {
-    localStorage.setItem(
-      STORAGE_KEYS.USER_CONFIG,
-      JSON.stringify(result.data.configuracoes)
-    );
+  const result = await mobileApi<any>('syncConfigMobile');
+  
+  console.log('[API] syncConfigMobile raw response:', JSON.stringify(result, null, 2));
+  
+  if (result.error || !result.data) {
+    console.error('[API] syncConfigMobile error:', result.error);
+    return { data: null, error: result.error || 'Failed to sync config' };
   }
   
-  return result;
+  // Backend now returns data directly, not wrapped in 'configuracoes'
+  // Transform the flat response into the expected ConfigSyncResponse format
+  const configResponse: ConfigSyncResponse = {
+    configuracoes: {
+      contatos_suporte: result.data.contatos_rede_apoio || [],
+      gatilhos: {
+        voz: result.data.gravacao_ativa_config ?? true,
+        manual: true
+      }
+    },
+    dentro_horario: result.data.dentro_horario ?? false,
+    gravacao_ativa: result.data.gravacao_ativa ?? false,
+    periodo_atual_index: result.data.periodo_atual_index ?? null,
+    gravacao_inicio: result.data.gravacao_inicio ?? null,
+    gravacao_fim: result.data.gravacao_fim ?? null,
+    periodos_hoje: result.data.periodos_hoje ?? [],
+    gravacao_dias: result.data.gravacao_dias ?? [],
+    audio_trigger_config: result.data.audio_trigger_config ?? null,
+    periodos_semana: result.data.periodos_semana ?? null,
+    ultima_atualizacao: new Date().toISOString()
+  };
+  
+  // Cache the transformed config
+  localStorage.setItem(
+    STORAGE_KEYS.USER_CONFIG,
+    JSON.stringify(configResponse.configuracoes)
+  );
+  
+  console.log('[API] syncConfigMobile processed successfully', {
+    dentro_horario: configResponse.dentro_horario,
+    periodos_hoje_count: configResponse.periodos_hoje.length
+  });
+  
+  return { data: configResponse, error: null };
 }
 
 /**

@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { VoiceRecorder } from 'capacitor-voice-recorder';
 
 export type PermissionStatus = 'granted' | 'denied' | 'prompt';
 
