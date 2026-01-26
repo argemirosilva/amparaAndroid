@@ -19,10 +19,7 @@ export interface AppConfig {
   periodos_semana?: import('@/lib/types').PeriodosSemana;
   dentro_horario?: boolean;
   periodo_atual_index?: number | null;
-  audio_trigger?: {
-    sensitivity: 'low' | 'medium' | 'high';
-    min_score: number;
-  };
+  audio_trigger?: import('@/lib/types').ServerAudioTriggerConfig;
 }
 
 export interface ConfigState {
@@ -43,11 +40,8 @@ const DEFAULT_CONFIG: AppConfig = {
   monitoring_enabled: true,
   monitoring_periods: [
     { inicio: '08:00', fim: '18:00' }
-  ],
-  audio_trigger: {
-    sensitivity: 'medium',
-    min_score: 5
-  }
+  ]
+  // audio_trigger will use DEFAULT_CONFIG from audioTrigger.ts if not provided by API
 };
 
 // ============================================
@@ -224,10 +218,7 @@ function transformApiConfigToAppConfig(apiResponse: ConfigSyncResponse): AppConf
     periodos_semana: apiResponse.periodos_semana,
     dentro_horario: apiResponse.dentro_horario ?? false,
     periodo_atual_index: apiResponse.periodo_atual_index ?? null,
-    audio_trigger: apiResponse.audio_trigger_config ? {
-      sensitivity: 'medium',
-      min_score: 5
-    } : DEFAULT_CONFIG.audio_trigger
+    audio_trigger: apiResponse.audio_trigger_config || DEFAULT_CONFIG.audio_trigger
   };
 }
 
