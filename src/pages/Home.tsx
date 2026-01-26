@@ -96,7 +96,18 @@ export function HomePage({ onLogout }: HomePageProps) {
     
     if (monitoring.dentroHorario && !audioTrigger.isCapturing) {
       console.log('[Home] Auto-starting audio trigger (dentro do período de monitoramento)');
-      audioTrigger.start();
+      // Add small delay to ensure permission context is ready
+      const timer = setTimeout(() => {
+        audioTrigger.start().catch(err => {
+          console.error('[Home] Failed to auto-start audio trigger:', err);
+          toast({
+            title: "Erro ao iniciar monitoramento",
+            description: "Toque no botão de debug para iniciar manualmente.",
+            variant: "destructive"
+          });
+        });
+      }, 500);
+      return () => clearTimeout(timer);
     } else if (!monitoring.dentroHorario && audioTrigger.isCapturing && !manualAudioStartRef.current) {
       console.log('[Home] Auto-stopping audio trigger (fora do período de monitoramento)');
       audioTrigger.stop();
@@ -107,6 +118,7 @@ export function HomePage({ onLogout }: HomePageProps) {
     audioTrigger.isCapturing,
     audioTrigger.start,
     audioTrigger.stop,
+    toast,
     manualAudioStartRef.current,
   ]);
 
