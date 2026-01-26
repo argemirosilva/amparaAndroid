@@ -86,14 +86,17 @@ async function executePing(): Promise<void> {
     const latency = Date.now() - startTime;
     
     if (result.error || !result.data) {
-      handlePingFailure('API error: ' + (result.error || 'No data'), latency);
+      const errorMsg = result.error ? JSON.stringify(result.error) : 'No data';
+      handlePingFailure('API error: ' + errorMsg, latency);
     } else {
       handlePingSuccess(latency, result.data);
     }
     
   } catch (error) {
     const latency = Date.now() - startTime;
-    handlePingFailure(error instanceof Error ? error.message : 'Unknown error', latency);
+    const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
+    console.error('[ConnectivityService] Ping exception:', errorMsg);
+    handlePingFailure(errorMsg, latency);
   }
 }
 
@@ -119,7 +122,7 @@ function handlePingSuccess(latencyMs: number, data: any): void {
  * Handle failed ping
  */
 function handlePingFailure(error: string, latencyMs: number): void {
-  console.warn('[ConnectivityService] Ping failed', { error, latency_ms: latencyMs });
+  console.warn('[ConnectivityService] Ping failed:', error, '| latency:', latencyMs, 'ms');
   
   state.consecutiveFailures++;
   state.lastLatencyMs = latencyMs;
