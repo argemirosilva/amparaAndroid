@@ -4,6 +4,18 @@ import { checkmarkCircle } from 'ionicons/icons';
 import { useIconChanger, AVAILABLE_ICONS } from '../composables/useIconChanger';
 import './IconSelector.css';
 
+// Import das imagens dos ícones
+import iconAmpara from '../assets/icon_ampara_original.png';
+import iconWorkout from '../assets/icon_fitness_workout.png';
+import iconSteps from '../assets/icon_fitness_steps.png';
+import iconYoga from '../assets/icon_fitness_yoga.png';
+import iconCycle from '../assets/icon_feminine_cycle.png';
+import iconBeauty from '../assets/icon_feminine_beauty.png';
+import iconFashion from '../assets/icon_feminine_fashion.png';
+import iconPuzzle from '../assets/icon_game_puzzle.png';
+import iconCards from '../assets/icon_game_cards.png';
+import iconCasual from '../assets/icon_game_casual.png';
+
 const IconSelector: React.FC = () => {
   const { changeIcon, getCurrentIcon, isNative } = useIconChanger();
   const [currentIconId, setCurrentIconId] = useState<string>('ampara');
@@ -59,20 +71,20 @@ const IconSelector: React.FC = () => {
   };
 
   const getIconImage = (iconId: string) => {
-    // Mapear IDs para os arquivos de ícone
+    // Mapear IDs para as imagens importadas
     const iconMap: Record<string, string> = {
-      ampara: '/icon_ampara_original.png',
-      workout: '/icon_fitness_workout.png',
-      steps: '/icon_fitness_steps.png',
-      yoga: '/icon_fitness_yoga.png',
-      cycle: '/icon_feminine_cycle.png',
-      beauty: '/icon_feminine_beauty.png',
-      fashion: '/icon_feminine_fashion.png',
-      puzzle: '/icon_game_puzzle.png',
-      cards: '/icon_game_cards.png',
-      casual: '/icon_game_casual.png',
+      ampara: iconAmpara,
+      workout: iconWorkout,
+      steps: iconSteps,
+      yoga: iconYoga,
+      cycle: iconCycle,
+      beauty: iconBeauty,
+      fashion: iconFashion,
+      puzzle: iconPuzzle,
+      cards: iconCards,
+      casual: iconCasual,
     };
-    return iconMap[iconId] || '/icon_ampara_original.png';
+    return iconMap[iconId] || iconAmpara;
   };
 
   const getCategoryTitle = (category: string) => {
