@@ -486,18 +486,6 @@ export function HomePage({ onLogout }: HomePageProps) {
                 variant="ghost"
                 className="w-full justify-start gap-3"
                 onClick={() => {
-                  navigate('/schedule');
-                  setMenuOpen(false);
-                }}
-              >
-                <Calendar className="w-5 h-5" />
-                Agenda de monitoramento
-              </Button>
-
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3"
-                onClick={() => {
                   navigate('/icon-selector');
                   setMenuOpen(false);
                 }}

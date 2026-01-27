@@ -15,7 +15,7 @@ import { PanicActivePage } from "./pages/PanicActive";
 import { RecordingPage } from "./pages/Recording";
 import { PendingPage } from "./pages/Pending";
 import { UploadPage } from "./pages/Upload";
-import { SchedulePage } from "./pages/Schedule";
+
 import { AudioTriggerDebugPage } from "./pages/AudioTriggerDebug";
 import IconSelector from "./pages/IconSelector";
 import AboutPage from "./pages/About";
@@ -160,7 +160,7 @@ const App = () => {
                 <Route path="/recording" element={<RecordingPage />} />
                 <Route path="/pending" element={<PendingPage />} />
                 <Route path="/upload" element={<UploadPage />} />
-                <Route path="/schedule" element={<SchedulePage />} />
+
                 <Route path="/audio-trigger-debug" element={<AudioTriggerDebugPage />} />
                 <Route path="/icon-selector" element={<IconSelector />} />
                 <Route path="/about" element={<AboutPage />} />
