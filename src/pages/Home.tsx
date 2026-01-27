@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Triangle, Menu, LogOut, X, Upload, Calendar, Wifi, WifiOff, Palette } from 'lucide-react';
+import { Triangle, Menu, LogOut, X, Upload, Calendar, Wifi, WifiOff, Palette, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
@@ -135,9 +135,11 @@ export function HomePage({ onLogout }: HomePageProps) {
   ]);
 
   // Auto-start recording when discussion is detected
+  // IMPORTANT: Only auto-record if WITHIN monitoring period (monitoring gate)
   useEffect(() => {
     const shouldAutoRecord = 
       audioTrigger.discussionOn && 
+      monitoring.dentroHorario && // <-- MONITORING GATE CHECK
       !recording.isRecording && 
       !panic.isPanicActive &&
       !autoRecordingStartedRef.current;
@@ -507,6 +509,18 @@ export function HomePage({ onLogout }: HomePageProps) {
               >
                 <Palette className="w-5 h-5" />
                 Alterar ícone do app
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3"
+                onClick={() => {
+                  navigate('/about');
+                  setMenuOpen(false);
+                }}
+              >
+                <Info className="w-5 h-5" />
+                Sobre
               </Button>
 
               <div className="pt-4 border-t border-border mt-4">

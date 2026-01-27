@@ -223,35 +223,37 @@ export function AudioTriggerMeter({
             strokeLinecap="round"
           />
           
-          {/* Progress arc with gradient color */}
-          <motion.circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={arcLength}
-            strokeLinecap="round"
-            initial={{ strokeDashoffset: arcLength }}
-            animate={{ 
-              strokeDashoffset: offset,
-              stroke: strokeColor,
-            }}
-            transition={{ 
-              strokeDashoffset: { duration: 0.5, ease: 'easeOut' },
-              stroke: { duration: 0.3 },
-            }}
-            style={{
-              filter: isRecording ? `drop-shadow(0 0 6px ${strokeColor})` : 'none',
-            }}
-          />
+          {/* Progress arc with gradient color - ONLY show when within monitoring period */}
+          {dentroHorario && (
+            <motion.circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+              strokeDasharray={arcLength}
+              strokeLinecap="round"
+              initial={{ strokeDashoffset: arcLength }}
+              animate={{ 
+                strokeDashoffset: offset,
+                stroke: strokeColor,
+              }}
+              transition={{ 
+                strokeDashoffset: { duration: 0.5, ease: 'easeOut' },
+                stroke: { duration: 0.3 },
+              }}
+              style={{
+                filter: isRecording ? `drop-shadow(0 0 6px ${strokeColor})` : 'none',
+              }}
+            />
+          )}
         </svg>
         
         {/* Center icon with sound waves */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Sound wave animations */}
-          {isCapturing && (
+          {/* Sound wave animations - ONLY show when within monitoring period */}
+          {isCapturing && dentroHorario && (
             <>
               {[0, 1, 2].map((i) => (
                 <motion.div
