@@ -49,10 +49,8 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
 
   if (hasPermissions === null) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a0a2e] text-white p-6 text-center">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-lg font-medium">Iniciando Ampara...</p>
-        <p className="text-sm text-gray-400 mt-2">Verificando permissões de segurança</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
