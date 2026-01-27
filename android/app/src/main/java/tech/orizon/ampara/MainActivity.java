@@ -1,14 +1,37 @@
 package tech.orizon.ampara;
 
 import android.content.ComponentName;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import tech.orizon.ampara.plugins.SecureStoragePlugin;
 
 public class MainActivity extends BridgeActivity {
+    
+    private static final String TAG = "IconChanger";
+    private static final String PREFS_NAME = "IconChangerPrefs";
+    private static final String PREF_CURRENT_ALIAS = "currentAlias";
+    
+    // Lista de todos os aliases disponíveis (nomes completos)
+    private static final String[] ALL_ALIASES = {
+        "tech.orizon.ampara.MainActivityAmpara",
+        "tech.orizon.ampara.MainActivityWorkout",
+        "tech.orizon.ampara.MainActivitySteps",
+        "tech.orizon.ampara.MainActivityYoga",
+        "tech.orizon.ampara.MainActivityCycle",
+        "tech.orizon.ampara.MainActivityBeauty",
+        "tech.orizon.ampara.MainActivityFashion",
+        "tech.orizon.ampara.MainActivityPuzzle",
+        "tech.orizon.ampara.MainActivityCards",
+        "tech.orizon.ampara.MainActivityCasual"
+    };
+    
+    // Alias padrão
+    private static final String DEFAULT_ALIAS = "tech.orizon.ampara.MainActivityAmpara";
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -26,57 +49,68 @@ public class MainActivity extends BridgeActivity {
      * Interface direta para ser chamada via JavaScript: window.AndroidIconChanger.changeIcon(alias)
      */
     public class IconChangerInterface {
-        private static final String MAIN_ACTIVITY = ".MainActivity";
-        private static final String[] ICON_ALIASES = {
-            ".MainActivityAmpara", ".MainActivityWorkout", ".MainActivitySteps", 
-            ".MainActivityYoga", ".MainActivityCycle", ".MainActivityBeauty", 
-            ".MainActivityFashion", ".MainActivityPuzzle", ".MainActivityCards", 
-            ".MainActivityCasual"
-        };
-
+        
         @JavascriptInterface
         public boolean changeIcon(String targetAlias) {
-            try {
-                PackageManager packageManager = getPackageManager();
-                String packageName = getPackageName();
-
-                // 1. MainActivity SEMPRE fica habilitada para garantir que o app possa ser aberto
-                // Apenas os aliases é que alternam o ícone visível no launcher
-
-                // 2. Gerenciar Aliases
-                for (String alias : ICON_ALIASES) {
-                    int state = alias.equals(targetAlias) 
-                        ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                        : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
-                    
-                    packageManager.setComponentEnabledSetting(
-                        new ComponentName(packageName, packageName + alias),
-                        state,
-                        PackageManager.DONT_KILL_APP
-                    );
-                }
+            Log.d(TAG, "changeIcon called with: " + targetAlias);
+            
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            String currentAlias = prefs.getString(PREF_CURRENT_ALIAS, DEFAULT_ALIAS);
+            
+            // Converter alias curto para nome completo se necessário
+            String fullTargetAlias = targetAlias.startsWith("tech.orizon.ampara.") 
+                ? targetAlias 
+                : "tech.orizon.ampara." + targetAlias.replace(".", "");
+            
+            Log.d(TAG, "Current: " + currentAlias + " -> Target: " + fullTargetAlias);
+            
+            // Se já é o mesmo, não fazer nada
+            if (currentAlias.equals(fullTargetAlias)) {
+                Log.d(TAG, "Already using this icon, skipping");
                 return true;
+            }
+            
+            try {
+                PackageManager pm = getPackageManager();
+                
+                // 1. Desabilitar o alias atual (usar DEFAULT para resetar ao estado do manifest)
+                pm.setComponentEnabledSetting(
+                    new ComponentName(getApplicationContext(), currentAlias),
+                    PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,
+                    PackageManager.DONT_KILL_APP
+                );
+                Log.d(TAG, "Disabled: " + currentAlias);
+                
+                // 2. Habilitar o novo alias
+                pm.setComponentEnabledSetting(
+                    new ComponentName(getApplicationContext(), fullTargetAlias),
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                );
+                Log.d(TAG, "Enabled: " + fullTargetAlias);
+                
+                // 3. Salvar a preferência
+                prefs.edit().putString(PREF_CURRENT_ALIAS, fullTargetAlias).apply();
+                
+                Log.d(TAG, "Icon changed successfully!");
+                return true;
+                
             } catch (Exception e) {
+                Log.e(TAG, "Error changing icon", e);
                 return false;
             }
         }
 
         @JavascriptInterface
         public String getCurrentIcon() {
-            try {
-                PackageManager packageManager = getPackageManager();
-                String packageName = getPackageName();
-
-                // Verificar qual alias está ativo
-                for (String alias : ICON_ALIASES) {
-                    int state = packageManager.getComponentEnabledSetting(new ComponentName(packageName, packageName + alias));
-                    if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
-                        return alias;
-                    }
-                }
-            } catch (Exception e) {}
-            // Se nenhum alias estiver ativo, retornar o padrão
-            return ".MainActivityAmpara";
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            String currentAlias = prefs.getString(PREF_CURRENT_ALIAS, DEFAULT_ALIAS);
+            
+            // Retornar apenas a parte final do nome (ex: MainActivityWorkout)
+            if (currentAlias.contains(".")) {
+                return currentAlias.substring(currentAlias.lastIndexOf(".") + 1);
+            }
+            return currentAlias;
         }
     }
 }

@@ -19,49 +19,45 @@
 
     <application
         android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!-- MainActivity sempre habilitada como fallback para garantir que o app possa ser aberto -->
+        <!-- MainActivity SEM intent-filter LAUNCHER (apenas os aliases terão) -->
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
-            android:name=".MainActivity"
+            android:name="tech.orizon.ampara.MainActivity"
             android:label="@string/title_activity_main"
-            android:icon="@drawable/ic_launcher_ampara"
-            android:roundIcon="@mipmap/ic_launcher_round"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="true" />
 
-        <!-- Activity Aliases para troca de ícone -->
-        <!-- IMPORTANTE: MainActivityAmpara agora é desabilitada por padrão pois a MainActivity já cobre o ícone original -->
+        <!-- Alias Padrão (Ampara Original) - HABILITADO por padrão -->
         <activity-alias
-            android:name=".MainActivityAmpara"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_ampara"
+            android:name="tech.orizon.ampara.MainActivityAmpara"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_ampara"
+            android:roundIcon="@mipmap/ic_launcher_ampara"
             android:label="Ampara"
-            android:targetActivity=".MainActivity">
+            android:exported="true"
+            android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
 
+        <!-- Aliases Alternativos - DESABILITADOS por padrão -->
         <activity-alias
-            android:name=".MainActivityWorkout"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_workout"
+            android:name="tech.orizon.ampara.MainActivityWorkout"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_workout"
+            android:roundIcon="@mipmap/ic_launcher_workout"
             android:label="Treino Fitness"
-            android:targetActivity=".MainActivity">
+            android:exported="true"
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -69,12 +65,13 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivitySteps"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_steps"
+            android:name="tech.orizon.ampara.MainActivitySteps"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_steps"
+            android:roundIcon="@mipmap/ic_launcher_steps"
             android:label="Contador de Passos"
-            android:targetActivity=".MainActivity">
+            android:exported="true"
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -82,12 +79,13 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityYoga"
-            android:enabled="false"
+            android:name="tech.orizon.ampara.MainActivityYoga"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_yoga"
+            android:roundIcon="@mipmap/ic_launcher_yoga"
+            android:label="Yoga e Meditacao"
             android:exported="true"
-            android:icon="@drawable/ic_launcher_yoga"
-            android:label="Yoga e Meditação"
-            android:targetActivity=".MainActivity">
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -95,12 +93,13 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityCycle"
-            android:enabled="false"
+            android:name="tech.orizon.ampara.MainActivityCycle"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_cycle"
+            android:roundIcon="@mipmap/ic_launcher_cycle"
+            android:label="Calendario Feminino"
             android:exported="true"
-            android:icon="@drawable/ic_launcher_cycle"
-            android:label="Calendário Feminino"
-            android:targetActivity=".MainActivity">
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -108,12 +107,13 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityBeauty"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_beauty"
+            android:name="tech.orizon.ampara.MainActivityBeauty"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_beauty"
+            android:roundIcon="@mipmap/ic_launcher_beauty"
             android:label="Beleza e Makeup"
-            android:targetActivity=".MainActivity">
+            android:exported="true"
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -121,12 +121,13 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityFashion"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_fashion"
+            android:name="tech.orizon.ampara.MainActivityFashion"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_fashion"
+            android:roundIcon="@mipmap/ic_launcher_fashion"
             android:label="Meu Guarda-Roupa"
-            android:targetActivity=".MainActivity">
+            android:exported="true"
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -134,12 +135,13 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityPuzzle"
-            android:enabled="false"
+            android:name="tech.orizon.ampara.MainActivityPuzzle"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_puzzle"
+            android:roundIcon="@mipmap/ic_launcher_puzzle"
+            android:label="Quebra-Cabeca"
             android:exported="true"
-            android:icon="@drawable/ic_launcher_puzzle"
-            android:label="Quebra-Cabeça"
-            android:targetActivity=".MainActivity">
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -147,12 +149,13 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityCards"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_cards"
+            android:name="tech.orizon.ampara.MainActivityCards"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_cards"
+            android:roundIcon="@mipmap/ic_launcher_cards"
             android:label="Jogo de Cartas"
-            android:targetActivity=".MainActivity">
+            android:exported="true"
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -160,12 +163,13 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityCasual"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_casual"
+            android:name="tech.orizon.ampara.MainActivityCasual"
+            android:targetActivity="tech.orizon.ampara.MainActivity"
+            android:icon="@mipmap/ic_launcher_casual"
+            android:roundIcon="@mipmap/ic_launcher_casual"
             android:label="Jogo Casual"
-            android:targetActivity=".MainActivity">
+            android:exported="true"
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
