@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonBackButton, IonGrid, IonRow, IonCol, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonText, IonIcon, IonSpinner, IonToast } from '@ionic/react';
-import { checkmarkCircle } from 'ionicons/icons';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, Dumbbell, Heart, Gamepad2, Sparkles, Footprints, Flower2, Shirt, Puzzle, PlayingCards, Candy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useIconChanger, AVAILABLE_ICONS } from '../composables/useIconChanger';
-import './IconSelector.css';
+import { useToast } from '@/hooks/use-toast';
 
 // Import das imagens dos ícones
 import iconAmpara from '../assets/icon_ampara_original.png';
@@ -17,11 +19,11 @@ import iconCards from '../assets/icon_game_cards.png';
 import iconCasual from '../assets/icon_game_casual.png';
 
 const IconSelector: React.FC = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const { changeIcon, getCurrentIcon, isNative } = useIconChanger();
   const [currentIconId, setCurrentIconId] = useState<string>('ampara');
   const [loading, setLoading] = useState<boolean>(false);
-  const [showToast, setShowToast] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string>('');
 
   useEffect(() => {
     loadCurrentIcon();
@@ -34,44 +36,43 @@ const IconSelector: React.FC = () => {
 
   const handleIconSelect = async (iconId: string) => {
     if (!isNative) {
-      setToastMessage('Troca de ícone disponível apenas no app Android');
-      setShowToast(true);
+      toast({
+        title: "Aviso",
+        description: "Troca de ícone disponível apenas no app Android.",
+        variant: "destructive"
+      });
       return;
     }
 
-    if (iconId === currentIconId) {
-      return;
-    }
+    if (iconId === currentIconId) return;
 
     setLoading(true);
-
     try {
       const success = await changeIcon(iconId);
-      
       if (success) {
         setCurrentIconId(iconId);
-        setToastMessage('Ícone alterado com sucesso! O app será reiniciado.');
-        setShowToast(true);
-        
-        // Aguardar um pouco antes de recarregar
+        toast({
+          title: "Sucesso!",
+          description: "Ícone alterado. O app será reiniciado em instantes.",
+        });
         setTimeout(() => {
           window.location.reload();
         }, 2000);
       } else {
-        setToastMessage('Erro ao alterar ícone. Tente novamente.');
-        setShowToast(true);
+        throw new Error("Falha na troca");
       }
     } catch (error) {
-      console.error('Error changing icon:', error);
-      setToastMessage('Erro ao alterar ícone. Tente novamente.');
-      setShowToast(true);
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar o ícone.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const getIconImage = (iconId: string) => {
-    // Mapear IDs para as imagens importadas
     const iconMap: Record<string, string> = {
       ampara: iconAmpara,
       workout: iconWorkout,
@@ -87,104 +88,123 @@ const IconSelector: React.FC = () => {
     return iconMap[iconId] || iconAmpara;
   };
 
-  const getCategoryTitle = (category: string) => {
-    const titles: Record<string, string> = {
-      original: '🎯 Original',
-      fitness: '🏋️ Fitness',
-      feminine: '💄 Feminino',
-      games: '🎮 Jogos',
+  const getCategoryInfo = (category: string) => {
+    const info: Record<string, { title: string, icon: any, color: string }> = {
+      original: { title: 'Original', icon: Sparkles, color: 'text-primary' },
+      fitness: { title: 'Fitness', icon: Dumbbell, color: 'text-orange-500' },
+      feminine: { title: 'Feminino', icon: Heart, color: 'text-pink-500' },
+      games: { title: 'Jogos', icon: Gamepad2, color: 'text-blue-500' },
     };
-    return titles[category] || category;
+    return info[category] || { title: category, icon: Sparkles, color: 'text-primary' };
   };
 
-  // Agrupar ícones por categoria
   const groupedIcons = AVAILABLE_ICONS.reduce((acc, icon) => {
-    if (!acc[icon.category]) {
-      acc[icon.category] = [];
-    }
+    if (!acc[icon.category]) acc[icon.category] = [];
     acc[icon.category].push(icon);
     return acc;
   }, {} as Record<string, typeof AVAILABLE_ICONS>);
 
   return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/home" />
-          </IonButtons>
-          <IonTitle>Alterar Ícone do App</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+    <div className="min-h-screen bg-background text-foreground pb-10">
+      {/* Header */}
+      <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
+        <div className="container flex h-16 items-center gap-4 px-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/')}
+            className="rounded-full"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+          <h1 className="text-xl font-bold tracking-tight">Personalizar Ícone</h1>
+        </div>
+      </header>
 
-      <IonContent className="ion-padding">
-        <div className="icon-selector-container">
-          <IonText className="ion-padding">
-            <h2>Escolha um ícone</h2>
-            <p>Selecione o ícone que aparecerá na tela inicial do seu celular. O app será reiniciado após a mudança.</p>
-          </IonText>
-
-          {Object.entries(groupedIcons).map(([category, icons]) => (
-            <div key={category} className="category-section">
-              <IonText color="primary">
-                <h3>{getCategoryTitle(category)}</h3>
-              </IonText>
-
-              <IonGrid>
-                <IonRow>
-                  {icons.map((icon) => (
-                    <IonCol size="6" sizeMd="4" sizeLg="3" key={icon.id}>
-                      <IonCard
-                        button
-                        onClick={() => handleIconSelect(icon.id)}
-                        className={`icon-card ${currentIconId === icon.id ? 'selected' : ''}`}
-                        disabled={loading}
-                      >
-                        <div className="icon-image-container">
-                          <img
-                            src={getIconImage(icon.id)}
-                            alt={icon.name}
-                            className="icon-image"
-                          />
-                          {currentIconId === icon.id && (
-                            <div className="selected-badge">
-                              <IonIcon icon={checkmarkCircle} color="success" />
-                            </div>
-                          )}
-                        </div>
-                        <IonCardHeader>
-                          <IonCardTitle className="icon-title">{icon.name}</IonCardTitle>
-                        </IonCardHeader>
-                        <IonCardContent>
-                          <IonText color="medium">
-                            <small>{icon.description}</small>
-                          </IonText>
-                        </IonCardContent>
-                      </IonCard>
-                    </IonCol>
-                  ))}
-                </IonRow>
-              </IonGrid>
-            </div>
-          ))}
-
-          {loading && (
-            <div className="loading-overlay">
-              <IonSpinner name="crescent" />
-              <p>Alterando ícone...</p>
-            </div>
-          )}
+      <main className="container px-4 pt-6">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-2">Escolha o disfarce</h2>
+          <p className="text-muted-foreground">
+            Selecione como o app aparecerá na sua tela inicial para maior segurança e privacidade.
+          </p>
         </div>
 
-        <IonToast
-          isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
-          message={toastMessage}
-          duration={2000}
-          position="bottom"
-        />
-      </IonContent>
-    </IonPage>
+        <div className="space-y-10">
+          {Object.entries(groupedIcons).map(([category, icons]) => {
+            const catInfo = getCategoryInfo(category);
+            const IconComp = catInfo.icon;
+            
+            return (
+              <section key={category} className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <IconComp className={`h-5 w-5 ${catInfo.color}`} />
+                  <h3 className="text-lg font-semibold uppercase tracking-wider text-muted-foreground">
+                    {catInfo.title}
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {icons.map((icon) => (
+                    <motion.div
+                      key={icon.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleIconSelect(icon.id)}
+                      className={`relative cursor-pointer rounded-2xl border-2 p-3 transition-all ${
+                        currentIconId === icon.id 
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+                          : 'border-border bg-card hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="aspect-square w-full overflow-hidden rounded-xl bg-muted mb-3 relative">
+                        <img
+                          src={getIconImage(icon.id)}
+                          alt={icon.name}
+                          className="h-full w-full object-cover"
+                        />
+                        {currentIconId === icon.id && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-primary/10">
+                            <CheckCircle2 className="h-10 w-10 text-primary drop-shadow-md" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="text-center">
+                        <p className="font-bold text-sm leading-tight mb-1">{icon.name}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-tighter">
+                          {icon.description}
+                        </p>
+                      </div>
+
+                      {currentIconId === icon.id && (
+                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-lg">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      </main>
+
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm"
+          >
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="mt-4 text-lg font-medium animate-pulse">Aplicando novo ícone...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
