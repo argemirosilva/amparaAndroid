@@ -28,6 +28,18 @@ const IconSelector: React.FC = () => {
   useEffect(() => {
     loadCurrentIcon();
   }, []);
+  
+  // Recarregar o ícone atual sempre que a tela ficar visível
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadCurrentIcon();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const loadCurrentIcon = async () => {
     const iconId = await getCurrentIcon();
