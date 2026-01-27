@@ -1,12 +1,4 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
-
-export interface IconChangerPlugin {
-  changeIcon(options: { alias: string }): Promise<{ success: boolean }>;
-  getCurrentIcon(): Promise<{ alias: string }>;
-}
-
-// Registrar o plugin de forma explícita para garantir que o Capacitor o encontre
-const IconChanger = registerPlugin<IconChangerPlugin>('IconChanger');
+import { Capacitor } from '@capacitor/core';
 
 export interface IconOption {
   id: string;
@@ -32,6 +24,11 @@ export const AVAILABLE_ICONS: IconOption[] = [
 export const useIconChanger = () => {
   const isNative = Capacitor.isNativePlatform();
 
+  const getPlugin = () => {
+    // Tentar acessar o plugin de várias formas para garantir compatibilidade
+    return (Capacitor as any).Plugins.IconChanger || (window as any).Capacitor?.Plugins?.IconChanger;
+  };
+
   const changeIcon = async (iconId: string) => {
     if (!isNative) {
       console.warn('Icon change is only available on native platforms');
@@ -39,17 +36,20 @@ export const useIconChanger = () => {
     }
 
     const icon = AVAILABLE_ICONS.find(i => i.id === iconId);
-    if (!icon) {
-      console.error('Icon not found:', iconId);
-      return false;
-    }
+    if (!icon) return false;
 
     try {
-      console.log('Calling native IconChanger.changeIcon with alias:', icon.alias);
-      const result = await IconChanger.changeIcon({ alias: icon.alias });
-      return result.success;
+      const plugin = getPlugin();
+      if (!plugin) {
+        console.error('IconChanger plugin not found in Capacitor.Plugins');
+        return false;
+      }
+
+      console.log('Calling IconChanger.changeIcon with:', icon.alias);
+      const result = await plugin.changeIcon({ alias: icon.alias });
+      return !!result?.success;
     } catch (error) {
-      console.error('Error calling native IconChanger:', error);
+      console.error('Error calling IconChanger:', error);
       return false;
     }
   };
@@ -58,7 +58,10 @@ export const useIconChanger = () => {
     if (!isNative) return 'ampara';
 
     try {
-      const result = await IconChanger.getCurrentIcon();
+      const plugin = getPlugin();
+      if (!plugin) return 'ampara';
+
+      const result = await plugin.getCurrentIcon();
       const icon = AVAILABLE_ICONS.find(i => i.alias === result.alias);
       return icon ? icon.id : 'ampara';
     } catch (error) {

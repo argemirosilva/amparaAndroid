@@ -2,6 +2,7 @@ package tech.orizon.ampara;
 
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
+import android.util.Log;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -11,6 +12,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "IconChanger")
 public class IconChangerPlugin extends Plugin {
 
+    private static final String TAG = "IconChanger";
     private static final String MAIN_ACTIVITY = ".MainActivity";
     private static final String[] ICON_ALIASES = {
         ".MainActivityAmpara",
@@ -28,60 +30,51 @@ public class IconChangerPlugin extends Plugin {
     @PluginMethod
     public void changeIcon(PluginCall call) {
         String targetAlias = call.getString("alias");
+        Log.d(TAG, "changeIcon called with alias: " + targetAlias);
+
         if (targetAlias == null) {
             call.reject("Alias is required");
             return;
         }
 
         try {
-            android.util.Log.d("IconChanger", "Attempting to change icon to: " + targetAlias);
             PackageManager packageManager = getContext().getPackageManager();
             String packageName = getContext().getPackageName();
 
-            // Se o alvo for o original (Ampara), habilitamos a MainActivity e desabilitamos todos os aliases
-            if (targetAlias.equals(".MainActivityAmpara")) {
-                // Habilitar MainActivity principal
+            // 1. Habilitar/Desabilitar MainActivity principal
+            int mainState = targetAlias.equals(".MainActivityAmpara") 
+                ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED 
+                : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+            
+            packageManager.setComponentEnabledSetting(
+                new ComponentName(packageName, packageName + MAIN_ACTIVITY),
+                mainState,
+                PackageManager.DONT_KILL_APP
+            );
+            Log.d(TAG, "MainActivity state set to: " + mainState);
+
+            // 2. Gerenciar Aliases
+            for (String alias : ICON_ALIASES) {
+                int state = alias.equals(targetAlias) 
+                    ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                    : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+                
                 packageManager.setComponentEnabledSetting(
-                    new ComponentName(packageName, packageName + MAIN_ACTIVITY),
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    new ComponentName(packageName, packageName + alias),
+                    state,
                     PackageManager.DONT_KILL_APP
                 );
-                // Desabilitar todos os aliases
-                for (String alias : ICON_ALIASES) {
-                    packageManager.setComponentEnabledSetting(
-                        new ComponentName(packageName, packageName + alias),
-                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                        PackageManager.DONT_KILL_APP
-                    );
-                }
-            } else {
-                // Se for um disfarce, desabilitamos a MainActivity principal
-                packageManager.setComponentEnabledSetting(
-                    new ComponentName(packageName, packageName + MAIN_ACTIVITY),
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                    PackageManager.DONT_KILL_APP
-                );
-                // Habilitamos apenas o alias alvo e desabilitamos os outros
-                for (String alias : ICON_ALIASES) {
-                    int state = alias.equals(targetAlias) 
-                        ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                        : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
-                    
-                    packageManager.setComponentEnabledSetting(
-                        new ComponentName(packageName, packageName + alias),
-                        state,
-                        PackageManager.DONT_KILL_APP
-                    );
+                if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+                    Log.d(TAG, "Enabled alias: " + alias);
                 }
             }
 
-            android.util.Log.d("IconChanger", "Icon change successful");
             JSObject ret = new JSObject();
             ret.put("success", true);
             call.resolve(ret);
         } catch (Exception e) {
-            android.util.Log.e("IconChanger", "Error changing icon", e);
-            call.reject("Error changing icon: " + e.getMessage());
+            Log.e(TAG, "Error in changeIcon", e);
+            call.reject(e.getMessage());
         }
     }
 
@@ -90,15 +83,12 @@ public class IconChangerPlugin extends Plugin {
         try {
             PackageManager packageManager = getContext().getPackageManager();
             String packageName = getContext().getPackageName();
+            String activeAlias = ".MainActivityAmpara";
 
-            String activeAlias = ".MainActivityAmpara"; // Default
-
-            // Verificar se a MainActivity principal está ativa
             int mainState = packageManager.getComponentEnabledSetting(new ComponentName(packageName, packageName + MAIN_ACTIVITY));
             if (mainState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || mainState == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
                 activeAlias = ".MainActivityAmpara";
             } else {
-                // Se não, procurar qual alias está ativo
                 for (String alias : ICON_ALIASES) {
                     int state = packageManager.getComponentEnabledSetting(new ComponentName(packageName, packageName + alias));
                     if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
@@ -112,7 +102,7 @@ public class IconChangerPlugin extends Plugin {
             ret.put("alias", activeAlias);
             call.resolve(ret);
         } catch (Exception e) {
-            call.reject("Error getting current icon: " + e.getMessage());
+            call.reject(e.getMessage());
         }
     }
 }
