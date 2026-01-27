@@ -52,12 +52,13 @@ const IconSelector: React.FC = () => {
       if (success) {
         setCurrentIconId(iconId);
         toast({
-          title: "Sucesso!",
-          description: "Ícone alterado. O app será reiniciado em instantes.",
+          title: "✅ Ícone Alterado!",
+          description: "Volte para a tela inicial. O novo ícone pode levar até 10 segundos para aparecer. Se não mudar, reinicie o celular.",
         });
+        // Não recarregar automaticamente para dar tempo do Android processar
         setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+          setLoading(false);
+        }, 3000);
       } else {
         throw new Error("Falha na troca");
       }
