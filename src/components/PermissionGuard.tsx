@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
+import BatteryOptimization from '../plugins/batteryOptimization';
+import KeepAlive from '../plugins/keepAlive';
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -36,6 +38,25 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
         const finalMic = await VoiceRecorder.hasAudioRecordingPermission();
         
         setHasPermissions(finalGeo.location === 'granted' && finalMic.value);
+      }
+
+      // 3. Check Battery Optimization (não bloqueia o app)
+      try {
+        const batteryStatus = await BatteryOptimization.isIgnoringBatteryOptimizations();
+        if (!batteryStatus.isIgnoring) {
+          console.log('[PermissionGuard] Requesting battery optimization exemption...');
+          await BatteryOptimization.requestIgnoreBatteryOptimizations();
+        }
+      } catch (error) {
+        console.error('[PermissionGuard] Error checking battery optimization:', error);
+      }
+
+      // 4. Start KeepAlive Service
+      try {
+        console.log('[PermissionGuard] Starting KeepAlive service...');
+        await KeepAlive.start();
+      } catch (error) {
+        console.error('[PermissionGuard] Error starting KeepAlive service:', error);
       }
     } catch (error) {
       console.error('[PermissionGuard] Error checking permissions:', error);

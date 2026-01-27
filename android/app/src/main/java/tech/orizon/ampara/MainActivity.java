@@ -9,6 +9,8 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import tech.orizon.ampara.plugins.SecureStoragePlugin;
+import tech.orizon.ampara.plugins.KeepAlivePlugin;
+import tech.orizon.ampara.plugins.BatteryOptimizationPlugin;
 
 public class MainActivity extends BridgeActivity {
     
@@ -37,6 +39,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         registerPlugin(SecureStoragePlugin.class);
+        registerPlugin(KeepAlivePlugin.class);
+        registerPlugin(BatteryOptimizationPlugin.class);
         
         // Garantir que pelo menos um alias esteja habilitado
         ensureAtLeastOneAliasEnabled();
