@@ -24,32 +24,25 @@ export const AVAILABLE_ICONS: IconOption[] = [
 export const useIconChanger = () => {
   const isNative = Capacitor.isNativePlatform();
 
-  const getPlugin = () => {
-    // Tentar acessar o plugin de várias formas para garantir compatibilidade
-    return (Capacitor as any).Plugins.IconChanger || (window as any).Capacitor?.Plugins?.IconChanger;
-  };
-
   const changeIcon = async (iconId: string) => {
-    if (!isNative) {
-      console.warn('Icon change is only available on native platforms');
-      return false;
-    }
+    if (!isNative) return false;
 
     const icon = AVAILABLE_ICONS.find(i => i.id === iconId);
     if (!icon) return false;
 
     try {
-      const plugin = getPlugin();
-      if (!plugin) {
-        console.error('IconChanger plugin not found in Capacitor.Plugins');
+      // Usar a interface direta injetada na WebView
+      const androidInterface = (window as any).AndroidIconChanger;
+      
+      if (androidInterface && typeof androidInterface.changeIcon === 'function') {
+        console.log('Calling direct AndroidIconChanger interface with:', icon.alias);
+        return androidInterface.changeIcon(icon.alias);
+      } else {
+        console.error('AndroidIconChanger interface not found');
         return false;
       }
-
-      console.log('Calling IconChanger.changeIcon with:', icon.alias);
-      const result = await plugin.changeIcon({ alias: icon.alias });
-      return !!result?.success;
     } catch (error) {
-      console.error('Error calling IconChanger:', error);
+      console.error('Error calling AndroidIconChanger:', error);
       return false;
     }
   };
@@ -58,16 +51,14 @@ export const useIconChanger = () => {
     if (!isNative) return 'ampara';
 
     try {
-      const plugin = getPlugin();
-      if (!plugin) return 'ampara';
-
-      const result = await plugin.getCurrentIcon();
-      const icon = AVAILABLE_ICONS.find(i => i.alias === result.alias);
-      return icon ? icon.id : 'ampara';
-    } catch (error) {
-      console.error('Error getting current icon:', error);
-      return 'ampara';
-    }
+      const androidInterface = (window as any).AndroidIconChanger;
+      if (androidInterface && typeof androidInterface.getCurrentIcon === 'function') {
+        const alias = androidInterface.getCurrentIcon();
+        const icon = AVAILABLE_ICONS.find(i => i.alias === alias);
+        return icon ? icon.id : 'ampara';
+      }
+    } catch (error) {}
+    return 'ampara';
   };
 
   return {
