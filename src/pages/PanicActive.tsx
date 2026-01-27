@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePanicContext } from '@/contexts/PanicContext';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
+import { PasswordValidationDialog } from '@/components/PasswordValidationDialog';
 
 const HOLD_DURATION_MS = 2000;
 
@@ -12,23 +13,48 @@ export function PanicActivePage() {
   const { toast } = useToast();
   const [isCancelling, setIsCancelling] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [isCoercionMode, setIsCoercionMode] = useState(false);
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const appState = useAppState();
   const panic = usePanicContext();
 
-  const handleCancelPanic = async () => {
+  const handlePasswordValidated = async (loginTipo: 'normal' | 'coacao') => {
+    setShowPasswordDialog(false);
     setIsCancelling(true);
     
+    if (loginTipo === 'coacao') {
+      // MODO COAÇÃO: Simula cancelamento mas mantém pânico ativo
+      console.log('[PanicActive] MODO COAÇÃO DETECTADO - Simulando cancelamento');
+      setIsCoercionMode(true);
+      
+      // Mostra feedback de "sucesso" para enganar agressor
+      toast({
+        title: 'Proteção desativada',
+        description: 'O modo pânico foi encerrado.',
+      });
+      
+      // Redireciona para Home (mas pânico continua ativo em background)
+      navigate('/');
+      
+      // NÃO chama deactivatePanic() - mantém tudo ativo
+      setIsCancelling(false);
+      return;
+    }
+    
+    // MODO NORMAL: Cancela pânico de verdade
+    console.log('[PanicActive] Cancelando pânico (modo normal)');
     await panic.deactivatePanic();
     appState.setStatus('normal');
+    
     toast({
       title: 'Proteção desativada',
       description: 'O modo pânico foi encerrado.',
     });
-    navigate('/');
     
+    navigate('/');
     setIsCancelling(false);
   };
 
@@ -45,11 +71,11 @@ export function PanicActivePage() {
       setHoldProgress(progress);
     }, 16);
     
-    // Trigger cancel after hold duration
+    // Trigger password dialog after hold duration
     holdTimerRef.current = setTimeout(() => {
       clearInterval(progressIntervalRef.current!);
       setHoldProgress(100);
-      handleCancelPanic();
+      setShowPasswordDialog(true);
     }, HOLD_DURATION_MS);
   };
 
@@ -69,7 +95,16 @@ export function PanicActivePage() {
   const isHolding = holdProgress > 0;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background safe-area-inset-top safe-area-inset-bottom p-6">
+    <>
+      <PasswordValidationDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        onValidated={handlePasswordValidated}
+        title="Confirmar Cancelamento"
+        description="Digite sua senha para cancelar o modo pânico"
+      />
+      
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background safe-area-inset-top safe-area-inset-bottom p-6">
       {/* Timer with pulse effect */}
       <motion.div
         animate={{ 
@@ -145,6 +180,7 @@ export function PanicActivePage() {
         )}
       </motion.button>
     </div>
+    </>
   );
 }
 
