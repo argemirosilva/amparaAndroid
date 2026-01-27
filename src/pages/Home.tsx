@@ -249,16 +249,11 @@ export function HomePage({ onLogout }: HomePageProps) {
           {/* Connectivity indicator */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50">
+              <div className="flex items-center gap-1.5">
                 {connectivity.isOnline ? (
                   <Wifi className="w-4 h-4 text-success" />
                 ) : (
                   <WifiOff className="w-4 h-4 text-destructive" />
-                )}
-                {connectivity.lastLatencyMs > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {connectivity.lastLatencyMs}ms
-                  </span>
                 )}
               </div>
             </TooltipTrigger>
