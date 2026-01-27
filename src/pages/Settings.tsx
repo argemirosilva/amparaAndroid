@@ -1,0 +1,361 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Lock, Calendar, Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Logo } from '@/components/Logo';
+import { useToast } from '@/hooks/use-toast';
+import { changePassword, updateSchedules, WeekSchedule } from '@/lib/api_settings';
+import { clearSessionToken } from '@/lib/api';
+import { WeeklyScheduleEditor } from '@/components/WeeklyScheduleEditor';
+
+export default function SettingsPage() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Change Password State
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [showSenhaAtual, setShowSenhaAtual] = useState(false);
+  const [showNovaSenha, setShowNovaSenha] = useState(false);
+  const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Monitoring Periods State
+  const [initialSchedule, setInitialSchedule] = useState<WeekSchedule>({});
+  const [modifiedSchedule, setModifiedSchedule] = useState<WeekSchedule>({});
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  // TODO: Load initial schedule from config service or API
+  // useEffect(() => {
+  //   // Load from ConfigService or make API call to get current schedule
+  // }, []);
+
+  // Change Password Handler
+  const handleChangePassword = async () => {
+    // Client-side validations
+    if (!senhaAtual.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Digite sua senha atual',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!novaSenha.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Digite a nova senha',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (novaSenha.length < 6) {
+      toast({
+        title: 'Erro',
+        description: 'A nova senha deve ter no mínimo 6 caracteres',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (novaSenha !== confirmarSenha) {
+      toast({
+        title: 'Erro',
+        description: 'As senhas não coincidem',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const result = await changePassword(senhaAtual, novaSenha);
+
+      if (result.error) {
+        // Check for session expiration
+        if (result.error.includes('Sessão')) {
+          await clearSessionToken();
+          toast({
+            title: 'Sessão Expirada',
+            description: 'Faça login novamente',
+            variant: 'destructive',
+          });
+          navigate('/login');
+          return;
+        }
+
+        toast({
+          title: 'Erro',
+          description: result.error,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (result.data?.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Senha alterada com sucesso',
+        });
+
+        // Clear fields
+        setSenhaAtual('');
+        setNovaSenha('');
+        setConfirmarSenha('');
+
+        // Close keyboard (blur all inputs)
+        document.querySelectorAll('input').forEach(input => input.blur());
+      } else {
+        toast({
+          title: 'Erro',
+          description: result.data?.error || 'Erro ao alterar senha',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('[Settings] Error changing password:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro inesperado ao alterar senha',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  // Save Schedule Handler
+  const handleSaveSchedule = async () => {
+    setIsSavingSchedule(true);
+
+    try {
+      const result = await updateSchedules(modifiedSchedule);
+
+      if (result.error) {
+        // Check for session expiration
+        if (result.error.includes('Sessão')) {
+          await clearSessionToken();
+          toast({
+            title: 'Sessão Expirada',
+            description: 'Faça login novamente',
+            variant: 'destructive',
+          });
+          navigate('/login');
+          return;
+        }
+
+        toast({
+          title: 'Erro',
+          description: result.error,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (result.data?.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Agenda atualizada com sucesso',
+        });
+
+        // Update initial schedule to reflect saved changes
+        setInitialSchedule({ ...initialSchedule, ...modifiedSchedule });
+        setModifiedSchedule({});
+
+        // TODO: Trigger config refresh to update monitoring status
+        // This should update any component showing "próximo período"
+      } else {
+        toast({
+          title: 'Erro',
+          description: result.data?.error || 'Erro ao atualizar agenda',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('[Settings] Error updating schedule:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro inesperado ao atualizar agenda',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col safe-area-inset-top safe-area-inset-bottom">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3"
+      >
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/')}
+            className="h-9 w-9"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Logo size="sm" />
+            <h1 className="text-lg font-semibold">Configurações</h1>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto px-4 py-6 space-y-6">
+        
+        {/* Change Password Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border rounded-lg p-6"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Lock className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Alterar Senha</h2>
+          </div>
+
+          <div className="space-y-4">
+            {/* Senha Atual */}
+            <div className="space-y-2">
+              <Label htmlFor="senha-atual">Senha Atual</Label>
+              <div className="relative">
+                <Input
+                  id="senha-atual"
+                  type={showSenhaAtual ? 'text' : 'password'}
+                  value={senhaAtual}
+                  onChange={(e) => setSenhaAtual(e.target.value)}
+                  placeholder="Digite sua senha atual"
+                  disabled={isChangingPassword}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSenhaAtual(!showSenhaAtual)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showSenhaAtual ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Nova Senha */}
+            <div className="space-y-2">
+              <Label htmlFor="nova-senha">Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="nova-senha"
+                  type={showNovaSenha ? 'text' : 'password'}
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  placeholder="Digite a nova senha (mín. 6 caracteres)"
+                  disabled={isChangingPassword}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNovaSenha(!showNovaSenha)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showNovaSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirmar Nova Senha */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmar-senha">Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="confirmar-senha"
+                  type={showConfirmarSenha ? 'text' : 'password'}
+                  value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
+                  placeholder="Digite a nova senha novamente"
+                  disabled={isChangingPassword}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmarSenha(!showConfirmarSenha)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              onClick={handleChangePassword}
+              disabled={isChangingPassword}
+              className="w-full"
+            >
+              {isChangingPassword ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Alterando...
+                </>
+              ) : (
+                'Salvar Nova Senha'
+              )}
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Monitoring Periods Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card border border-border rounded-lg p-6"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Períodos de Monitoramento</h2>
+          </div>
+
+          <p className="text-sm text-muted-foreground mb-4">
+            Configure os dias e horários em que o Ampara deve monitorar o ambiente.
+          </p>
+
+          <WeeklyScheduleEditor
+            initialSchedule={initialSchedule}
+            onScheduleChange={setModifiedSchedule}
+          />
+
+          {/* Save Button */}
+          {Object.keys(modifiedSchedule).length > 0 && (
+            <Button
+              onClick={handleSaveSchedule}
+              disabled={isSavingSchedule}
+              className="w-full mt-4"
+            >
+              {isSavingSchedule ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Agenda'
+              )}
+            </Button>
+          )}
+        </motion.div>
+      </div>
+    </div>
+  );
+}
