@@ -21,6 +21,11 @@ export interface UpdateSchedulesResponse {
   success: boolean;
 }
 
+export interface ValidatePasswordResponse {
+  success: boolean;
+  loginTipo: 'normal' | 'coacao';
+}
+
 export interface SchedulePeriod {
   inicio: string; // HH:MM
   fim: string; // HH:MM
@@ -122,5 +127,23 @@ export async function updateSchedules(
   
   return await settingsApi<UpdateSchedulesResponse>('update_schedules', {
     periodos_semana: periodosSemanaPatch,
+  });
+}
+
+// ============================================
+// Validate Password (for coercion detection)
+// ============================================
+
+/**
+ * Validate password and detect coercion
+ * Used before accessing Settings or Logout
+ */
+export async function validatePassword(
+  senha: string
+): Promise<ApiResponse<ValidatePasswordResponse>> {
+  console.log('[Settings API] Calling validatePassword');
+  
+  return await settingsApi<ValidatePasswordResponse>('validate_password', {
+    senha,
   });
 }

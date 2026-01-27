@@ -7,13 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
-import { changePassword, updateSchedules, WeekSchedule } from '@/lib/api_settings';
+import { changePassword, updateSchedules, WeekSchedule, validatePassword } from '@/lib/api_settings';
 import { clearSessionToken } from '@/lib/api';
 import { WeeklyScheduleEditor } from '@/components/WeeklyScheduleEditor';
+import { PasswordValidationDialog } from '@/components/PasswordValidationDialog';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Password Validation State (for coercion detection)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(true);
+  const [isValidatingPassword, setIsValidatingPassword] = useState(false);
+  const [isCoercionMode, setIsCoercionMode] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Change Password State
   const [senhaAtual, setSenhaAtual] = useState('');
@@ -34,8 +41,72 @@ export default function SettingsPage() {
   //   // Load from ConfigService or make API call to get current schedule
   // }, []);
 
-  // Change Password Handler
+  // Password Validation Handler
+  const handlePasswordValidation = async (senha: string) => {
+    setIsValidatingPassword(true);
+
+    try {
+      const result = await validatePassword(senha);
+
+      if (result.error) {
+        toast({
+          title: 'Erro',
+          description: result.error,
+          variant: 'destructive',
+        });
+        setIsValidatingPassword(false);
+        return;
+      }
+
+      if (result.data?.success) {
+        const isCoercion = result.data.loginTipo === 'coacao';
+        setIsCoercionMode(isCoercion);
+        setIsAuthenticated(true);
+        setShowPasswordDialog(false);
+
+        if (isCoercion) {
+          console.log('[Settings] Coercion mode activated - changes will be simulated');
+        }
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'Senha incorreta',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('[Settings] Error validating password:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao validar senha',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsValidatingPassword(false);
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    navigate('/');
+  };
+
+  // Change Password Handler (respects coercion mode)
   const handleChangePassword = async () => {
+    // In coercion mode, simulate success without actually changing
+    if (isCoercionMode) {
+      console.log('[Settings] Coercion mode: simulating password change');
+      toast({
+        title: 'Sucesso',
+        description: 'Senha alterada com sucesso',
+      });
+      setSenhaAtual('');
+      setNovaSenha('');
+      setConfirmarSenha('');
+      document.querySelectorAll('input').forEach(input => input.blur());
+      return;
+    }
+
+    // Normal mode: actual password change
     // Client-side validations
     if (!senhaAtual.trim()) {
       toast({
@@ -131,10 +202,25 @@ export default function SettingsPage() {
     }
   };
 
-  // Save Schedule Handler
+  // Save Schedule Handler (respects coercion mode)
   const handleSaveSchedule = async () => {
     setIsSavingSchedule(true);
 
+    // In coercion mode, simulate success without actually saving
+    if (isCoercionMode) {
+      console.log('[Settings] Coercion mode: simulating schedule save');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+      toast({
+        title: 'Sucesso',
+        description: 'Agenda atualizada com sucesso',
+      });
+      setInitialSchedule({ ...initialSchedule, ...modifiedSchedule });
+      setModifiedSchedule({});
+      setIsSavingSchedule(false);
+      return;
+    }
+
+    // Normal mode: actual schedule save
     try {
       const result = await updateSchedules(modifiedSchedule);
 
@@ -189,6 +275,25 @@ export default function SettingsPage() {
       setIsSavingSchedule(false);
     }
   };
+
+  // Don't render settings until authenticated
+  if (!isAuthenticated) {
+    return (
+      <>
+        <PasswordValidationDialog
+          isOpen={showPasswordDialog}
+          title="Acesso às Configurações"
+          description="Digite sua senha para acessar as configurações do aplicativo."
+          onValidate={handlePasswordValidation}
+          onCancel={handlePasswordCancel}
+          isValidating={isValidatingPassword}
+        />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col safe-area-inset-top safe-area-inset-bottom">

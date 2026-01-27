@@ -8,7 +8,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, X, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { loginCustomizado, getUserEmail } from '@/lib/api';
+import { getUserEmail } from '@/lib/api';
+import { validatePassword } from '@/lib/api_settings';
+import { App } from '@capacitor/app';
 
 interface LogoutConfirmDialogProps {
   isOpen: boolean;
@@ -40,8 +42,8 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
     setError(null);
 
     try {
-      // Validate password by attempting login
-      const result = await loginCustomizado(email, password);
+      // Validate password and check for coercion
+      const result = await validatePassword(password);
       
       if (result.error) {
         setError('Senha incorreta');
@@ -49,11 +51,33 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
         return;
       }
 
-      // Password is correct, proceed with logout
+      if (!result.data?.success) {
+        setError('Senha incorreta');
+        setIsLoading(false);
+        return;
+      }
+
+      const isCoercion = result.data.loginTipo === 'coacao';
+
       setIsLoading(false);
       setPassword('');
-      onConfirm();
-    } catch {
+
+      if (isCoercion) {
+        // Coercion mode: minimize app instead of logging out
+        console.log('[Logout] Coercion detected - minimizing app instead of logout');
+        try {
+          await App.minimizeApp();
+        } catch (error) {
+          console.error('[Logout] Failed to minimize app:', error);
+          // Fallback: just close the dialog
+        }
+        onClose();
+      } else {
+        // Normal mode: proceed with actual logout
+        onConfirm();
+      }
+    } catch (error) {
+      console.error('[Logout] Error validating password:', error);
       setError('Erro ao verificar senha');
       setIsLoading(false);
     }
