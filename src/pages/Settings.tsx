@@ -44,10 +44,11 @@ export default function SettingsPage() {
       try {
         const config = getCurrentConfig();
         if (config?.periodos_semana) {
-          console.log('[Settings] Loading existing schedule from ConfigService:', config.periodos_semana);
+          console.log('[Settings] Loading existing schedule from ConfigService:', JSON.stringify(config.periodos_semana, null, 2));
           setInitialSchedule(config.periodos_semana as WeekSchedule);
         } else {
           console.log('[Settings] No periodos_semana found in ConfigService');
+          console.log('[Settings] Full config:', JSON.stringify(config, null, 2));
         }
       } catch (error) {
         console.error('[Settings] Failed to load schedule:', error);
