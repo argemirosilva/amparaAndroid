@@ -12,6 +12,8 @@ export interface KeepAlivePlugin {
   stop(): Promise<void>;
 }
 
-const KeepAlive = registerPlugin<KeepAlivePlugin>('KeepAlive');
+const KeepAlive = registerPlugin<KeepAlivePlugin>('KeepAlive', {
+  web: () => import('./keepAliveWeb').then(m => new m.KeepAliveWeb()),
+});
 
 export default KeepAlive;

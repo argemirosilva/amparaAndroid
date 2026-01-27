@@ -12,6 +12,8 @@ export interface BatteryOptimizationPlugin {
   requestIgnoreBatteryOptimizations(): Promise<void>;
 }
 
-const BatteryOptimization = registerPlugin<BatteryOptimizationPlugin>('BatteryOptimization');
+const BatteryOptimization = registerPlugin<BatteryOptimizationPlugin>('BatteryOptimization', {
+  web: () => import('./batteryOptimizationWeb').then(m => new m.BatteryOptimizationWeb()),
+});
 
 export default BatteryOptimization;

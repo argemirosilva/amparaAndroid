@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
+import { Capacitor } from '@capacitor/core';
 import BatteryOptimization from '../plugins/batteryOptimization';
 import KeepAlive from '../plugins/keepAlive';
 
@@ -20,6 +21,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
       const micStatus = await VoiceRecorder.hasAudioRecordingPermission();
 
       if (geoStatus.location === 'granted' && micStatus.value) {
+        console.log('[PermissionGuard] ✅ All basic permissions granted');
         setHasPermissions(true);
       } else {
         // Request them
@@ -39,28 +41,43 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
         
         setHasPermissions(finalGeo.location === 'granted' && finalMic.value);
       }
-
-      // 3. Check Battery Optimization (não bloqueia o app)
-      try {
-        const batteryStatus = await BatteryOptimization.isIgnoringBatteryOptimizations();
-        if (!batteryStatus.isIgnoring) {
-          console.log('[PermissionGuard] Requesting battery optimization exemption...');
-          await BatteryOptimization.requestIgnoreBatteryOptimizations();
-        }
-      } catch (error) {
-        console.error('[PermissionGuard] Error checking battery optimization:', error);
-      }
-
-      // 4. Start KeepAlive Service
-      try {
-        console.log('[PermissionGuard] Starting KeepAlive service...');
-        await KeepAlive.start();
-      } catch (error) {
-        console.error('[PermissionGuard] Error starting KeepAlive service:', error);
-      }
     } catch (error) {
       console.error('[PermissionGuard] Error checking permissions:', error);
       setHasPermissions(false);
+    }
+
+    // 3. Check Battery Optimization (apenas no Android, não bloqueia o app)
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        console.log('[PermissionGuard] 🔋 Checking battery optimization...');
+        const batteryStatus = await BatteryOptimization.isIgnoringBatteryOptimizations();
+        console.log('[PermissionGuard] Battery optimization status:', batteryStatus);
+        
+        if (!batteryStatus.isIgnoring) {
+          console.log('[PermissionGuard] ⚠️ App is being optimized, requesting exemption...');
+          await BatteryOptimization.requestIgnoreBatteryOptimizations();
+          console.log('[PermissionGuard] ✅ Battery optimization dialog opened');
+        } else {
+          console.log('[PermissionGuard] ✅ App already ignoring battery optimizations');
+        }
+      } catch (error) {
+        console.error('[PermissionGuard] ❌ Error with battery optimization:', error);
+      }
+    } else {
+      console.log('[PermissionGuard] Skipping battery optimization (not Android)');
+    }
+
+    // 4. Start KeepAlive Service (apenas no Android)
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        console.log('[PermissionGuard] 🚀 Starting KeepAlive service...');
+        await KeepAlive.start();
+        console.log('[PermissionGuard] ✅ KeepAlive service started successfully');
+      } catch (error) {
+        console.error('[PermissionGuard] ❌ Error starting KeepAlive service:', error);
+      }
+    } else {
+      console.log('[PermissionGuard] Skipping KeepAlive service (not Android)');
     }
   };
 
