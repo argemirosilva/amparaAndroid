@@ -242,9 +242,8 @@ export default function AboutPage() {
                       </p>
                     </div>
 
-                    {/* Período de Monitoramento */}
-                    <di                      {/* Configurações */}
-                      <div>
+                    {/* Configurações */}
+                    <div>
                         <h3 className="font-semibold text-foreground mb-3">⚙️ Configurações: Deixe o App do Seu Jeito</h3>
                         <p className="mb-3">
                           No menu, você encontra a tela de <strong>Configurações</strong>. Lá você pode:
@@ -257,10 +256,10 @@ export default function AboutPage() {
                             <strong>Gerenciar Períodos de Monitoramento:</strong> Escolha exatamente os dias e horários em que o Ampara deve ficar ativo. Você pode adicionar, editar ou remover períodos para cada dia da semana.
                           </li>
                         </ul>
-                      </div>
+                    </div>
 
-                      {/* Proteção Contra Coação */}
-                      <div>
+                    {/* Proteção Contra Coação */}
+                    <div>
                         <h3 className="font-semibold text-foreground mb-3">🛡️ Proteção Contra Coação: Sua Segurança Secreta</h3>
                         <p className="mb-3">
                           O Ampara tem uma camada de segurança especial para situações em que você pode ser forçada a desativar o aplicativo.
@@ -282,9 +281,11 @@ export default function AboutPage() {
                             Isso engana o agressor, fazendo-o pensar que conseguiu desativar sua proteção, enquanto você continua segura.
                           </p>
                         </div>
-                      </div>
+                    </div>
 
-                      <h3 className="font-semibold text-foreground mb-3">🗓️ Período de Monitoramento</h3>Quando o App te Protege?</h3>
+                    {/* Período de Monitoramento */}
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-3">🗓️ Período de Monitoramento: Quando o App te Protege?</h3>
                       <p className="mb-3">
                         Você decide em quais dias e horários o Ampara deve ficar de prontidão. Fora desses períodos, o app economiza bateria e não monitora o ambiente.
                       </p>
@@ -297,7 +298,7 @@ export default function AboutPage() {
                       </ul>
 
                       <p className="text-xs mt-3 bg-blue-50 dark:bg-blue-950/20 p-2 rounded">
-                        💡 <strong>Dica:</strong> Para ajustar os horários, vá em <strong>Menu → Agenda de Monitoramento</strong>.
+                        💡 <strong>Dica:</strong> Para ajustar os horários, vá em <strong>Menu → Configurações → Períodos de Monitoramento</strong>.
                       </p>
                     </div>
 
