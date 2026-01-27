@@ -34,7 +34,7 @@
             android:launchMode="singleTask"
             android:exported="true" />
 
-        <!-- Alias Padrão (Ampara Original) - HABILITADO por padrão -->
+        <!-- Alias Padrão (Ampara Original) - Será habilitado programaticamente -->
         <activity-alias
             android:name="tech.orizon.ampara.MainActivityAmpara"
             android:targetActivity="tech.orizon.ampara.MainActivity"
@@ -42,7 +42,7 @@
             android:roundIcon="@mipmap/ic_launcher_ampara"
             android:label="Ampara"
             android:exported="true"
-            android:enabled="true">
+            android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -38,10 +38,47 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         registerPlugin(SecureStoragePlugin.class);
         
+        // Garantir que pelo menos um alias esteja habilitado
+        ensureAtLeastOneAliasEnabled();
+        
         // Injetar a interface JavaScript diretamente na WebView do Capacitor
         WebView webView = getBridge().getWebView();
         if (webView != null) {
             webView.addJavascriptInterface(new IconChangerInterface(), "AndroidIconChanger");
+        }
+    }
+    
+    /**
+     * Garante que pelo menos um alias esteja habilitado (senão o app não aparece no launcher)
+     */
+    private void ensureAtLeastOneAliasEnabled() {
+        String currentEnabled = getRealEnabledAlias();
+        
+        // Se nenhum alias está habilitado, habilitar o padrão
+        if (currentEnabled == null || currentEnabled.equals(DEFAULT_ALIAS)) {
+            PackageManager pm = getPackageManager();
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            String savedAlias = prefs.getString(PREF_CURRENT_ALIAS, DEFAULT_ALIAS);
+            
+            try {
+                pm.setComponentEnabledSetting(
+                    new ComponentName(getApplicationContext(), savedAlias),
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                );
+                Log.d(TAG, "Enabled saved alias on startup: " + savedAlias);
+            } catch (Exception e) {
+                Log.e(TAG, "Error enabling saved alias, falling back to default", e);
+                try {
+                    pm.setComponentEnabledSetting(
+                        new ComponentName(getApplicationContext(), DEFAULT_ALIAS),
+                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                        PackageManager.DONT_KILL_APP
+                    );
+                } catch (Exception e2) {
+                    Log.e(TAG, "Error enabling default alias", e2);
+                }
+            }
         }
     }
 
@@ -58,14 +95,13 @@ public class MainActivity extends BridgeActivity {
                 );
                 
                 // ENABLED = 1, DEFAULT = 0 (usa o valor do manifest), DISABLED = 2
-                // Se for ENABLED ou DEFAULT (e é o padrão no manifest), está ativo
+                // Apenas ENABLED conta como ativo (não confiar em DEFAULT)
                 if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
                     Log.d(TAG, "Found enabled alias: " + alias + " (state: ENABLED)");
                     return alias;
-                } else if (state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && alias.equals(DEFAULT_ALIAS)) {
-                    Log.d(TAG, "Found enabled alias: " + alias + " (state: DEFAULT, is default in manifest)");
-                    return alias;
                 }
+                
+                Log.d(TAG, "Alias " + alias + " state: " + state);
             } catch (Exception e) {
                 Log.e(TAG, "Error checking alias: " + alias, e);
             }
@@ -103,19 +139,15 @@ public class MainActivity extends BridgeActivity {
             try {
                 PackageManager pm = getPackageManager();
                 
-                // 1. Desabilitar TODOS os outros aliases primeiro
+                // 1. Desabilitar TODOS os outros aliases primeiro (usar DISABLED para todos)
                 for (String alias : ALL_ALIASES) {
                     if (!alias.equals(fullTargetAlias)) {
-                        int stateToSet = alias.equals(DEFAULT_ALIAS) 
-                            ? PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
-                            : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
-                        
                         pm.setComponentEnabledSetting(
                             new ComponentName(getApplicationContext(), alias),
-                            stateToSet,
+                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                             PackageManager.DONT_KILL_APP
                         );
-                        Log.d(TAG, "Disabled: " + alias + " (state: " + stateToSet + ")");
+                        Log.d(TAG, "Disabled: " + alias);
                     }
                 }
                 
