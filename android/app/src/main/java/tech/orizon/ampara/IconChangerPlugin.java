@@ -34,6 +34,7 @@ public class IconChangerPlugin extends Plugin {
         }
 
         try {
+            android.util.Log.d("IconChanger", "Attempting to change icon to: " + targetAlias);
             PackageManager packageManager = getContext().getPackageManager();
             String packageName = getContext().getPackageName();
 
@@ -74,10 +75,12 @@ public class IconChangerPlugin extends Plugin {
                 }
             }
 
+            android.util.Log.d("IconChanger", "Icon change successful");
             JSObject ret = new JSObject();
             ret.put("success", true);
             call.resolve(ret);
         } catch (Exception e) {
+            android.util.Log.e("IconChanger", "Error changing icon", e);
             call.reject("Error changing icon: " + e.getMessage());
         }
     }
