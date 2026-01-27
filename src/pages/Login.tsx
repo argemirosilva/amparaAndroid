@@ -18,7 +18,6 @@ export function LoginPage({ onLoginSuccess, onLogout }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
   const [showConnecting, setShowConnecting] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
@@ -33,14 +32,6 @@ export function LoginPage({ onLoginSuccess, onLogout }: LoginPageProps) {
       description: 'Você foi desconectado.',
     });
   };
-
-  // Hide splash after delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,74 +95,14 @@ export function LoginPage({ onLoginSuccess, onLogout }: LoginPageProps) {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center p-6 safe-area-inset-top safe-area-inset-bottom transition-colors duration-500 ${showSplash ? 'bg-white' : 'bg-[hsl(210,20%,98%)]'}`}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 safe-area-inset-top safe-area-inset-bottom bg-[hsl(210,20%,98%)]">
       {/* Background gradient effect - subtle for ice white */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-primary/8 to-secondary/6 blur-[100px] rounded-full" />
       </div>
 
       <AnimatePresence mode="wait">
-        {showSplash ? (
-          /* Splash Screen - Logo only */
-          <motion.div
-            key="splash"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9, y: -20 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="relative z-10 flex flex-col items-center"
-          >
-            {/* Logo with pulse animation */}
-            <motion.div
-              animate={{ scale: [1, 1.03, 1] }}
-              transition={{ 
-                duration: 2, 
-                repeat: Infinity, 
-                ease: 'easeInOut' 
-              }}
-            >
-              <LogoWithText size="lg" />
-            </motion.div>
-            
-            {/* Tagline */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
-              className="text-muted-foreground/60 text-sm mt-4"
-            >
-              Você não está sozinha
-            </motion.p>
-
-            {/* Loading indicator */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8, duration: 0.4 }}
-              className="mt-8 flex flex-col items-center gap-3"
-            >
-              <div className="flex gap-1.5">
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-primary/60"
-                    animate={{ 
-                      scale: [1, 1.3, 1],
-                      opacity: [0.5, 1, 0.5]
-                    }}
-                    transition={{
-                      duration: 0.8,
-                      repeat: Infinity,
-                      delay: i * 0.15,
-                      ease: 'easeInOut'
-                    }}
-                  />
-                ))}
-              </div>
-              <span className="text-xs text-muted-foreground/50">Iniciando...</span>
-            </motion.div>
-          </motion.div>
-        ) : showConnecting ? (
+        {showConnecting ? (
           /* Connecting Screen - Centered container with logo background */
           <motion.div
             key="connecting"
@@ -229,8 +160,6 @@ export function LoginPage({ onLoginSuccess, onLogout }: LoginPageProps) {
         </motion.div>
 
         {/* Login Form */}
-
-        {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Email Field */}
           <motion.div 
@@ -279,73 +208,55 @@ export function LoginPage({ onLoginSuccess, onLogout }: LoginPageProps) {
           </motion.div>
 
           {/* Forgot Password */}
-          <motion.button
-            type="button"
-            onClick={handleForgotPassword}
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.3 }}
-            className="text-xs text-primary hover:text-primary/80 transition-colors"
-            disabled={auth.isLoading}
+            className="flex justify-end"
           >
-            Esqueceu sua senha?
-          </motion.button>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-xs text-primary hover:underline"
+              disabled={auth.isLoading}
+            >
+              Esqueci minha senha
+            </button>
+          </motion.div>
 
           {/* Submit Button */}
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.3 }}
           >
             <Button
               type="submit"
-              className="w-full h-11 text-base font-semibold bg-gradient-primary hover:opacity-90 transition-opacity rounded-lg"
               disabled={auth.isLoading}
+              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-sm shadow-sm"
             >
-              {auth.isLoading ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                />
-              ) : (
-                'Entrar'
-              )}
+              {auth.isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
-          </motion.div>
-
-          {/* Logout option */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7, duration: 0.3 }}
-            className="pt-3 text-center border-t border-border/50 mt-4"
-          >
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-              disabled={auth.isLoading}
-            >
-              Sair do aplicativo
-            </button>
           </motion.div>
         </form>
 
-          </motion.div>
+        {/* Footer */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.4 }}
+          className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground/60"
+        >
+          <span>Powered by</span>
+          <img 
+            src={orizonLogo} 
+            alt="Orizon Tech" 
+            className="h-3 opacity-60"
+          />
+        </motion.div>
+      </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Powered by footer - always visible */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showSplash ? 0 : 1 }}
-        transition={{ delay: 0.8, duration: 0.5 }}
-        className="absolute bottom-6 flex flex-col items-center gap-0.5"
-      >
-        <span className="text-[6px] text-muted-foreground/50">powered by</span>
-        <img src={orizonLogo} alt="Orizon Tech" className="h-[25px] object-contain opacity-80 mix-blend-multiply" />
-      </motion.footer>
     </div>
   );
 }
