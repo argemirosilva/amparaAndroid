@@ -1,43 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, HelpCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { ArrowLeft, FileText, HelpCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Logo } from '@/components/Logo';
 
 export default function AboutPage() {
   const navigate = useNavigate();
-  const [helpContent, setHelpContent] = useState<string | null>(null);
-  const [isLoadingHelp, setIsLoadingHelp] = useState(false);
-  const [helpError, setHelpError] = useState(false);
-
-  // Load help content from online source
-  const loadHelpContent = async () => {
-    setIsLoadingHelp(true);
-    setHelpError(false);
-    
-    try {
-      // TODO: Replace with actual endpoint URL
-      const response = await fetch('https://amparamulher.com.br/api/help-content');
-      
-      if (!response.ok) {
-        throw new Error('Failed to load help content');
-      }
-      
-      const data = await response.json();
-      setHelpContent(data.content || 'Conteúdo de ajuda não disponível.');
-    } catch (error) {
-      console.error('[About] Failed to load help content:', error);
-      setHelpError(true);
-    } finally {
-      setIsLoadingHelp(false);
-    }
-  };
-
-  useEffect(() => {
-    loadHelpContent();
-  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col safe-area-inset-top safe-area-inset-bottom">
@@ -194,34 +164,8 @@ export default function AboutPage() {
             >
               <h2 className="text-xl font-semibold text-foreground mb-4">Manual de Uso</h2>
 
-              {isLoadingHelp && (
-                <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-muted-foreground">Carregando ajuda...</p>
-                </div>
-              )}
-
-              {helpError && !isLoadingHelp && (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <HelpCircle className="h-12 w-12 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground text-center">
-                    Ajuda indisponível no momento.
-                    <br />
-                    Verifique sua conexão e tente novamente.
-                  </p>
-                  <Button
-                    onClick={loadHelpContent}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Tentar novamente
-                  </Button>
-                </div>
-              )}
-
-              {!isLoadingHelp && !helpError && (
-                <div className="prose prose-sm max-w-none text-muted-foreground">
+              {/* Manual estático */}
+              <div className="prose prose-sm max-w-none text-muted-foreground">
                   {/* Manual de Uso */}
                   <section className="space-y-6">
                     {/* Introdução */}
@@ -414,7 +358,7 @@ export default function AboutPage() {
                     </div>
                   </section>
                 </div>
-              )}
+              </div>
             </motion.div>
           </TabsContent>
         </Tabs>
