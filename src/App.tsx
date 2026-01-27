@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "./pages/Login";
 import { HomePage } from "./pages/Home";
 import { initializeSession, isAuthenticated, reloadSession, clearSession } from '@/services/sessionService';
-import { validateSessionToken } from '@/lib/api_validate_token';
 import { initializeConfigService } from '@/services/configService';
 import { startPingService, stopPingService } from '@/services/connectivityService';
 import { initializeBackgroundStateManager } from '@/services/backgroundStateManager';
@@ -47,21 +46,9 @@ const App = () => {
         const authenticated = isAuthenticated();
         console.log('[App] Authentication status:', authenticated);
         
-        // If authenticated, validate token with server
-        if (authenticated) {
-          console.log('[App] Validating session token with server...');
-          const isTokenValid = await validateSessionToken();
-          
-          if (!isTokenValid) {
-            console.log('[App] Token is invalid, forcing logout');
-            await clearSession();
-            setAuthState(false);
-            return;
-          }
-          
-          console.log('[App] Token is valid');
-        }
-        
+        // Persist session - don't validate token on app open
+        // Token will be validated when making API calls
+        // If token is invalid, API will return 401 and force logout
         setAuthState(authenticated);
       } catch (e) {
         console.error('[App] Session initialization failed:', e);

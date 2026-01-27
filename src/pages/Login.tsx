@@ -22,6 +22,14 @@ export function LoginPage({ onLoginSuccess, onLogout }: LoginPageProps) {
   const { toast } = useToast();
   const auth = useAuth();
 
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    if (auth.isAuthenticated) {
+      console.log('[Login] User already authenticated, redirecting to home...');
+      onLoginSuccess();
+    }
+  }, [auth.isAuthenticated, onLoginSuccess]);
+
   const handleLogout = () => {
     if (onLogout) {
       onLogout();
