@@ -89,7 +89,14 @@ export function PanicButton({
         <div className="flex flex-col items-center justify-center text-white z-10">
           {isLoading ? (
             <>
-              <span className="text-lg font-bold tracking-wider">Aguarde...</span>
+              {/* Spinner animation */}
+              <motion.div
+                className="w-10 h-10 border-4 border-white border-t-transparent rounded-full mb-2"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+              />
+              <span className="text-base font-bold tracking-wider">ENVIANDO...</span>
+              <span className="text-xs mt-1 opacity-80">Aguarde</span>
             </>
           ) : (
             <>

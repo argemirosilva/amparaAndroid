@@ -356,8 +356,8 @@ export function HomePage({ onLogout }: HomePageProps) {
                   onHoldStart={handlePanicStart}
                   onHoldEnd={handlePanicEnd}
                   isActivating={panic.isActivating}
-                  disabled={recording.isRecording}
-                  isLoading={isConfigLoading}
+                  disabled={recording.isRecording || panic.isSendingToServer}
+                  isLoading={panic.isSendingToServer}
                 />
               </motion.div>
               
