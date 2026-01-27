@@ -19,6 +19,9 @@ export interface ChangePasswordResponse {
 
 export interface UpdateSchedulesResponse {
   success: boolean;
+  message?: string;
+  periodos_atualizados?: number;
+  errors?: string[];
 }
 
 export interface ValidatePasswordResponse {

@@ -246,9 +246,11 @@ export default function SettingsPage() {
       }
 
       if (result.data?.success) {
+        // Full success
+        const message = result.data.message || 'Agenda atualizada com sucesso';
         toast({
           title: 'Sucesso',
-          description: 'Agenda atualizada com sucesso',
+          description: message,
         });
 
         // Update initial schedule to reflect saved changes
@@ -258,11 +260,37 @@ export default function SettingsPage() {
         // TODO: Trigger config refresh to update monitoring status
         // This should update any component showing "próximo período"
       } else {
+        // Partial success or full error
+        const errorMessage = result.data?.message || 'Erro ao atualizar agenda';
+        const errors = result.data?.errors || [];
+        
+        // Show main message
         toast({
-          title: 'Erro',
-          description: result.data?.error || 'Erro ao atualizar agenda',
-          variant: 'destructive',
+          title: errors.length > 0 ? 'Atenção' : 'Erro',
+          description: errorMessage,
+          variant: errors.length > 0 ? 'default' : 'destructive',
         });
+
+        // Show individual errors if present
+        if (errors.length > 0) {
+          setTimeout(() => {
+            errors.forEach((error: string, index: number) => {
+              setTimeout(() => {
+                toast({
+                  title: 'Erro de Validação',
+                  description: error,
+                  variant: 'destructive',
+                });
+              }, index * 500);
+            });
+          }, 500);
+        }
+
+        // If partial success, update only the successful changes
+        if (result.data?.periodos_atualizados && result.data.periodos_atualizados > 0) {
+          setInitialSchedule({ ...initialSchedule, ...modifiedSchedule });
+          setModifiedSchedule({});
+        }
       }
     } catch (error) {
       console.error('[Settings] Error updating schedule:', error);
