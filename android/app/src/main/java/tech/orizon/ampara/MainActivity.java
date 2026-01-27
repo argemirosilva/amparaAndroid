@@ -40,16 +40,8 @@ public class MainActivity extends BridgeActivity {
                 PackageManager packageManager = getPackageManager();
                 String packageName = getPackageName();
 
-                // 1. Gerenciar MainActivity principal
-                int mainState = targetAlias.equals(".MainActivityAmpara") 
-                    ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED 
-                    : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
-                
-                packageManager.setComponentEnabledSetting(
-                    new ComponentName(packageName, packageName + MAIN_ACTIVITY),
-                    mainState,
-                    PackageManager.DONT_KILL_APP
-                );
+                // 1. MainActivity SEMPRE fica habilitada para garantir que o app possa ser aberto
+                // Apenas os aliases é que alternam o ícone visível no launcher
 
                 // 2. Gerenciar Aliases
                 for (String alias : ICON_ALIASES) {
@@ -75,18 +67,15 @@ public class MainActivity extends BridgeActivity {
                 PackageManager packageManager = getPackageManager();
                 String packageName = getPackageName();
 
-                int mainState = packageManager.getComponentEnabledSetting(new ComponentName(packageName, packageName + MAIN_ACTIVITY));
-                if (mainState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || mainState == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
-                    return ".MainActivityAmpara";
-                } else {
-                    for (String alias : ICON_ALIASES) {
-                        int state = packageManager.getComponentEnabledSetting(new ComponentName(packageName, packageName + alias));
-                        if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
-                            return alias;
-                        }
+                // Verificar qual alias está ativo
+                for (String alias : ICON_ALIASES) {
+                    int state = packageManager.getComponentEnabledSetting(new ComponentName(packageName, packageName + alias));
+                    if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+                        return alias;
                     }
                 }
             } catch (Exception e) {}
+            // Se nenhum alias estiver ativo, retornar o padrão
             return ".MainActivityAmpara";
         }
     }
