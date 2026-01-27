@@ -10,6 +10,7 @@ interface PermissionGuardProps {
 }
 
 export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) => {
+  console.log('🚨🚨🚨 [PermissionGuard] COMPONENT MOUNTED! 🚨🚨🚨');
   const [hasPermissions, setHasPermissions] = useState<boolean | null>(null);
 
   const checkAndRequestPermissions = async () => {
