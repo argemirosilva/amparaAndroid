@@ -299,8 +299,48 @@ export default function AboutPage() {
                     </div>
 
                     {/* Período de Monitoramento */}
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-3">🗓️ Período de Monitoramento: Quando o App te Protege?</h3>
+                    <di                      {/* Configurações */}
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-3">⚙️ Configurações: Deixe o App do Seu Jeito</h3>
+                        <p className="mb-3">
+                          No menu, você encontra a tela de <strong>Configurações</strong>. Lá você pode:
+                        </p>
+                        <ul className="list-disc list-inside ml-2 space-y-2">
+                          <li>
+                            <strong>Alterar sua senha:</strong> Mantenha sua conta segura.
+                          </li>
+                          <li>
+                            <strong>Gerenciar Períodos de Monitoramento:</strong> Escolha exatamente os dias e horários em que o Ampara deve ficar ativo. Você pode adicionar, editar ou remover períodos para cada dia da semana.
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Proteção Contra Coação */}
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-3">🛡️ Proteção Contra Coação: Sua Segurança Secreta</h3>
+                        <p className="mb-3">
+                          O Ampara tem uma camada de segurança especial para situações em que você pode ser forçada a desativar o aplicativo.
+                        </p>
+                        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 text-sm">
+                          <p className="font-semibold text-amber-600 mb-2">Como funciona?</p>
+                          <p>
+                            Ao acessar <strong>Configurações</strong> ou tentar <strong>Sair (Logout)</strong>, o app pedirá sua senha. Se você digitar sua <strong>senha de coação</strong> (definida com sua rede de apoio), o Ampara entrará em modo de simulação:
+                          </p>
+                          <ul className="list-disc list-inside ml-2 space-y-1 mt-2">
+                            <li>
+                              <strong>Nas Configurações:</strong> O app fingirá que salvou as alterações, mas nada será realmente modificado. Seus períodos de monitoramento e sua senha continuarão os mesmos.
+                            </li>
+                            <li>
+                              <strong>No Logout:</strong> O app fingirá que fechou, mas na verdade ele apenas irá para segundo plano. Você continuará logada e protegida.
+                            </li>
+                          </ul>
+                          <p className="mt-3">
+                            Isso engana o agressor, fazendo-o pensar que conseguiu desativar sua proteção, enquanto você continua segura.
+                          </p>
+                        </div>
+                      </div>
+
+                      <h3 className="font-semibold text-foreground mb-3">🗓️ Período de Monitoramento</h3>Quando o App te Protege?</h3>
                       <p className="mb-3">
                         Você decide em quais dias e horários o Ampara deve ficar de prontidão. Fora desses períodos, o app economiza bateria e não monitora o ambiente.
                       </p>
