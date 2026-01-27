@@ -55,7 +55,8 @@ public class IconChangerPlugin extends Plugin {
 
             // Desabilitar todos os outros aliases
             for (String alias : ICON_ALIASES) {
-                ComponentName componentName = new ComponentName(packageName, packageName + alias);
+                // Usar o nome completo do alias (tech.orizon.ampara.MainActivity...)
+                ComponentName componentName = new ComponentName(packageName, "tech.orizon.ampara" + alias);
                 int state = alias.equals(targetAlias) 
                     ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
                     : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
@@ -85,7 +86,7 @@ public class IconChangerPlugin extends Plugin {
 
             // Encontrar qual alias está ativo
             for (String alias : ICON_ALIASES) {
-                ComponentName componentName = new ComponentName(packageName, packageName + alias);
+                ComponentName componentName = new ComponentName(packageName, "tech.orizon.ampara" + alias);
                 int state = packageManager.getComponentEnabledSetting(componentName);
                 
                 if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || 
