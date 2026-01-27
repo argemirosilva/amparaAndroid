@@ -298,6 +298,68 @@ export default function AboutPage() {
                       </p>
                     </div>
 
+                    {/* Período de Monitoramento */}
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-3">🗓️ Período de Monitoramento: Quando o App te Protege?</h3>
+                      <p className="mb-3">
+                        Você decide em quais dias e horários o Ampara deve ficar de prontidão. Fora desses períodos, o app economiza bateria e não monitora o ambiente.
+                      </p>
+                      
+                      <h4 className="font-semibold text-foreground text-sm mb-2">Como saber o status do monitoramento?</h4>
+                      <ul className="list-disc list-inside ml-2 space-y-2 text-sm">
+                        <li><strong className="text-emerald-600">Ativo (verde):</strong> O app está te protegendo agora.</li>
+                        <li><strong className="text-primary">Próximo (azul):</strong> O app está aguardando o próximo horário agendado para hoje.</li>
+                        <li><strong className="text-muted-foreground">Sem monitoramento (cinza):</strong> Não há mais horários de proteção para hoje.</li>
+                      </ul>
+
+                      <p className="text-xs mt-3 bg-blue-50 dark:bg-blue-950/20 p-2 rounded">
+                        💡 <strong>Dica:</strong> Para ajustar os horários, vá em <strong>Menu → Agenda de Monitoramento</strong>.
+                      </p>
+                    </div>
+
+                    {/* Permissões Essenciais */}
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-3">⚙️ Permissões Essenciais para sua Segurança</h3>
+                      <p className="mb-3">
+                        Para que o Ampara funcione corretamente, ele precisa de algumas permissões. Sem elas, não conseguimos te proteger.
+                      </p>
+                      
+                      <ul className="space-y-3">
+                        <li className="flex items-start gap-3">
+                          <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-primary/10 text-primary">🎤</div>
+                          <div>
+                            <h4 className="font-semibold text-foreground text-sm">Microfone</h4>
+                            <p className="text-xs">Para ouvir o ambiente e identificar discussões ou gritos, mesmo com o celular no bolso.</p>
+                          </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-primary/10 text-primary">📍</div>
+                          <div>
+                            <h4 className="font-semibold text-foreground text-sm">Localização</h4>
+                            <p className="text-xs">Para enviar sua localização exata aos guardiões quando você pede ajuda.</p>
+                          </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-primary/10 text-primary">🔔</div>
+                          <div>
+                            <h4 className="font-semibold text-foreground text-sm">Notificações</h4>
+                            <p className="text-xs">Para te avisar sobre o status do app de forma silenciosa e discreta.</p>
+                          </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-primary/10 text-primary">🔋</div>
+                          <div>
+                            <h4 className="font-semibold text-foreground text-sm">Bateria</h4>
+                            <p className="text-xs">É <strong>essencial</strong> que você desative a otimização de bateria para o Ampara. Isso impede que o Android feche o app para economizar energia.</p>
+                          </div>
+                        </li>
+                      </ul>
+
+                      <p className="text-xs mt-3 text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
+                        ⚠️ <strong>Como permitir:</strong> Vá em <strong>Configurações do Celular → Apps → Ampara → Permissões</strong> e ative todas. Para a bateria, vá em <strong>Configurações → Apps → Ampara → Bateria</strong> e selecione <strong>"Sem restrições"</strong>.
+                      </p>
+                    </div>
+
                     {/* Rodapé */}
                     <div className="pt-4 border-t border-border">
                       <p className="text-sm text-center text-muted-foreground italic">
