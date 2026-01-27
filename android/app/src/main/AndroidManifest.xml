@@ -28,7 +28,7 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@drawable/ic_launcher_ampara"
             android:roundIcon="@mipmap/ic_launcher_round"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
@@ -46,7 +46,7 @@
             android:name=".MainActivityAmpara"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_ampara"
+            android:icon="@drawable/ic_launcher_ampara"
             android:label="Ampara"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -59,7 +59,7 @@
             android:name=".MainActivityWorkout"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_workout"
+            android:icon="@drawable/ic_launcher_workout"
             android:label="Treino Fitness"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -72,7 +72,7 @@
             android:name=".MainActivitySteps"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_steps"
+            android:icon="@drawable/ic_launcher_steps"
             android:label="Contador de Passos"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -85,7 +85,7 @@
             android:name=".MainActivityYoga"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_yoga"
+            android:icon="@drawable/ic_launcher_yoga"
             android:label="Yoga e Meditação"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -98,7 +98,7 @@
             android:name=".MainActivityCycle"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_cycle"
+            android:icon="@drawable/ic_launcher_cycle"
             android:label="Calendário Feminino"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -111,7 +111,7 @@
             android:name=".MainActivityBeauty"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_beauty"
+            android:icon="@drawable/ic_launcher_beauty"
             android:label="Beleza e Makeup"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -124,7 +124,7 @@
             android:name=".MainActivityFashion"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_fashion"
+            android:icon="@drawable/ic_launcher_fashion"
             android:label="Meu Guarda-Roupa"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -137,7 +137,7 @@
             android:name=".MainActivityPuzzle"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_puzzle"
+            android:icon="@drawable/ic_launcher_puzzle"
             android:label="Quebra-Cabeça"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -150,7 +150,7 @@
             android:name=".MainActivityCards"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_cards"
+            android:icon="@drawable/ic_launcher_cards"
             android:label="Jogo de Cartas"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -163,7 +163,7 @@
             android:name=".MainActivityCasual"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_casual"
+            android:icon="@drawable/ic_launcher_casual"
             android:label="Jogo Casual"
             android:targetActivity=".MainActivity">
             <intent-filter>
