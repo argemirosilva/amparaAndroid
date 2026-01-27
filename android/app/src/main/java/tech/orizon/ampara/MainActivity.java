@@ -38,9 +38,35 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        registerPlugin(SecureStoragePlugin.class);
-        registerPlugin(KeepAlivePlugin.class);
-        registerPlugin(BatteryOptimizationPlugin.class);
+        
+        // Registrar plugins customizados com logs de debug
+        Log.d("AmparaPlugins", "========== REGISTERING CUSTOM PLUGINS ==========");
+        
+        try {
+            Log.d("AmparaPlugins", "Attempting to register SecureStoragePlugin...");
+            registerPlugin(SecureStoragePlugin.class);
+            Log.d("AmparaPlugins", "✅ SecureStoragePlugin registered successfully");
+        } catch (Exception e) {
+            Log.e("AmparaPlugins", "❌ Failed to register SecureStoragePlugin", e);
+        }
+        
+        try {
+            Log.d("AmparaPlugins", "Attempting to register KeepAlivePlugin...");
+            registerPlugin(KeepAlivePlugin.class);
+            Log.d("AmparaPlugins", "✅ KeepAlivePlugin registered successfully");
+        } catch (Exception e) {
+            Log.e("AmparaPlugins", "❌ Failed to register KeepAlivePlugin", e);
+        }
+        
+        try {
+            Log.d("AmparaPlugins", "Attempting to register BatteryOptimizationPlugin...");
+            registerPlugin(BatteryOptimizationPlugin.class);
+            Log.d("AmparaPlugins", "✅ BatteryOptimizationPlugin registered successfully");
+        } catch (Exception e) {
+            Log.e("AmparaPlugins", "❌ Failed to register BatteryOptimizationPlugin", e);
+        }
+        
+        Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE ==========");
         
         // Garantir que pelo menos um alias esteja habilitado
         ensureAtLeastOneAliasEnabled();
