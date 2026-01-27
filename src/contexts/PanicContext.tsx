@@ -11,6 +11,7 @@ interface PanicState {
   isPanicActive: boolean;
   panicDuration: number;
   isActivating: boolean;
+  isSendingToServer: boolean;
   location: { lat: number; lng: number } | null;
   protocolNumber: string | null;
   guardiansNotified: number;
@@ -67,6 +68,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
     isPanicActive: false,
     panicDuration: 0,
     isActivating: false,
+    isSendingToServer: false,
     location: null,
     protocolNumber: null,
     guardiansNotified: 0,
@@ -104,6 +106,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
           isPanicActive: true,
           panicDuration: elapsedSeconds,
           isActivating: false,
+          isSendingToServer: false,
           location: saved.location,
           protocolNumber: saved.protocolNumber,
           guardiansNotified: saved.guardiansNotified,
@@ -164,6 +167,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
       isPanicActive: false,
       panicDuration: 0,
       isActivating: false,
+      isSendingToServer: false,
       location: null,
       protocolNumber: null,
       guardiansNotified: 0,
@@ -197,7 +201,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
   const activatePanic = useCallback(async (
     tipo: PanicActivationType = 'manual'
   ) => {
-    setState((prev) => ({ ...prev, isActivating: false }));
+    setState((prev) => ({ ...prev, isActivating: false, isSendingToServer: true }));
     
     // Vibrate on activation
     if (navigator.vibrate) {
@@ -250,6 +254,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
       isPanicActive: true,
       panicDuration: 0,
       isActivating: false,
+      isSendingToServer: false,
       location: { lat, lng },
       protocolNumber: result.data?.numero_protocolo || null,
       guardiansNotified: result.data?.guardioes_notificados || 0,
