@@ -16,6 +16,7 @@ import {
   PanicActivationType,
   PanicCancelType,
   RecordingStatusType,
+  OrigemGravacao,
   STORAGE_KEYS,
 } from './types';
 
@@ -287,12 +288,36 @@ export async function receberAudioMobile(
  * Report recording status changes
  */
 export async function reportarStatusGravacao(
-  status: RecordingStatusType
+  status: RecordingStatusType,
+  origem?: OrigemGravacao,
+  alertaId?: string,
+  protocolo?: string,
+  segmentoIdx?: number
 ): Promise<ApiResponse<{ success: boolean }>> {
-  return mobileApi<{ success: boolean }>('reportarStatusGravacao', {
+  const payload: any = {
     status_gravacao: status,
     timestamp: new Date().toISOString(),
-  });
+  };
+
+  // Add optional fields if provided
+  if (origem) {
+    payload.origem_gravacao = origem;
+  }
+  
+  if (alertaId) {
+    payload.device_id = await getDeviceId();
+    payload.alerta_id = alertaId;
+  }
+  
+  if (protocolo) {
+    payload.protocolo = protocolo;
+  }
+  
+  if (segmentoIdx !== undefined) {
+    payload.segmento_idx = segmentoIdx;
+  }
+
+  return mobileApi<{ success: boolean }>('reportarStatusGravacao', payload);
 }
 
 // ============================================

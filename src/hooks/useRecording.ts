@@ -173,7 +173,7 @@ export function useRecording() {
       permissionsService.updateMicrophonePermission('granted');
 
       // Report recording started
-      await reportarStatusGravacao('iniciada');
+      await reportarStatusGravacao('iniciada', origemGravacao);
 
       // Setup AudioContext for WAV capture
       const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
@@ -259,7 +259,7 @@ export function useRecording() {
     cleanup();
 
     // Report recording ended
-    await reportarStatusGravacao('finalizada');
+    await reportarStatusGravacao('finalizada', origemGravacaoRef.current);
 
     setState({
       isRecording: false,
@@ -275,7 +275,7 @@ export function useRecording() {
   const pauseRecording = useCallback(async () => {
     if (isRecordingRef.current && !isPausedRef.current) {
       isPausedRef.current = true;
-      await reportarStatusGravacao('pausada');
+      await reportarStatusGravacao('pausada', origemGravacaoRef.current);
       setState((prev) => ({ ...prev, isPaused: true }));
     }
   }, []);
@@ -283,7 +283,7 @@ export function useRecording() {
   const resumeRecording = useCallback(async () => {
     if (isRecordingRef.current && isPausedRef.current) {
       isPausedRef.current = false;
-      await reportarStatusGravacao('retomada');
+      await reportarStatusGravacao('retomada', origemGravacaoRef.current);
       setState((prev) => ({ ...prev, isPaused: false }));
     }
   }, []);
