@@ -82,6 +82,11 @@ export function WeeklyScheduleEditor({ initialSchedule, onScheduleChange }: Week
   const [editingPeriod, setEditingPeriod] = useState<{ inicio: string; fim: string }>({ inicio: '', fim: '' });
   const [errors, setErrors] = useState<Record<DayOfWeek, string>>({} as Record<DayOfWeek, string>);
 
+  // Update schedule when initialSchedule changes (e.g., loaded from server)
+  useEffect(() => {
+    setSchedule(initialSchedule);
+  }, [initialSchedule]);
+
   useEffect(() => {
     // Notify parent of modified days
     const modified: WeekSchedule = {};
