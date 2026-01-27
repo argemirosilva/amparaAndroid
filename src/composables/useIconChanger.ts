@@ -1,84 +1,76 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+export interface IconChangerPlugin {
+  changeIcon(options: { alias: string }): Promise<{ success: boolean }>;
+  getCurrentIcon(): Promise<{ alias: string }>;
+}
+
+// Registrar o plugin de forma explícita para garantir que o Capacitor o encontre
+const IconChanger = registerPlugin<IconChangerPlugin>('IconChanger');
 
 export interface IconOption {
   id: string;
   name: string;
   description: string;
   category: 'original' | 'fitness' | 'feminine' | 'games';
+  alias: string;
 }
 
 export const AVAILABLE_ICONS: IconOption[] = [
-  { id: 'ampara', name: 'Ampara', description: 'Ícone original', category: 'original' },
-  { id: 'workout', name: 'Treino Fitness', description: 'App de exercícios', category: 'fitness' },
-  { id: 'steps', name: 'Contador de Passos', description: 'Rastreador de caminhada', category: 'fitness' },
-  { id: 'yoga', name: 'Yoga & Meditação', description: 'Relaxamento e bem-estar', category: 'fitness' },
-  { id: 'cycle', name: 'Calendário Feminino', description: 'Ciclo menstrual', category: 'feminine' },
-  { id: 'beauty', name: 'Beleza & Makeup', description: 'Dicas de maquiagem', category: 'feminine' },
-  { id: 'fashion', name: 'Meu Guarda-Roupa', description: 'Looks do dia', category: 'feminine' },
-  { id: 'puzzle', name: 'Quebra-Cabeça', description: 'Jogo de raciocínio', category: 'games' },
-  { id: 'cards', name: 'Jogo de Cartas', description: 'Paciência e cartas', category: 'games' },
-  { id: 'casual', name: 'Jogo Casual', description: 'Diversão relaxante', category: 'games' },
+  { id: 'ampara', name: 'Ampara Original', description: 'Ícone padrão do app', category: 'original', alias: '.MainActivityAmpara' },
+  { id: 'workout', name: 'Treino Fitness', description: 'Disfarce de academia', category: 'fitness', alias: '.MainActivityWorkout' },
+  { id: 'steps', name: 'Contador de Passos', description: 'Disfarce de saúde', category: 'fitness', alias: '.MainActivitySteps' },
+  { id: 'yoga', name: 'Yoga e Meditação', description: 'Disfarce de bem-estar', category: 'fitness', alias: '.MainActivityYoga' },
+  { id: 'cycle', name: 'Calendário Feminino', description: 'Disfarce de ciclo menstrual', category: 'feminine', alias: '.MainActivityCycle' },
+  { id: 'beauty', name: 'Beleza e Makeup', description: 'Disfarce de maquiagem', category: 'feminine', alias: '.MainActivityBeauty' },
+  { id: 'fashion', name: 'Meu Guarda-Roupa', description: 'Disfarce de moda', category: 'feminine', alias: '.MainActivityFashion' },
+  { id: 'puzzle', name: 'Quebra-Cabeça', description: 'Disfarce de jogo puzzle', category: 'games', alias: '.MainActivityPuzzle' },
+  { id: 'cards', name: 'Jogo de Cartas', description: 'Disfarce de paciência', category: 'games', alias: '.MainActivityCards' },
+  { id: 'casual', name: 'Jogo Casual', description: 'Disfarce de match-3', category: 'games', alias: '.MainActivityCasual' },
 ];
 
-export function useIconChanger() {
+export const useIconChanger = () => {
   const isNative = Capacitor.isNativePlatform();
 
-  const changeIcon = async (iconId: string): Promise<boolean> => {
+  const changeIcon = async (iconId: string) => {
     if (!isNative) {
       console.warn('Icon change is only available on native platforms');
       return false;
     }
 
-    try {
-      const IconChanger = Capacitor.Plugins.IconChanger as any;
-      
-      if (!IconChanger) {
-        console.error('IconChanger plugin not found');
-        return false;
-      }
+    const icon = AVAILABLE_ICONS.find(i => i.id === iconId);
+    if (!icon) {
+      console.error('Icon not found:', iconId);
+      return false;
+    }
 
-      await IconChanger.changeIcon({ iconName: iconId });
-      
-      // Salvar preferência localmente
-      localStorage.setItem('selectedIcon', iconId);
-      
-      return true;
+    try {
+      console.log('Calling native IconChanger.changeIcon with alias:', icon.alias);
+      const result = await IconChanger.changeIcon({ alias: icon.alias });
+      return result.success;
     } catch (error) {
-      console.error('Failed to change icon:', error);
+      console.error('Error calling native IconChanger:', error);
       return false;
     }
   };
 
-  const getCurrentIcon = async (): Promise<string> => {
-    if (!isNative) {
-      return 'ampara';
-    }
+  const getCurrentIcon = async () => {
+    if (!isNative) return 'ampara';
 
     try {
-      const IconChanger = Capacitor.Plugins.IconChanger as any;
-      
-      if (!IconChanger) {
-        return localStorage.getItem('selectedIcon') || 'ampara';
-      }
-
       const result = await IconChanger.getCurrentIcon();
-      return result.iconName || 'ampara';
+      const icon = AVAILABLE_ICONS.find(i => i.alias === result.alias);
+      return icon ? icon.id : 'ampara';
     } catch (error) {
-      console.error('Failed to get current icon:', error);
-      return localStorage.getItem('selectedIcon') || 'ampara';
+      console.error('Error getting current icon:', error);
+      return 'ampara';
     }
-  };
-
-  const getIconPreview = (iconId: string): string => {
-    // Retorna o caminho para a imagem de preview do ícone
-    return `/assets/icons/preview_${iconId}.png`;
   };
 
   return {
     changeIcon,
     getCurrentIcon,
-    getIconPreview,
-    availableIcons: AVAILABLE_ICONS,
     isNative,
+    AVAILABLE_ICONS
   };
-}
+};
