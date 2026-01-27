@@ -9,7 +9,8 @@ import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
 import { changePassword, updateSchedules, WeekSchedule, validatePassword } from '@/lib/api_settings';
 import { clearSessionToken } from '@/lib/api';
-import { STORAGE_KEYS, PeriodosSemana } from '@/lib/types';
+import { PeriodosSemana } from '@/lib/types';
+import { getCurrentConfig } from '@/services/configService';
 import { WeeklyScheduleEditor } from '@/components/WeeklyScheduleEditor';
 import { PasswordValidationDialog } from '@/components/PasswordValidationDialog';
 
@@ -37,17 +38,16 @@ export default function SettingsPage() {
   const [modifiedSchedule, setModifiedSchedule] = useState<WeekSchedule>({});
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
-  // Load initial schedule from localStorage (saved during login)
+  // Load initial schedule from ConfigService
   useEffect(() => {
     if (isAuthenticated) {
       try {
-        const configStr = localStorage.getItem(STORAGE_KEYS.USER_CONFIG);
-        if (configStr) {
-          const config = JSON.parse(configStr);
-          if (config.periodos_semana) {
-            console.log('[Settings] Loading existing schedule:', config.periodos_semana);
-            setInitialSchedule(config.periodos_semana as WeekSchedule);
-          }
+        const config = getCurrentConfig();
+        if (config?.periodos_semana) {
+          console.log('[Settings] Loading existing schedule from ConfigService:', config.periodos_semana);
+          setInitialSchedule(config.periodos_semana as WeekSchedule);
+        } else {
+          console.log('[Settings] No periodos_semana found in ConfigService');
         }
       } catch (error) {
         console.error('[Settings] Failed to load schedule:', error);
