@@ -11,6 +11,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "IconChanger")
 public class IconChangerPlugin extends Plugin {
 
+    private static final String MAIN_ACTIVITY = ".MainActivity";
     private static final String[] ICON_ALIASES = {
         ".MainActivityAmpara",
         ".MainActivityWorkout",
@@ -36,20 +37,41 @@ public class IconChangerPlugin extends Plugin {
             PackageManager packageManager = getContext().getPackageManager();
             String packageName = getContext().getPackageName();
 
-            // Desabilitar todos os outros aliases e habilitar o alvo
-            for (String alias : ICON_ALIASES) {
-                // ComponentName(packageName, packageName + alias) é o padrão mais seguro
-                ComponentName componentName = new ComponentName(packageName, packageName + alias);
-                
-                int state = alias.equals(targetAlias) 
-                    ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                    : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
-                
+            // Se o alvo for o original (Ampara), habilitamos a MainActivity e desabilitamos todos os aliases
+            if (targetAlias.equals(".MainActivityAmpara")) {
+                // Habilitar MainActivity principal
                 packageManager.setComponentEnabledSetting(
-                    componentName,
-                    state,
-                    PackageManager.DONT_KILL_APP // Evita que o Android mate o processo imediatamente
+                    new ComponentName(packageName, packageName + MAIN_ACTIVITY),
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
                 );
+                // Desabilitar todos os aliases
+                for (String alias : ICON_ALIASES) {
+                    packageManager.setComponentEnabledSetting(
+                        new ComponentName(packageName, packageName + alias),
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP
+                    );
+                }
+            } else {
+                // Se for um disfarce, desabilitamos a MainActivity principal
+                packageManager.setComponentEnabledSetting(
+                    new ComponentName(packageName, packageName + MAIN_ACTIVITY),
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP
+                );
+                // Habilitamos apenas o alias alvo e desabilitamos os outros
+                for (String alias : ICON_ALIASES) {
+                    int state = alias.equals(targetAlias) 
+                        ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                        : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+                    
+                    packageManager.setComponentEnabledSetting(
+                        new ComponentName(packageName, packageName + alias),
+                        state,
+                        PackageManager.DONT_KILL_APP
+                    );
+                }
             }
 
             JSObject ret = new JSObject();
@@ -68,13 +90,18 @@ public class IconChangerPlugin extends Plugin {
 
             String activeAlias = ".MainActivityAmpara"; // Default
 
-            for (String alias : ICON_ALIASES) {
-                ComponentName componentName = new ComponentName(packageName, packageName + alias);
-                int state = packageManager.getComponentEnabledSetting(componentName);
-                
-                if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
-                    activeAlias = alias;
-                    break;
+            // Verificar se a MainActivity principal está ativa
+            int mainState = packageManager.getComponentEnabledSetting(new ComponentName(packageName, packageName + MAIN_ACTIVITY));
+            if (mainState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || mainState == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
+                activeAlias = ".MainActivityAmpara";
+            } else {
+                // Se não, procurar qual alias está ativo
+                for (String alias : ICON_ALIASES) {
+                    int state = packageManager.getComponentEnabledSetting(new ComponentName(packageName, packageName + alias));
+                    if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+                        activeAlias = alias;
+                        break;
+                    }
                 }
             }
 
