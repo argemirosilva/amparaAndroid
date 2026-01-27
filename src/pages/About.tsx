@@ -220,91 +220,92 @@ export default function AboutPage() {
                 </div>
               )}
 
-              {helpContent && !isLoadingHelp && !helpError && (
+              {!isLoadingHelp && !helpError && (
                 <div className="prose prose-sm max-w-none text-muted-foreground">
-                  {/* Fallback static help content */}
-                  <section className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">1. O que é "período de monitoramento"?</h3>
-                      <p>
-                        Período de monitoramento é o horário em que o AMPARA está <strong>ativamente</strong> detectando situações de risco. 
-                        Por exemplo: se você configurou monitoramento das 18h às 23h, o app só vai analisar sons e enviar alertas nesse horário.
-                      </p>
-                      <p className="text-xs mt-2 text-amber-600">
-                        💡 <strong>Dica:</strong> Fora do período, o app continua funcionando em segundo plano (para manter conexão com o servidor), 
-                        mas NÃO está detectando situações de risco.
+                  {/* Manual de Uso */}
+                  <section className="space-y-6">
+                    {/* Introdução */}
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-primary mb-2">💜 Bem-vinda ao Ampara!</h3>
+                      <p className="text-sm">
+                        Este é o seu guia para usar o aplicativo e se sentir mais segura. Vamos te mostrar como cada parte funciona, passo a passo!
                       </p>
                     </div>
 
+                    {/* Botão de Pânico */}
                     <div>
-                      <h3 className="font-semibold text-foreground mb-2">2. Como saber se estou "dentro" ou "fora" do período?</h3>
-                      <p>
-                        Na tela principal, você verá um dos seguintes status:
+                      <h3 className="font-semibold text-foreground mb-3">🚨 O Botão de Pânico: Seu Alerta de Segurança</h3>
+                      <p className="mb-3">
+                        O botão de pânico é a principal ferramenta para pedir ajuda de forma rápida e silenciosa.
                       </p>
-                      <ul className="list-disc list-inside ml-2 space-y-1 mt-2">
-                        <li><strong className="text-emerald-600">Ativo</strong> (verde): Você está dentro do período de monitoramento. O app está protegendo você agora.</li>
-                        <li><strong className="text-primary">Próximo</strong> (azul): Você está fora do período, mas há um próximo período ainda hoje. O app mostra quando começa.</li>
-                        <li><strong className="text-muted-foreground">Sem monitoramento</strong> (cinza): Não há mais períodos agendados para hoje.</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">3. O que fazer se estiver "sem monitoramentos agendados para hoje"?</h3>
-                      <p>
-                        Isso significa que você não configurou nenhum período de monitoramento para hoje (ou todos os períodos já passaram). Para configurar:
-                      </p>
-                      <ol className="list-decimal list-inside ml-2 space-y-1 mt-2">
-                        <li>Clique no menu (☰) no canto superior direito</li>
-                        <li>Selecione "Agenda de monitoramento"</li>
-                        <li>Adicione os horários que deseja ser monitorada</li>
-                        <li>Salve as alterações</li>
+                      
+                      <h4 className="font-semibold text-foreground text-sm mb-2">Como usar:</h4>
+                      <ol className="list-decimal list-inside ml-2 space-y-2 text-sm">
+                        <li><strong>Pressione e segure</strong> o botão vermelho grande no centro da tela.</li>
+                        <li>Mantenha o dedo pressionado por <strong>2 segundos</strong>.</li>
+                        <li>Você verá um círculo se completando ao redor do botão. Isso mostra que o alarme está sendo ativado.</li>
+                        <li>Após os 2 segundos, o botão mudará para <strong>"ENVIANDO..."</strong>. Pronto! Seus guardiões e a central de monitoramento foram acionados.</li>
                       </ol>
-                      <p className="text-xs mt-2">
-                        Exemplo: Se você quer proteção das 18h às 23h todos os dias, configure esse horário na agenda.
-                      </p>
-                    </div>
 
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">4. Permissões do Android (microfone e localização)</h3>
-                      <p>
-                        O AMPARA precisa de duas permissões principais:
-                      </p>
-                      <ul className="list-disc list-inside ml-2 space-y-2 mt-2">
-                        <li>
-                          <strong>Microfone:</strong> Para ouvir sons ao redor e detectar situações de risco (como discussões ou gritos).
-                          <br />
-                          <span className="text-xs">Como permitir: Configurações do Android → Apps → AMPARA → Permissões → Microfone → Permitir</span>
-                        </li>
-                        <li>
-                          <strong>Localização:</strong> Para enviar sua localização exata em caso de alerta.
-                          <br />
-                          <span className="text-xs">Como permitir: Configurações do Android → Apps → AMPARA → Permissões → Localização → Permitir o tempo todo</span>
-                        </li>
+                      <h4 className="font-semibold text-foreground text-sm mb-2 mt-3">O que acontece depois?</h4>
+                      <ul className="list-disc list-inside ml-2 space-y-1 text-sm">
+                        <li>Seus guardiões recebem um alerta com sua localização.</li>
+                        <li>O aplicativo começa a gravar o som ambiente para usar como prova, se necessário.</li>
+                        <li>A central de monitoramento (se contratada) entra em ação.</li>
                       </ul>
-                      <p className="text-xs mt-2 text-amber-600">
-                        ⚠️ <strong>Importante:</strong> Sem essas permissões, o AMPARA não consegue proteger você adequadamente.
+
+                      <p className="text-xs mt-3 text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
+                        ⚠️ <strong>Importante:</strong> Use o botão de pânico apenas em situações de emergência real. Ele foi feito para ser seu socorro rápido e silencioso.
                       </p>
                     </div>
 
+                    {/* Disfarce do App */}
                     <div>
-                      <h3 className="font-semibold text-foreground mb-2">5. O que o app faz em segundo plano?</h3>
-                      <p>
-                        Mesmo quando você não está usando o celular, o AMPARA:
+                      <h3 className="font-semibold text-foreground mb-3">🎨 Disfarce do Aplicativo: Sua Privacidade em Primeiro Lugar</h3>
+                      <p className="mb-3">
+                        Sabemos que sua privacidade é fundamental. Por isso, você pode mudar a aparência do ícone do Ampara na tela do seu celular.
                       </p>
-                      <ul className="list-disc list-inside ml-2 space-y-1 mt-2">
-                        <li>Mantém conexão com o servidor (envia "pings" regulares)</li>
-                        <li>Monitora sons ao redor (apenas dentro do período configurado)</li>
-                        <li>Está pronto para enviar alertas se detectar uma situação de risco</li>
-                      </ul>
-                      <p className="text-xs mt-2">
-                        Isso garante que você esteja protegida mesmo com o celular no bolso ou com a tela desligada.
+                      
+                      <h4 className="font-semibold text-foreground text-sm mb-2">Como mudar o ícone:</h4>
+                      <ol className="list-decimal list-inside ml-2 space-y-2 text-sm">
+                        <li>Na tela principal, toque no ícone de <strong>Menu</strong> (três linhas no canto superior direito).</li>
+                        <li>Escolha a opção <strong>"Disfarce do App"</strong> (ícone de paleta de pintura 🎨).</li>
+                        <li>Você verá várias opções de ícones, como apps de ginástica, jogos ou beleza.</li>
+                        <li>Toque no ícone que você preferir. Ele será aplicado imediatamente!</li>
+                      </ol>
+
+                      <p className="text-xs mt-3 bg-blue-50 dark:bg-blue-950/20 p-2 rounded">
+                        💡 <strong>Dica:</strong> Escolha um ícone que não chame a atenção no seu celular. Assim, só você saberá que o Ampara está ali, pronto para te proteger.
                       </p>
                     </div>
 
+                    {/* Monitoramento de Áudio */}
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-3">🎤 Monitoramento de Áudio: O App que Ouve por Você</h3>
+                      <p className="mb-3">
+                        O Ampara pode ouvir o ambiente para identificar discussões ou situações de risco, mesmo com o celular guardado.
+                      </p>
+                      
+                      <h4 className="font-semibold text-foreground text-sm mb-2">Como funciona:</h4>
+                      <ul className="list-disc list-inside ml-2 space-y-2 text-sm">
+                        <li>O monitoramento de áudio <strong>só fica ativo nos horários que você configurou</strong> no seu perfil (ex: à noite, ou aos fins de semana).</li>
+                        <li>Quando o monitoramento está ligado, você verá um <strong>círculo colorido</strong> na tela principal, mostrando a intensidade do som.</li>
+                        <li>Se o app detectar um som de discussão, ele pode iniciar uma gravação automática para sua segurança.</li>
+                      </ul>
+
+                      <p className="text-xs mt-3 bg-emerald-50 dark:bg-emerald-950/20 p-2 rounded">
+                        ✅ <strong>Fique tranquila:</strong> O app só monitora o som nos períodos que você definiu. Fora desses horários, ele não ouve nem grava nada.
+                      </p>
+                    </div>
+
+                    {/* Rodapé */}
                     <div className="pt-4 border-t border-border">
-                      <p className="text-xs text-muted-foreground">
-                        Ainda tem dúvidas? Entre em contato através do site 
-                        <a href="https://amparamulher.com.br" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline mx-1">
+                      <p className="text-sm text-center text-muted-foreground italic">
+                        Lembre-se: o Ampara é seu aliado. Explore as funções e sinta-se mais segura todos os dias.
+                      </p>
+                      <p className="text-xs text-center text-muted-foreground mt-3">
+                        Ainda tem dúvidas? Entre em contato através do site{' '}
+                        <a href="https://amparamulher.com.br" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                           amparamulher.com.br
                         </a>
                       </p>
