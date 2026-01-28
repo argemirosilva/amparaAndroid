@@ -208,7 +208,7 @@ public class AudioTriggerService extends Service {
         // Log every aggregation for debugging
         if (aggregationCounter % 5 == 0) {
             Log.d(TAG, String.format("[METRICS] RMS: %.1f dB, ZCR: %.3f, Speech: %b, Loud: %b, State: %s",
-                avgRmsDb, avgZcr, isSpeech, isLoud, result.currentState));
+                avgRmsDb, avgZcr, isSpeech, isLoud, detector.getState()));
         }
         
         // Log detection
