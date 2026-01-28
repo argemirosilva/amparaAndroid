@@ -37,9 +37,7 @@ public class MainActivity extends BridgeActivity {
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        // Registrar plugins customizados com logs de debug
+        // Registrar plugins customizados com logs de debug ANTES do super.onCreate
         Log.d("AmparaPlugins", "========== REGISTERING CUSTOM PLUGINS ==========");
         
         try {
@@ -67,6 +65,9 @@ public class MainActivity extends BridgeActivity {
         }
         
         Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE ==========");
+        
+        // Chamar super.onCreate DEPOIS de registrar os plugins
+        super.onCreate(savedInstanceState);
         
         // Garantir que pelo menos um alias esteja habilitado
         ensureAtLeastOneAliasEnabled();
