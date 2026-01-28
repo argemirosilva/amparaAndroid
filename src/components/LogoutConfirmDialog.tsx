@@ -46,6 +46,13 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
       const result = await validatePassword(password);
       
       if (result.error) {
+        // Se o erro for 401 (Sessão expirada), forçamos o logout local
+        if (result.error.includes('401') || result.error.includes('Sessão expirada')) {
+          console.warn('[Logout] Session expired during password validation, forcing local logout');
+          onConfirm();
+          return;
+        }
+        
         setError('Senha incorreta');
         setIsLoading(false);
         return;
