@@ -22,8 +22,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
       // Check if all critical permissions are granted
       const allGranted = 
         permissions.microphone === 'granted' &&
-        permissions.location === 'granted' &&
-        permissions.notification === 'granted';
+        permissions.location === 'granted';
       
       if (allGranted) {
         console.log('[PermissionGuard] ✅ All basic permissions granted');

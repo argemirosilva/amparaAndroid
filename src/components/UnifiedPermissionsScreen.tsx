@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MapPin, Shield, Bell, Battery, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Mic, MapPin, Shield, Battery, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { checkPermissions, requestMicrophonePermission, requestLocationPermission, requestNotificationPermission } from '@/services/permissionsService';
+import { requestMicrophonePermission, requestLocationPermission } from '@/services/permissionsService';
+import { Geolocation } from '@capacitor/geolocation';
+import { VoiceRecorder } from 'capacitor-voice-recorder';
 import BatteryOptimization from '@/plugins/batteryOptimization';
 import amparaLogo from '@/assets/ampara-logo.png';
 
@@ -78,12 +80,10 @@ interface UnifiedPermissionsScreenProps {
 export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> = ({ onComplete }) => {
   const [microphoneStatus, setMicrophoneStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   const [locationStatus, setLocationStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
-  const [notificationStatus, setNotificationStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   const [batteryStatus, setBatteryStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   
   const [requestingMic, setRequestingMic] = useState(false);
   const [requestingLocation, setRequestingLocation] = useState(false);
-  const [requestingNotification, setRequestingNotification] = useState(false);
   const [requestingBattery, setRequestingBattery] = useState(false);
 
   useEffect(() => {
@@ -91,10 +91,23 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
   }, []);
 
   const checkAllPermissions = async () => {
-    const permissions = await checkPermissions();
-    setMicrophoneStatus(permissions.microphone);
-    setLocationStatus(permissions.location);
-    setNotificationStatus(permissions.notification);
+    // Check microphone
+    try {
+      const micStatus = await VoiceRecorder.hasAudioRecordingPermission();
+      setMicrophoneStatus(micStatus.value ? 'granted' : 'prompt');
+    } catch (error) {
+      console.error('Error checking microphone:', error);
+      setMicrophoneStatus('prompt');
+    }
+    
+    // Check location
+    try {
+      const locStatus = await Geolocation.checkPermissions();
+      setLocationStatus(locStatus.location === 'granted' ? 'granted' : locStatus.location === 'denied' ? 'denied' : 'prompt');
+    } catch (error) {
+      console.error('Error checking location:', error);
+      setLocationStatus('prompt');
+    }
     
     // Check battery optimization
     try {
@@ -126,15 +139,7 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
     }
   };
 
-  const handleRequestNotification = async () => {
-    setRequestingNotification(true);
-    try {
-      const result = await requestNotificationPermission();
-      setNotificationStatus(result);
-    } finally {
-      setRequestingNotification(false);
-    }
-  };
+
 
   const handleRequestBattery = async () => {
     setRequestingBattery(true);
@@ -154,7 +159,6 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
   const allGranted = 
     microphoneStatus === 'granted' &&
     locationStatus === 'granted' &&
-    notificationStatus === 'granted' &&
     batteryStatus === 'granted';
 
   return (
@@ -182,14 +186,7 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
 
         {/* Permission Items */}
         <div className="space-y-3">
-          <PermissionItem
-            icon={<Bell className="w-5 h-5" />}
-            title="Notificações"
-            description="Receber alertas de emergência e atualizações importantes"
-            status={notificationStatus}
-            onRequest={handleRequestNotification}
-            isRequesting={requestingNotification}
-          />
+
 
           <PermissionItem
             icon={<Mic className="w-5 h-5" />}
@@ -211,8 +208,8 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
 
           <PermissionItem
             icon={<Battery className="w-5 h-5" />}
-            title="Ignorar Economia de Bateria"
-            description="Funcionar em segundo plano mesmo com tela bloqueada"
+            title="Sem Restrições de Bateria"
+            description="Configurar como 'Sem Restrições' para funcionar em segundo plano"
             status={batteryStatus}
             onRequest={handleRequestBattery}
             isRequesting={requestingBattery}
