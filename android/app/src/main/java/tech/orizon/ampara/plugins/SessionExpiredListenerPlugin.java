@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -48,15 +47,20 @@ public class SessionExpiredListenerPlugin extends Plugin {
         };
         
         IntentFilter filter = new IntentFilter("tech.orizon.ampara.SESSION_EXPIRED");
-        LocalBroadcastManager.getInstance(getContext()).registerReceiver(sessionExpiredReceiver, filter);
+        getContext().registerReceiver(sessionExpiredReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         Log.d(TAG, "Session expired receiver registered");
     }
     
     private void unregisterSessionExpiredReceiver() {
         if (sessionExpiredReceiver != null) {
-            LocalBroadcastManager.getInstance(getContext()).unregisterReceiver(sessionExpiredReceiver);
-            sessionExpiredReceiver = null;
-            Log.d(TAG, "Session expired receiver unregistered");
+            try {
+                getContext().unregisterReceiver(sessionExpiredReceiver);
+                sessionExpiredReceiver = null;
+                Log.d(TAG, "Session expired receiver unregistered");
+            } catch (IllegalArgumentException e) {
+                // Receiver já foi desregistrado
+                Log.w(TAG, "Receiver was already unregistered");
+            }
         }
     }
     

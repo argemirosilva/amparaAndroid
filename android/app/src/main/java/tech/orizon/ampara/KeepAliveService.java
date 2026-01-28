@@ -14,7 +14,6 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.json.JSONObject;
 
@@ -294,13 +293,14 @@ public class KeepAliveService extends Service {
     }
     
     /**
-     * Notifica o JavaScript que a sessão expirou via LocalBroadcast
+     * Notifica o JavaScript que a sessão expirou via Broadcast global
      */
     private void notifyJavaScriptSessionExpired() {
         try {
             Intent intent = new Intent("tech.orizon.ampara.SESSION_EXPIRED");
             intent.putExtra("source", "native-ping");
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+            intent.setPackage(getPackageName()); // Garante que só o próprio app receba
+            sendBroadcast(intent);
             Log.d(TAG, "Session expired broadcast sent to JavaScript");
         } catch (Exception e) {
             Log.e(TAG, "Error sending session expired broadcast", e);
