@@ -4,6 +4,7 @@ import { VoiceRecorder } from 'capacitor-voice-recorder';
 import { Capacitor } from '@capacitor/core';
 import BatteryOptimization from '../plugins/batteryOptimization';
 import KeepAlive from '../plugins/keepAlive';
+import { getDeviceId } from '../lib/deviceId';
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -75,7 +76,9 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
     if (Capacitor.getPlatform() === 'android') {
       try {
         console.log('[PermissionGuard] 🚀 Starting KeepAlive service...');
-        await KeepAlive.start();
+        const deviceId = getDeviceId();
+        console.log('[PermissionGuard] 📱 Syncing device_id:', deviceId);
+        await KeepAlive.start({ deviceId });
         console.log('[PermissionGuard] ✅ KeepAlive service started successfully');
       } catch (error) {
         console.error('[PermissionGuard] ❌ Error starting KeepAlive service:', error);

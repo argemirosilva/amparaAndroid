@@ -1,6 +1,8 @@
 package tech.orizon.ampara.plugins;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.util.Log;
 import com.getcapacitor.Plugin;
@@ -20,6 +22,16 @@ public class KeepAlivePlugin extends Plugin {
     @PluginMethod
     public void start(PluginCall call) {
         try {
+            // Recebe o device_id do JavaScript e salva no SharedPreferences
+            String deviceId = call.getString("deviceId");
+            if (deviceId != null && !deviceId.isEmpty()) {
+                SharedPreferences prefs = getContext().getSharedPreferences("ampara_secure_storage", Context.MODE_PRIVATE);
+                prefs.edit().putString("ampara_device_id", deviceId).apply();
+                Log.d(TAG, "Device ID synchronized: " + deviceId);
+            } else {
+                Log.w(TAG, "No device_id provided, using fallback");
+            }
+            
             Intent serviceIntent = new Intent(getContext(), KeepAliveService.class);
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

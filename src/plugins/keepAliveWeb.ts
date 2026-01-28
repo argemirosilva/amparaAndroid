@@ -2,8 +2,8 @@ import { WebPlugin } from '@capacitor/core';
 import type { KeepAlivePlugin } from './keepAlive';
 
 export class KeepAliveWeb extends WebPlugin implements KeepAlivePlugin {
-  async start(): Promise<void> {
-    console.log('[KeepAlive] Web platform - no action needed');
+  async start(options: { deviceId: string }): Promise<void> {
+    console.log('[KeepAlive] Web platform - no action needed (deviceId:', options.deviceId, ')');
     return Promise.resolve();
   }
 

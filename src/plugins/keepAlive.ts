@@ -4,7 +4,7 @@ export interface KeepAlivePlugin {
   /**
    * Inicia o serviço de foreground para manter o app ativo em Doze Mode
    */
-  start(): Promise<void>;
+  start(options: { deviceId: string }): Promise<void>;
   
   /**
    * Para o serviço de foreground
