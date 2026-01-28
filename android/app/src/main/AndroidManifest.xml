@@ -194,6 +194,16 @@
             android:foregroundServiceType="location|dataSync"
             android:stopWithTask="false" />
 
+        <!-- BroadcastReceiver for AlarmManager to wake up in Doze Mode -->
+        <receiver
+            android:name="tech.orizon.ampara.KeepAliveAlarmReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="tech.orizon.ampara.KEEPALIVE_ALARM" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

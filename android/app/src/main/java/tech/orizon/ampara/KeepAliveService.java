@@ -59,7 +59,8 @@ public class KeepAliveService extends Service {
     
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "Service started");
+        String action = intent != null ? intent.getAction() : null;
+        Log.d(TAG, "Service started with action: " + action);
         
         Notification notification = createNotification();
         
@@ -70,25 +71,26 @@ public class KeepAliveService extends Service {
             startForeground(NOTIFICATION_ID, notification);
         }
         
-        // SEMPRE executa o ping (seja na primeira vez ou via alarme)
-        executeNativePing();
-        
-        // Agenda o próximo ping
-        scheduleNextPing();
+        // Se é a primeira vez (sem action) ou se é um alarme, executa ping e agenda próximo
+        if (action == null || "ACTION_EXECUTE_PING".equals(action)) {
+            executeNativePing();
+            scheduleNextPing();
+        }
         
         return START_STICKY;
     }
     
     private void scheduleNextPing() {
-        Intent intent = new Intent(this, KeepAliveService.class);
-        intent.setAction("ACTION_PING");
+        // Usa BroadcastReceiver ao invés de reiniciar o serviço
+        Intent intent = new Intent(this, KeepAliveAlarmReceiver.class);
+        intent.setAction("tech.orizon.ampara.KEEPALIVE_ALARM");
         
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flags |= PendingIntent.FLAG_IMMUTABLE;
         }
         
-        alarmIntent = PendingIntent.getService(this, 0, intent, flags);
+        alarmIntent = PendingIntent.getBroadcast(this, 0, intent, flags);
         
         long triggerAtMillis = System.currentTimeMillis() + 30000; // 30 segundos
         
@@ -96,10 +98,11 @@ public class KeepAliveService extends Service {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 // setExactAndAllowWhileIdle é crucial para Doze Mode
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
+                Log.d(TAG, "Next ping scheduled in 30s (ExactAndAllowWhileIdle via BroadcastReceiver)");
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
+                Log.d(TAG, "Next ping scheduled in 30s (Exact via BroadcastReceiver)");
             }
-            Log.d(TAG, "Next ping scheduled in 30s (ExactAndAllowWhileIdle)");
         } catch (SecurityException e) {
             // Fallback se a permissão de alarme exato não foi concedida (Android 12+)
             alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
