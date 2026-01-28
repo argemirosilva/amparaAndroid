@@ -44,7 +44,14 @@ public class KeepAliveService extends Service {
         
         // Criar notificação de foreground
         Notification notification = createNotification();
-        startForeground(NOTIFICATION_ID, notification);
+        
+        // Android 14+ requer especificar o tipo de foreground service
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, 
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        } else {
+            startForeground(NOTIFICATION_ID, notification);
+        }
         
         // Retornar START_STICKY para que o serviço seja reiniciado se morrer
         return START_STICKY;
