@@ -106,29 +106,36 @@ export function HomePage({ onLogout }: HomePageProps) {
 
   // Listen to native audio trigger events (discussion detected in background)
   useEffect(() => {
-    const handleNativeEvent = (event: { event: string; reason: string }) => {
+    const handleNativeEvent = (event: { event: string; reason?: string; filePath?: string }) => {
       console.log('[Home] Native audio trigger event:', event);
       
       if (event.event === 'discussionDetected') {
-        // Only auto-record if within monitoring period
-        if (monitoring.dentroHorario && !recording.isRecording && !panic.isPanicActive) {
-          console.log('[Home] Native discussion detected - starting recording');
-          recording.startRecording('automatico').then(success => {
-            if (success) {
-              appState.setStatus('recording');
-              toast({
-                title: 'Gravação automática iniciada',
-                description: 'Discussão detectada em segundo plano',
-                duration: 3000,
-              });
-            }
+        // Native recording is handled automatically by the service
+        // Just show notification to user
+        console.log('[Home] Native discussion detected - native recording started automatically');
+        toast({
+          title: 'Discussão detectada',
+          description: 'Gravação automática em andamento',
+          duration: 3000,
+        });
+      }
+      
+      if (event.event === 'nativeRecordingComplete' && event.filePath) {
+        // Native recording completed - process and upload
+        console.log('[Home] Native recording completed:', event.filePath);
+        
+        // Check if within monitoring period before uploading
+        if (monitoring.dentroHorario && !panic.isPanicActive) {
+          console.log('[Home] Processing native recording for upload');
+          // TODO: Implement upload of native recording file
+          // For now, just notify user
+          toast({
+            title: 'Gravação concluída',
+            description: 'Discussão finalizada - processando gravação',
+            duration: 3000,
           });
         } else {
-          console.log('[Home] Native discussion detected but not recording:', {
-            dentroHorario: monitoring.dentroHorario,
-            isRecording: recording.isRecording,
-            isPanicActive: panic.isPanicActive
-          });
+          console.log('[Home] Native recording completed but outside monitoring period');
         }
       }
     };
@@ -138,7 +145,15 @@ export function HomePage({ onLogout }: HomePageProps) {
     return () => {
       hybridAudioTrigger.removeListener(handleNativeEvent);
     };
-  }, [monitoring.dentroHorario, recording, panic.isPanicActive, appState, toast]);
+  }, [monitoring.dentroHorario, panic.isPanicActive, toast]);
+
+  // Set native config when available
+  useEffect(() => {
+    if (audioTriggerConfig) {
+      console.log('[Home] Setting native audio trigger config');
+      hybridAudioTrigger.setNativeConfig(audioTriggerConfig);
+    }
+  }, [audioTriggerConfig]);
 
   // Auto-start audio monitoring on login (keeps app alive 24/7)
   // Only stops on logout

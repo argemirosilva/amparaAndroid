@@ -56,6 +56,14 @@ public class AudioTriggerPlugin extends Plugin {
     public void start(PluginCall call) {
         try {
             Intent intent = new Intent(getContext(), AudioTriggerService.class);
+            
+            // Pass configuration if provided
+            JSObject config = call.getObject("config");
+            if (config != null) {
+                intent.putExtra("config", config.toString());
+                Log.d(TAG, "Starting AudioTrigger service with config: " + config.toString());
+            }
+            
             getContext().startService(intent);
             
             Log.d(TAG, "AudioTrigger service started");

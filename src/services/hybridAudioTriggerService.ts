@@ -16,6 +16,7 @@ class HybridAudioTriggerService {
   private eventListeners: Array<(event: AudioTriggerEvent) => void> = [];
   private jsStartCallback: (() => Promise<void>) | null = null;
   private jsStopCallback: (() => Promise<void>) | null = null;
+  private nativeConfig: any = null;
   
   constructor() {
     this.init();
@@ -127,7 +128,10 @@ class HybridAudioTriggerService {
     
     try {
       console.log('[HybridAudioTrigger] Starting native audio trigger');
-      const result = await AudioTriggerNative.start();
+      
+      // Pass configuration if available
+      const options = this.nativeConfig ? { config: this.nativeConfig } : {};
+      const result = await AudioTriggerNative.start(options);
       
       if (result.success) {
         this.isNativeRunning = true;
@@ -205,6 +209,14 @@ class HybridAudioTriggerService {
     this.jsStartCallback = start;
     this.jsStopCallback = stop;
     console.log('[HybridAudioTrigger] JavaScript callbacks registered');
+  }
+  
+  /**
+   * Set configuration for native audio trigger
+   */
+  setNativeConfig(config: any) {
+    this.nativeConfig = config;
+    console.log('[HybridAudioTrigger] Native config set:', config);
   }
   
   getStatus() {

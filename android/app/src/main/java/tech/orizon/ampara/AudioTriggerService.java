@@ -15,9 +15,12 @@ import android.os.PowerManager;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
 
+import org.json.JSONObject;
+
 import tech.orizon.ampara.audio.AudioDSP;
 import tech.orizon.ampara.audio.AudioTriggerConfig;
 import tech.orizon.ampara.audio.DiscussionDetector;
+import tech.orizon.ampara.audio.NativeRecorder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +41,7 @@ public class AudioTriggerService extends Service {
     
     private AudioTriggerConfig config;
     private DiscussionDetector detector;
+    private NativeRecorder recorder;
     
     private short[] frameBuffer;
     private List<DiscussionDetector.AggregationMetrics> aggregationBuffer;
@@ -55,6 +59,7 @@ public class AudioTriggerService extends Service {
         
         config = new AudioTriggerConfig();
         detector = new DiscussionDetector(config);
+        recorder = new NativeRecorder(this);
         
         int frameSamples = config.getFrameSamples();
         frameBuffer = new short[frameSamples];
@@ -65,11 +70,65 @@ public class AudioTriggerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "AudioTriggerService started");
         
+        // Apply configuration if provided
+        if (intent != null && intent.hasExtra("config")) {
+            String configJson = intent.getStringExtra("config");
+            applyConfiguration(configJson);
+        }
+        
         if (!isRunning) {
             startAudioCapture();
         }
         
         return START_STICKY;
+    }
+    
+    private void applyConfiguration(String configJson) {
+        try {
+            JSONObject json = new JSONObject(configJson);
+            
+            Log.d(TAG, "Applying configuration from API: " + configJson);
+            
+            // Audio capture settings
+            if (json.has("sampleRate")) config.sampleRate = json.getInt("sampleRate");
+            if (json.has("frameMs")) config.frameMs = json.getInt("frameMs");
+            if (json.has("aggregationMs")) config.aggregationMs = json.getInt("aggregationMs");
+            
+            // Detection thresholds
+            if (json.has("loudDeltaDb")) config.loudDeltaDb = json.getDouble("loudDeltaDb");
+            if (json.has("vadDeltaDb")) config.vadDeltaDb = json.getDouble("vadDeltaDb");
+            if (json.has("speechDensityMin")) config.speechDensityMin = json.getDouble("speechDensityMin");
+            if (json.has("loudDensityMin")) config.loudDensityMin = json.getDouble("loudDensityMin");
+            
+            // Timing windows
+            if (json.has("discussionWindowSeconds")) config.discussionWindowSeconds = json.getInt("discussionWindowSeconds");
+            if (json.has("preTriggerSeconds")) config.preTriggerSeconds = json.getInt("preTriggerSeconds");
+            if (json.has("startHoldSeconds")) config.startHoldSeconds = json.getInt("startHoldSeconds");
+            if (json.has("endHoldSeconds")) config.endHoldSeconds = json.getInt("endHoldSeconds");
+            if (json.has("cooldownSeconds")) config.cooldownSeconds = json.getInt("cooldownSeconds");
+            
+            // Noise floor learning
+            if (json.has("noiseFloorLearningRate")) config.noiseFloorLearningRate = json.getDouble("noiseFloorLearningRate");
+            
+            // Turn-taking detection
+            if (json.has("turnTakingMin")) config.turnTakingMin = json.getInt("turnTakingMin");
+            
+            // End detection
+            if (json.has("speechDensityEnd")) config.speechDensityEnd = json.getDouble("speechDensityEnd");
+            if (json.has("loudDensityEnd")) config.loudDensityEnd = json.getDouble("loudDensityEnd");
+            if (json.has("silenceDecaySeconds")) config.silenceDecaySeconds = json.getInt("silenceDecaySeconds");
+            if (json.has("silenceDecayRate")) config.silenceDecayRate = json.getDouble("silenceDecayRate");
+            
+            // ZCR thresholds
+            if (json.has("zcrMinVoice")) config.zcrMinVoice = json.getDouble("zcrMinVoice");
+            if (json.has("zcrMaxVoice")) config.zcrMaxVoice = json.getDouble("zcrMaxVoice");
+            
+            Log.i(TAG, String.format("Configuration applied: speechDensityMin=%.2f, loudDensityMin=%.2f, endHoldSeconds=%d",
+                config.speechDensityMin, config.loudDensityMin, config.endHoldSeconds));
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing configuration JSON", e);
+        }
     }
     
     private void startAudioCapture() {
@@ -215,11 +274,26 @@ public class AudioTriggerService extends Service {
         if (result.shouldStartRecording) {
             Log.i(TAG, String.format("DISCUSSION DETECTED! Reason: %s, Speech: %.2f, Loud: %.2f",
                 result.reason, result.speechDensity, result.loudDensity));
+            
+            // Start native recording
+            String filePath = recorder.startRecording();
+            if (filePath != null) {
+                Log.i(TAG, "Native recording started: " + filePath);
+            }
+            
             notifyJavaScript("discussionDetected", result.reason);
         }
         
         if (result.shouldStopRecording) {
             Log.i(TAG, String.format("DISCUSSION ENDED! Reason: %s", result.reason));
+            
+            // Stop native recording
+            String filePath = recorder.stopRecording();
+            if (filePath != null) {
+                Log.i(TAG, "Native recording stopped: " + filePath);
+                notifyRecordingComplete(filePath);
+            }
+            
             notifyJavaScript("discussionEnded", result.reason);
         }
     }
@@ -234,6 +308,18 @@ public class AudioTriggerService extends Service {
         sendBroadcast(intent);
         
         Log.d(TAG, "Broadcast sent: " + event);
+    }
+    
+    private void notifyRecordingComplete(String filePath) {
+        // Send broadcast with recording file path
+        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
+        intent.setPackage(getPackageName());
+        intent.putExtra("event", "nativeRecordingComplete");
+        intent.putExtra("filePath", filePath);
+        intent.putExtra("timestamp", System.currentTimeMillis());
+        sendBroadcast(intent);
+        
+        Log.d(TAG, "Recording complete broadcast sent: " + filePath);
     }
     
     private void createNotificationChannel() {
@@ -291,6 +377,12 @@ public class AudioTriggerService extends Service {
     @Override
     public void onDestroy() {
         Log.d(TAG, "AudioTriggerService destroyed");
+        
+        // Stop recording if active
+        if (recorder != null) {
+            recorder.destroy();
+        }
+        
         stopAudioCapture();
         releaseWakeLock();
         super.onDestroy();
