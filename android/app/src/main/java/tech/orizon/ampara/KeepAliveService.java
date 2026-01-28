@@ -70,10 +70,8 @@ public class KeepAliveService extends Service {
             startForeground(NOTIFICATION_ID, notification);
         }
         
-        // Se o intent veio do alarme, executa o ping
-        if (intent != null && "ACTION_PING".equals(intent.getAction())) {
-            executeNativePing();
-        }
+        // SEMPRE executa o ping (seja na primeira vez ou via alarme)
+        executeNativePing();
         
         // Agenda o próximo ping
         scheduleNextPing();
