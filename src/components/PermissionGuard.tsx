@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Geolocation } from '@capacitor/geolocation';
-import { VoiceRecorder } from 'capacitor-voice-recorder';
+import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import BatteryOptimization from '../plugins/batteryOptimization';
 import KeepAlive from '../plugins/keepAlive';
 import { getDeviceId } from '../lib/deviceId';
+import { UnifiedPermissionsScreen } from './UnifiedPermissionsScreen';
+import { checkPermissions } from '@/services/permissionsService';
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -16,32 +16,21 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
 
   const checkAndRequestPermissions = async () => {
     try {
-      // 1. Check Geolocation
-      const geoStatus = await Geolocation.checkPermissions();
+      // Check all permissions
+      const permissions = await checkPermissions();
       
-      // 2. Check Microphone
-      const micStatus = await VoiceRecorder.hasAudioRecordingPermission();
-
-      if (geoStatus.location === 'granted' && micStatus.value) {
+      // Check if all critical permissions are granted
+      const allGranted = 
+        permissions.microphone === 'granted' &&
+        permissions.location === 'granted' &&
+        permissions.notification === 'granted';
+      
+      if (allGranted) {
         console.log('[PermissionGuard] ✅ All basic permissions granted');
         setHasPermissions(true);
       } else {
-        // Request them
-        console.log('[PermissionGuard] Requesting permissions...');
-        
-        if (geoStatus.location !== 'granted') {
-          await Geolocation.requestPermissions();
-        }
-        
-        if (!micStatus.value) {
-          await VoiceRecorder.requestAudioRecordingPermission();
-        }
-
-        // Re-check after request
-        const finalGeo = await Geolocation.checkPermissions();
-        const finalMic = await VoiceRecorder.hasAudioRecordingPermission();
-        
-        setHasPermissions(finalGeo.location === 'granted' && finalMic.value);
+        console.log('[PermissionGuard] ⚠️ Missing permissions, showing unified screen');
+        setHasPermissions(false);
       }
     } catch (error) {
       console.error('[PermissionGuard] Error checking permissions:', error);
@@ -96,6 +85,10 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+
+  if (hasPermissions === false) {
+    return <UnifiedPermissionsScreen onComplete={checkAndRequestPermissions} />;
   }
 
   return <>{children}</>;
