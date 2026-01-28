@@ -18,7 +18,6 @@ public class MainActivity extends BridgeActivity {
     private static final String PREFS_NAME = "IconChangerPrefs";
     private static final String PREF_CURRENT_ALIAS = "currentAlias";
     
-    // Lista de todos os aliases disponíveis (nomes completos)
     private static final String[] ALL_ALIASES = {
         "tech.orizon.ampara.MainActivityAmpara",
         "tech.orizon.ampara.MainActivityWorkout",
@@ -32,196 +31,107 @@ public class MainActivity extends BridgeActivity {
         "tech.orizon.ampara.MainActivityCasual"
     };
     
-    // Alias padrão
     private static final String DEFAULT_ALIAS = "tech.orizon.ampara.MainActivityAmpara";
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // Registrar plugins customizados com logs de debug ANTES do super.onCreate
         Log.d("AmparaPlugins", "========== REGISTERING CUSTOM PLUGINS ==========");
         
         try {
-            Log.d("AmparaPlugins", "Attempting to register SecureStoragePlugin...");
             registerPlugin(SecureStoragePlugin.class);
-            Log.d("AmparaPlugins", "✅ SecureStoragePlugin registered successfully");
+            Log.d("AmparaPlugins", "✅ SecureStoragePlugin registered");
         } catch (Exception e) {
             Log.e("AmparaPlugins", "❌ Failed to register SecureStoragePlugin", e);
         }
         
         try {
-            Log.d("AmparaPlugins", "Attempting to register KeepAlivePlugin...");
             registerPlugin(KeepAlivePlugin.class);
-            Log.d("AmparaPlugins", "✅ KeepAlivePlugin registered successfully");
+            Log.d("AmparaPlugins", "✅ KeepAlivePlugin registered");
         } catch (Exception e) {
             Log.e("AmparaPlugins", "❌ Failed to register KeepAlivePlugin", e);
         }
         
         try {
-            Log.d("AmparaPlugins", "Attempting to register BatteryOptimizationPlugin...");
             registerPlugin(BatteryOptimizationPlugin.class);
-            Log.d("AmparaPlugins", "✅ BatteryOptimizationPlugin registered successfully");
+            Log.d("AmparaPlugins", "✅ BatteryOptimizationPlugin registered");
         } catch (Exception e) {
             Log.e("AmparaPlugins", "❌ Failed to register BatteryOptimizationPlugin", e);
         }
         
         Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE ==========");
         
-        // Chamar super.onCreate DEPOIS de registrar os plugins
         super.onCreate(savedInstanceState);
         
-        // Garantir que pelo menos um alias esteja habilitado
-        ensureAtLeastOneAliasEnabled();
-        
-        // Injetar a interface JavaScript diretamente na WebView do Capacitor
-        WebView webView = getBridge().getWebView();
-        if (webView != null) {
-            webView.addJavascriptInterface(new IconChangerInterface(), "AndroidIconChanger");
+        // No Android 14+, evitamos mexer nos aliases durante o onCreate para evitar crash de Secure Settings
+        // Apenas garantimos que a interface JS seja injetada
+        try {
+            WebView webView = getBridge().getWebView();
+            if (webView != null) {
+                webView.addJavascriptInterface(new IconChangerInterface(), "AndroidIconChanger");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error injecting JS interface", e);
         }
     }
     
-    /**
-     * Garante que pelo menos um alias esteja habilitado (senão o app não aparece no launcher)
-     */
-    private void ensureAtLeastOneAliasEnabled() {
-        String currentEnabled = getRealEnabledAlias();
-        
-        // Se nenhum alias está habilitado, habilitar o padrão
-        if (currentEnabled == null || currentEnabled.equals(DEFAULT_ALIAS)) {
-            PackageManager pm = getPackageManager();
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            String savedAlias = prefs.getString(PREF_CURRENT_ALIAS, DEFAULT_ALIAS);
-            
-            try {
-                pm.setComponentEnabledSetting(
-                    new ComponentName(getApplicationContext(), savedAlias),
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP
-                );
-                Log.d(TAG, "Enabled saved alias on startup: " + savedAlias);
-            } catch (Exception e) {
-                Log.e(TAG, "Error enabling saved alias, falling back to default", e);
-                try {
-                    pm.setComponentEnabledSetting(
-                        new ComponentName(getApplicationContext(), DEFAULT_ALIAS),
-                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                        PackageManager.DONT_KILL_APP
-                    );
-                } catch (Exception e2) {
-                    Log.e(TAG, "Error enabling default alias", e2);
-                }
-            }
-        }
-    }
-
-    /**
-     * Verifica qual alias está realmente habilitado no sistema
-     */
     private String getRealEnabledAlias() {
-        PackageManager pm = getPackageManager();
-        
-        for (String alias : ALL_ALIASES) {
-            try {
-                int state = pm.getComponentEnabledSetting(
-                    new ComponentName(getApplicationContext(), alias)
-                );
-                
-                // ENABLED = 1, DEFAULT = 0 (usa o valor do manifest), DISABLED = 2
-                // Apenas ENABLED conta como ativo (não confiar em DEFAULT)
+        try {
+            PackageManager pm = getPackageManager();
+            for (String alias : ALL_ALIASES) {
+                int state = pm.getComponentEnabledSetting(new ComponentName(getApplicationContext(), alias));
                 if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
-                    Log.d(TAG, "Found enabled alias: " + alias + " (state: ENABLED)");
                     return alias;
                 }
-                
-                Log.d(TAG, "Alias " + alias + " state: " + state);
-            } catch (Exception e) {
-                Log.e(TAG, "Error checking alias: " + alias, e);
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking real enabled alias", e);
         }
-        
-        Log.d(TAG, "No enabled alias found, returning default");
         return DEFAULT_ALIAS;
     }
 
-    /**
-     * Interface direta para ser chamada via JavaScript: window.AndroidIconChanger.changeIcon(alias)
-     */
     public class IconChangerInterface {
         
         @JavascriptInterface
         public boolean changeIcon(String targetAlias) {
             Log.d(TAG, "changeIcon called with: " + targetAlias);
             
-            // Converter alias curto para nome completo se necessário
             String fullTargetAlias = targetAlias.startsWith("tech.orizon.ampara.") 
                 ? targetAlias 
                 : "tech.orizon.ampara." + targetAlias.replace(".", "");
             
-            // Verificar qual alias está REALMENTE habilitado (não confiar no SharedPreferences)
-            String currentAlias = getRealEnabledAlias();
-            
-            Log.d(TAG, "Real current: " + currentAlias + " -> Target: " + fullTargetAlias);
-            
-            // Se já é o mesmo, não fazer nada
-            if (currentAlias.equals(fullTargetAlias)) {
-                Log.d(TAG, "Already using this icon, skipping");
-                return true;
-            }
-            
             try {
                 PackageManager pm = getPackageManager();
                 
-                // 1. Desabilitar TODOS os outros aliases primeiro (usar DISABLED para todos)
+                // Desabilitar outros e habilitar o novo em um bloco try-catch robusto
                 for (String alias : ALL_ALIASES) {
-                    if (!alias.equals(fullTargetAlias)) {
+                    int newState = alias.equals(fullTargetAlias) 
+                        ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED 
+                        : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+                    
+                    try {
                         pm.setComponentEnabledSetting(
                             new ComponentName(getApplicationContext(), alias),
-                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                            newState,
                             PackageManager.DONT_KILL_APP
                         );
-                        Log.d(TAG, "Disabled: " + alias);
+                    } catch (Exception e) {
+                        Log.w(TAG, "Could not set state for " + alias + ": " + e.getMessage());
                     }
                 }
                 
-                // 2. Habilitar o novo alias
-                pm.setComponentEnabledSetting(
-                    new ComponentName(getApplicationContext(), fullTargetAlias),
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP
-                );
-                Log.d(TAG, "Enabled: " + fullTargetAlias);
-                
-                // 3. Salvar a preferência
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
                 prefs.edit().putString(PREF_CURRENT_ALIAS, fullTargetAlias).apply();
-                
-                // 4. Verificar se realmente mudou
-                String newCurrent = getRealEnabledAlias();
-                Log.d(TAG, "After change, real enabled alias is: " + newCurrent);
-                
-                if (newCurrent.equals(fullTargetAlias)) {
-                    Log.d(TAG, "Icon changed successfully!");
-                    return true;
-                } else {
-                    Log.e(TAG, "Icon change failed! Expected " + fullTargetAlias + " but got " + newCurrent);
-                    return false;
-                }
+                return true;
                 
             } catch (Exception e) {
-                Log.e(TAG, "Error changing icon", e);
+                Log.e(TAG, "Fatal error changing icon", e);
                 return false;
             }
         }
 
         @JavascriptInterface
         public String getCurrentIcon() {
-            // Usar o estado real do sistema, não o SharedPreferences
-            String currentAlias = getRealEnabledAlias();
-            
-            // Retornar apenas a parte final do nome (ex: MainActivityWorkout)
-            if (currentAlias.contains(".")) {
-                return currentAlias.substring(currentAlias.lastIndexOf(".") + 1);
-            }
-            return currentAlias;
+            return getRealEnabledAlias();
         }
     }
 }
