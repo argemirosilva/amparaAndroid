@@ -49,16 +49,16 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
   };
 
   return (
-    <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 border border-border">
-      <div className="p-2 rounded-full bg-primary/10 text-primary">
+    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+      <div className="p-1.5 rounded-full bg-primary/10 text-primary flex-shrink-0">
         {icon}
       </div>
       <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-0.5">
           <h3 className="font-medium text-foreground">{title}</h3>
           {getStatusIcon()}
         </div>
-        <p className="text-sm text-muted-foreground mb-3">{description}</p>
+        <p className="text-xs text-muted-foreground mb-2">{description}</p>
         <Button
           onClick={onRequest}
           disabled={isRequesting || status === 'granted'}
@@ -162,30 +162,30 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
     batteryStatus === 'granted';
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-md space-y-4">
         {/* Logo */}
-        <div className="flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-center space-y-2">
           <img 
             src={amparaLogo} 
             alt="AMPARA" 
-            className="h-16 w-auto"
+            className="h-12 w-auto"
           />
         </div>
 
         {/* Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-1">
           <div className="flex items-center justify-center gap-2 text-primary">
             <Shield className="w-6 h-6" />
-            <h1 className="text-xl font-semibold">Configuração Inicial</h1>
+            <h1 className="text-lg font-semibold">Configuração Inicial</h1>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Para sua proteção, o AMPARA precisa das seguintes permissões:
           </p>
         </div>
 
         {/* Permission Items */}
-        <div className="space-y-3">
+        <div className="space-y-2">
 
 
           <PermissionItem
@@ -217,7 +217,7 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
         </div>
 
         {/* Continue Button */}
-        <div className="space-y-3 pt-4">
+        <div className="space-y-2 pt-2">
           {allGranted ? (
             <Button
               onClick={onComplete}
@@ -229,7 +229,7 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
             </Button>
           ) : (
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-3">
+              <p className="text-xs text-muted-foreground mb-2">
                 Clique em "Permitir" em cada permissão acima para continuar
               </p>
               <Button
