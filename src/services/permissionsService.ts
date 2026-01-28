@@ -7,6 +7,7 @@ export type PermissionStatus = 'granted' | 'denied' | 'prompt';
 export interface PermissionsState {
   microphone: PermissionStatus;
   location: PermissionStatus;
+  notification: PermissionStatus;
 }
 
 class PermissionsService {
@@ -213,3 +214,56 @@ class PermissionsService {
 }
 
 export const permissionsService = new PermissionsService();
+
+// Convenience exports for direct use
+export async function checkPermissions(): Promise<PermissionsState> {
+  const [microphone, location] = await Promise.all([
+    permissionsService.checkMicrophone(),
+    permissionsService.checkLocation(),
+  ]);
+  
+  // Check notification permission
+  let notification: PermissionStatus = 'prompt';
+  try {
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        notification = 'granted';
+      } else if (Notification.permission === 'denied') {
+        notification = 'denied';
+      }
+    }
+  } catch (error) {
+    console.warn('Error checking notification permission:', error);
+  }
+  
+  return { microphone, location, notification };
+}
+
+export async function requestMicrophonePermission(): Promise<PermissionStatus> {
+  const granted = await permissionsService.requestMicrophone();
+  return granted ? 'granted' : 'denied';
+}
+
+export async function requestLocationPermission(): Promise<PermissionStatus> {
+  const granted = await permissionsService.requestLocation();
+  return granted ? 'granted' : 'denied';
+}
+
+export async function requestNotificationPermission(): Promise<PermissionStatus> {
+  try {
+    if (!('Notification' in window)) {
+      console.warn('Notifications not supported');
+      return 'denied';
+    }
+    
+    if (Notification.permission === 'granted') {
+      return 'granted';
+    }
+    
+    const permission = await Notification.requestPermission();
+    return permission === 'granted' ? 'granted' : 'denied';
+  } catch (error) {
+    console.error('Error requesting notification permission:', error);
+    return 'denied';
+  }
+}
