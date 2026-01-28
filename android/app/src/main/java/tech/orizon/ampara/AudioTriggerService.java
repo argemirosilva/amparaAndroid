@@ -225,8 +225,9 @@ public class AudioTriggerService extends Service {
     }
     
     private void notifyJavaScript(String event, String reason) {
-        // Send broadcast to JavaScript
+        // Send explicit broadcast to JavaScript (required for Android 14+)
         Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
+        intent.setPackage(getPackageName()); // Make it explicit
         intent.putExtra("event", event);
         intent.putExtra("reason", reason);
         intent.putExtra("timestamp", System.currentTimeMillis());
