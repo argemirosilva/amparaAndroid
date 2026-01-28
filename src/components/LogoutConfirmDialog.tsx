@@ -190,27 +190,21 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
                 </Button>
               </div>
 
-              {/* Force Logout Button (appears after error) */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="pt-2"
+              {/* Force Logout Button (always visible) */}
+              <div className="pt-2 border-t border-border mt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    console.log('[Logout] Force local logout triggered');
+                    onConfirm();
+                  }}
+                  disabled={isLoading}
                 >
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full text-xs text-muted-foreground hover:text-destructive"
-                    onClick={() => {
-                      console.log('[Logout] Force local logout triggered');
-                      onConfirm();
-                    }}
-                    disabled={isLoading}
-                  >
-                    Forçar Saída Local (sem validação)
-                  </Button>
-                </motion.div>
-              )}
+                  Forçar Saída Local (sem validação)
+                </Button>
+              </div>
             </form>
           </motion.div>
         </motion.div>
