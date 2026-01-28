@@ -25,6 +25,7 @@ import { useAudioTriggerController } from '@/hooks/useAudioTriggerController';
 import { useStealthNotification } from '@/hooks/useStealthNotification';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBackgroundServices } from '@/hooks/useBackgroundServices';
+import { hybridAudioTrigger } from '@/services/hybridAudioTriggerService';
 
 interface HomePageProps {
   onLogout: () => void;
@@ -89,28 +90,75 @@ export function HomePage({ onLogout }: HomePageProps) {
     }
   }, [hasAllRequired, isPermissionsLoading, requestAll]);
 
+  // Register JavaScript audio trigger callbacks with hybrid service
+  useEffect(() => {
+    hybridAudioTrigger.registerJavaScriptCallbacks(
+      async () => {
+        console.log('[Home] Hybrid service starting JavaScript audio trigger');
+        await audioTrigger.start();
+      },
+      async () => {
+        console.log('[Home] Hybrid service stopping JavaScript audio trigger');
+        await audioTrigger.stop();
+      }
+    );
+  }, [audioTrigger]);
+
+  // Listen to native audio trigger events (discussion detected in background)
+  useEffect(() => {
+    const handleNativeEvent = (event: { event: string; reason: string }) => {
+      console.log('[Home] Native audio trigger event:', event);
+      
+      if (event.event === 'discussionDetected') {
+        // Only auto-record if within monitoring period
+        if (monitoring.dentroHorario && !recording.isRecording && !panic.isPanicActive) {
+          console.log('[Home] Native discussion detected - starting recording');
+          recording.startRecording('automatico').then(success => {
+            if (success) {
+              appState.setStatus('recording');
+              toast({
+                title: 'Gravação automática iniciada',
+                description: 'Discussão detectada em segundo plano',
+                duration: 3000,
+              });
+            }
+          });
+        } else {
+          console.log('[Home] Native discussion detected but not recording:', {
+            dentroHorario: monitoring.dentroHorario,
+            isRecording: recording.isRecording,
+            isPanicActive: panic.isPanicActive
+          });
+        }
+      }
+    };
+    
+    hybridAudioTrigger.addListener(handleNativeEvent);
+    
+    return () => {
+      hybridAudioTrigger.removeListener(handleNativeEvent);
+    };
+  }, [monitoring.dentroHorario, recording, panic.isPanicActive, appState, toast]);
+
   // Auto-start audio monitoring on login (keeps app alive 24/7)
   // Only stops on logout
   useEffect(() => {
     if (!hasAllRequired) return; // Don't start monitoring without permissions
     
-    // Start AudioTrigger automatically if not already running
-    if (!audioTrigger.isCapturing) {
-      console.log('[Home] Auto-starting audio trigger (keeps app alive)');
-      // Add small delay to ensure permission context is ready
-      const timer = setTimeout(() => {
-        audioTrigger.start().catch(err => {
-          console.error('[Home] Failed to auto-start audio trigger:', err);
-          toast({
-            title: "Erro ao iniciar monitoramento",
-            description: "Reinicie o app para tentar novamente.",
-            variant: "destructive"
-          });
+    // Start hybrid audio trigger (automatically switches between JS and Native)
+    console.log('[Home] Auto-starting hybrid audio trigger (keeps app alive)');
+    const timer = setTimeout(() => {
+      hybridAudioTrigger.start().catch(err => {
+        console.error('[Home] Failed to auto-start hybrid audio trigger:', err);
+        toast({
+          title: "Erro ao iniciar monitoramento",
+          description: "Reinicie o app para tentar novamente.",
+          variant: "destructive"
         });
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [hasAllRequired, audioTrigger, toast]);
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [hasAllRequired, toast]);
 
   // Switch AudioTrigger processing mode based on monitoring period
   // FULL mode: inside monitoring period (full analysis)

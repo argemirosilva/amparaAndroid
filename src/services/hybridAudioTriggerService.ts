@@ -14,6 +14,8 @@ class HybridAudioTriggerService {
   private appIsActive = true;
   
   private eventListeners: Array<(event: AudioTriggerEvent) => void> = [];
+  private jsStartCallback: (() => Promise<void>) | null = null;
+  private jsStopCallback: (() => Promise<void>) | null = null;
   
   constructor() {
     this.init();
@@ -73,21 +75,42 @@ class HybridAudioTriggerService {
     }
     
     console.log('[HybridAudioTrigger] Starting JavaScript audio trigger');
-    this.isJavaScriptRunning = true;
     
     // Stop native if running
     if (this.isNativeRunning) {
       await this.stopNative();
     }
     
-    // JavaScript audio trigger is managed by useAudioTriggerController
-    // This service just tracks the state
+    // Call JavaScript start callback if registered
+    if (this.jsStartCallback) {
+      try {
+        await this.jsStartCallback();
+        this.isJavaScriptRunning = true;
+        console.log('[HybridAudioTrigger] JavaScript audio trigger started via callback');
+      } catch (error) {
+        console.error('[HybridAudioTrigger] Error starting JavaScript audio trigger:', error);
+      }
+    } else {
+      console.warn('[HybridAudioTrigger] No JavaScript start callback registered');
+      this.isJavaScriptRunning = true;
+    }
   }
   
   private async stopJavaScript() {
     if (!this.isJavaScriptRunning) return;
     
     console.log('[HybridAudioTrigger] Stopping JavaScript audio trigger');
+    
+    // Call JavaScript stop callback if registered
+    if (this.jsStopCallback) {
+      try {
+        await this.jsStopCallback();
+        console.log('[HybridAudioTrigger] JavaScript audio trigger stopped via callback');
+      } catch (error) {
+        console.error('[HybridAudioTrigger] Error stopping JavaScript audio trigger:', error);
+      }
+    }
+    
     this.isJavaScriptRunning = false;
   }
   
@@ -173,6 +196,15 @@ class HybridAudioTriggerService {
         console.error('[HybridAudioTrigger] Error in event listener:', error);
       }
     });
+  }
+  
+  /**
+   * Register callbacks to control JavaScript audio trigger
+   */
+  registerJavaScriptCallbacks(start: () => Promise<void>, stop: () => Promise<void>) {
+    this.jsStartCallback = start;
+    this.jsStopCallback = stop;
+    console.log('[HybridAudioTrigger] JavaScript callbacks registered');
   }
   
   getStatus() {
