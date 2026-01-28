@@ -1,5 +1,6 @@
 package tech.orizon.ampara;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -7,15 +8,25 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
 
+import org.json.JSONObject;
+
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
- * Serviço de foreground para manter o app ativo em Doze Mode.
- * Mantém um WakeLock parcial e uma notificação persistente.
+ * Serviço de foreground para manter o app ativo em Doze Mode profundo.
+ * Implementa ping nativo e usa AlarmManager para acordar a rede.
  */
 public class KeepAliveService extends Service {
     
@@ -23,18 +34,22 @@ public class KeepAliveService extends Service {
     private static final String CHANNEL_ID = "ampara_keepalive";
     private static final int NOTIFICATION_ID = 9999;
     private static final String WAKELOCK_TAG = "Ampara::KeepAliveLock";
+    private static final String PREFS_NAME = "CapacitorStorage";
+    private static final String API_URL = "https://ilikiajeduezvvanjejz.supabase.co/functions/v1/mobile-api";
     
     private PowerManager.WakeLock wakeLock;
+    private ExecutorService executorService;
+    private AlarmManager alarmManager;
+    private PendingIntent alarmIntent;
     
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "Service created");
+        executorService = Executors.newSingleThreadExecutor();
+        alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         
-        // Criar canal de notificação
         createNotificationChannel();
-        
-        // Adquirir WakeLock parcial
         acquireWakeLock();
     }
     
@@ -42,10 +57,8 @@ public class KeepAliveService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Service started");
         
-        // Criar notificação de foreground
         Notification notification = createNotification();
         
-        // Android 14+ requer especificar o tipo de foreground service
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIFICATION_ID, notification, 
                 android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
@@ -53,16 +66,119 @@ public class KeepAliveService extends Service {
             startForeground(NOTIFICATION_ID, notification);
         }
         
-        // Retornar START_STICKY para que o serviço seja reiniciado se morrer
+        // Se o intent veio do alarme, executa o ping
+        if (intent != null && "ACTION_PING".equals(intent.getAction())) {
+            executeNativePing();
+        }
+        
+        // Agenda o próximo ping
+        scheduleNextPing();
+        
         return START_STICKY;
+    }
+    
+    private void scheduleNextPing() {
+        Intent intent = new Intent(this, KeepAliveService.class);
+        intent.setAction("ACTION_PING");
+        
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        
+        alarmIntent = PendingIntent.getService(this, 0, intent, flags);
+        
+        long triggerAtMillis = System.currentTimeMillis() + 30000; // 30 segundos
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // setExactAndAllowWhileIdle é crucial para Doze Mode
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
+        } else {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
+        }
+        
+        Log.d(TAG, "Next ping scheduled in 30s");
+    }
+    
+    private void executeNativePing() {
+        executorService.execute(() -> {
+            Log.d(TAG, "Executing native ping...");
+            HttpURLConnection conn = null;
+            try {
+                // Recuperar dados da sessão das SharedPreferences do Capacitor
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                String token = prefs.getString("ampara_token", null);
+                String userJson = prefs.getString("ampara_user", null);
+                String deviceIdJson = prefs.getString("device_id", null);
+                
+                String deviceId = "unknown";
+                if (deviceIdJson != null) {
+                    try {
+                        JSONObject devObj = new JSONObject(deviceIdJson);
+                        deviceId = devObj.getString("device_id");
+                    } catch (Exception e) {
+                        deviceId = deviceIdJson;
+                    }
+                }
+                
+                String email = null;
+                if (userJson != null) {
+                    try {
+                        JSONObject userObj = new JSONObject(userJson);
+                        email = userObj.getString("email");
+                    } catch (Exception e) {}
+                }
+
+                if (token == null) {
+                    Log.w(TAG, "No token found in SharedPreferences, skipping native ping");
+                    return;
+                }
+
+                URL url = new URL(API_URL);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+
+                JSONObject payload = new JSONObject();
+                payload.put("action", "pingMobile");
+                payload.put("session_token", token);
+                payload.put("device_id", deviceId);
+                if (email != null) {
+                    payload.put("email_usuario", email);
+                }
+
+                String jsonInputString = payload.toString();
+                try (OutputStream os = conn.getOutputStream()) {
+                    byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                    os.write(input, 0, input.length);
+                }
+
+                int code = conn.getResponseCode();
+                Log.d(TAG, "Native ping response code: " + code);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error in native ping: " + e.getMessage());
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        });
     }
     
     @Override
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Service destroyed");
-        
-        // Liberar WakeLock
+        if (alarmManager != null && alarmIntent != null) {
+            alarmManager.cancel(alarmIntent);
+        }
+        if (executorService != null) {
+            executorService.shutdown();
+        }
         releaseWakeLock();
     }
     
@@ -71,9 +187,6 @@ public class KeepAliveService extends Service {
         return null;
     }
     
-    /**
-     * Cria o canal de notificação para Android 8.0+
-     */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -92,17 +205,10 @@ public class KeepAliveService extends Service {
         }
     }
     
-    /**
-     * Cria a notificação de foreground
-     */
     private Notification createNotification() {
         Intent notificationIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE
-        );
+        int flags = PendingIntent.FLAG_IMMUTABLE;
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, flags);
         
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Sistema")
@@ -117,9 +223,6 @@ public class KeepAliveService extends Service {
             .build();
     }
     
-    /**
-     * Adquire um WakeLock parcial para manter a CPU ativa
-     */
     private void acquireWakeLock() {
         try {
             PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -138,9 +241,6 @@ public class KeepAliveService extends Service {
         }
     }
     
-    /**
-     * Libera o WakeLock
-     */
     private void releaseWakeLock() {
         try {
             if (wakeLock != null && wakeLock.isHeld()) {
