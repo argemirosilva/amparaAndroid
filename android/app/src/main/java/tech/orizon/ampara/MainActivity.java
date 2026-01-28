@@ -12,6 +12,7 @@ import tech.orizon.ampara.plugins.SecureStoragePlugin;
 import tech.orizon.ampara.plugins.KeepAlivePlugin;
 import tech.orizon.ampara.plugins.BatteryOptimizationPlugin;
 import tech.orizon.ampara.plugins.SessionExpiredListenerPlugin;
+import tech.orizon.ampara.plugins.DeviceInfoExtendedPlugin;
 
 public class MainActivity extends BridgeActivity {
     
@@ -64,6 +65,13 @@ public class MainActivity extends BridgeActivity {
             Log.d("AmparaPlugins", "✅ SessionExpiredListenerPlugin registered");
         } catch (Exception e) {
             Log.e("AmparaPlugins", "❌ Failed to register SessionExpiredListenerPlugin", e);
+        }
+        
+        try {
+            registerPlugin(DeviceInfoExtendedPlugin.class);
+            Log.d("AmparaPlugins", "✅ DeviceInfoExtendedPlugin registered");
+        } catch (Exception e) {
+            Log.e("AmparaPlugins", "❌ Failed to register DeviceInfoExtendedPlugin", e);
         }
         
         Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE ==========");

@@ -8,7 +8,13 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -147,12 +153,27 @@ public class KeepAliveService extends Service {
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(15000);
 
+                // Coletar informações do dispositivo
+                JSONObject deviceInfo = collectDeviceInfo();
+                
                 JSONObject payload = new JSONObject();
                 payload.put("action", "pingMobile");
                 payload.put("session_token", token);
                 payload.put("device_id", deviceId);
                 if (email != null) {
                     payload.put("email_usuario", email);
+                }
+                
+                // Adicionar informações do dispositivo
+                payload.put("device_model", deviceInfo.getString("device_model"));
+                payload.put("battery_level", deviceInfo.getInt("battery_level"));
+                payload.put("is_charging", deviceInfo.getBoolean("is_charging"));
+                payload.put("android_version", deviceInfo.getString("android_version"));
+                payload.put("app_version", deviceInfo.getString("app_version"));
+                payload.put("is_ignoring_battery_optimization", deviceInfo.getBoolean("is_ignoring_battery_optimization"));
+                payload.put("connection_type", deviceInfo.getString("connection_type"));
+                if (!deviceInfo.isNull("wifi_signal_strength")) {
+                    payload.put("wifi_signal_strength", deviceInfo.getInt("wifi_signal_strength"));
                 }
 
                 String jsonInputString = payload.toString();
@@ -291,6 +312,85 @@ public class KeepAliveService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error releasing WakeLock", e);
         }
+    }
+    
+    /**
+     * Coleta informações do dispositivo para enviar no ping
+     */
+    private JSONObject collectDeviceInfo() {
+        JSONObject info = new JSONObject();
+        try {
+            // Nome do modelo do dispositivo
+            String deviceModel = Build.MANUFACTURER + " " + Build.MODEL;
+            info.put("device_model", deviceModel);
+            
+            // Informações de bateria
+            BatteryManager batteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
+            int batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+            info.put("battery_level", batteryLevel);
+            
+            IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent batteryStatus = registerReceiver(null, ifilter);
+            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                                status == BatteryManager.BATTERY_STATUS_FULL;
+            info.put("is_charging", isCharging);
+            
+            // Versão do Android
+            info.put("android_version", Build.VERSION.RELEASE);
+            
+            // Versão do app
+            try {
+                String appVersion = getPackageManager()
+                    .getPackageInfo(getPackageName(), 0).versionName;
+                info.put("app_version", appVersion);
+            } catch (Exception e) {
+                info.put("app_version", "unknown");
+            }
+            
+            // Status de otimização de bateria
+            PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            boolean isIgnoringBatteryOptimization = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                isIgnoringBatteryOptimization = powerManager.isIgnoringBatteryOptimizations(getPackageName());
+            }
+            info.put("is_ignoring_battery_optimization", isIgnoringBatteryOptimization);
+            
+            // Tipo de conexão e força do sinal
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
+            
+            String connectionType = "none";
+            Integer wifiSignalStrength = null;
+            
+            if (activeNetwork != null && activeNetwork.isConnected()) {
+                int type = activeNetwork.getType();
+                if (type == ConnectivityManager.TYPE_WIFI) {
+                    connectionType = "wifi";
+                    
+                    // Obter força do sinal WiFi
+                    WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                    WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+                    int rssi = wifiInfo.getRssi();
+                    
+                    // Converter RSSI para porcentagem (0-100)
+                    wifiSignalStrength = Math.max(0, Math.min(100, (rssi + 100) * 2));
+                } else if (type == ConnectivityManager.TYPE_MOBILE) {
+                    connectionType = "cellular";
+                }
+            }
+            
+            info.put("connection_type", connectionType);
+            if (wifiSignalStrength != null) {
+                info.put("wifi_signal_strength", wifiSignalStrength);
+            } else {
+                info.put("wifi_signal_strength", JSONObject.NULL);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error collecting device info", e);
+        }
+        return info;
     }
     
     /**

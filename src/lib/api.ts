@@ -456,7 +456,26 @@ export async function syncConfigMobile(): Promise<ApiResponse<ConfigSyncResponse
  * Ping server to maintain online status
  */
 export async function pingMobile(): Promise<ApiResponse<PingResponse>> {
-  return mobileApi<PingResponse>('pingMobile');
+  try {
+    // Import device info plugin dynamically to avoid circular dependencies
+    const DeviceInfoExtended = (await import('@/plugins/deviceInfo')).default;
+    const deviceInfo = await DeviceInfoExtended.getExtendedInfo();
+    
+    return mobileApi<PingResponse>('pingMobile', {
+      device_model: deviceInfo.deviceModel,
+      battery_level: deviceInfo.batteryLevel,
+      is_charging: deviceInfo.isCharging,
+      android_version: deviceInfo.androidVersion,
+      app_version: deviceInfo.appVersion,
+      is_ignoring_battery_optimization: deviceInfo.isIgnoringBatteryOptimization,
+      connection_type: deviceInfo.connectionType,
+      wifi_signal_strength: deviceInfo.wifiSignalStrength,
+    });
+  } catch (error) {
+    console.warn('[API] Failed to get device info for ping, sending without it:', error);
+    // Fallback: send ping without device info
+    return mobileApi<PingResponse>('pingMobile');
+  }
 }
 
 // ============================================
