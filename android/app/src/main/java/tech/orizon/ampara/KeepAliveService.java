@@ -78,12 +78,12 @@ public class KeepAliveService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
-                "Ampara - Serviço Ativo",
-                NotificationManager.IMPORTANCE_DEFAULT
+                "Sistema Ativo",
+                NotificationManager.IMPORTANCE_MIN
             );
-            channel.setDescription("Mantém o Ampara ativo em segundo plano");
-            channel.setShowBadge(true);
-            channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            channel.setDescription("Processamento interno do sistema");
+            channel.setShowBadge(false);
+            channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
             
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
@@ -105,15 +105,15 @@ public class KeepAliveService extends Service {
         );
         
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Ampara Ativo")
-            .setContentText("Monitoramento em segundo plano")
+            .setContentTitle("Sistema")
+            .setContentText("Processamento em execução")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFERRED)
             .build();
     }
     
