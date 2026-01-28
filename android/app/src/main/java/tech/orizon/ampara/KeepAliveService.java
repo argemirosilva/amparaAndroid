@@ -357,27 +357,35 @@ public class KeepAliveService extends Service {
             info.put("is_ignoring_battery_optimization", isIgnoringBatteryOptimization);
             
             // Tipo de conexão e força do sinal
-            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
-            
             String connectionType = "none";
             Integer wifiSignalStrength = null;
             
-            if (activeNetwork != null && activeNetwork.isConnected()) {
-                int type = activeNetwork.getType();
-                if (type == ConnectivityManager.TYPE_WIFI) {
-                    connectionType = "wifi";
-                    
-                    // Obter força do sinal WiFi
-                    WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                    WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-                    int rssi = wifiInfo.getRssi();
-                    
-                    // Converter RSSI para porcentagem (0-100)
-                    wifiSignalStrength = Math.max(0, Math.min(100, (rssi + 100) * 2));
-                } else if (type == ConnectivityManager.TYPE_MOBILE) {
-                    connectionType = "cellular";
+            try {
+                ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
+                
+                if (activeNetwork != null && activeNetwork.isConnected()) {
+                    int type = activeNetwork.getType();
+                    if (type == ConnectivityManager.TYPE_WIFI) {
+                        connectionType = "wifi";
+                        
+                        // Obter força do sinal WiFi
+                        try {
+                            WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+                            int rssi = wifiInfo.getRssi();
+                            
+                            // Converter RSSI para porcentagem (0-100)
+                            wifiSignalStrength = Math.max(0, Math.min(100, (rssi + 100) * 2));
+                        } catch (SecurityException e) {
+                            Log.w(TAG, "WiFi signal strength unavailable (permission denied)");
+                        }
+                    } else if (type == ConnectivityManager.TYPE_MOBILE) {
+                        connectionType = "cellular";
+                    }
                 }
+            } catch (Exception e) {
+                Log.w(TAG, "Error getting connection type", e);
             }
             
             info.put("connection_type", connectionType);
