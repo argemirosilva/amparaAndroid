@@ -181,21 +181,35 @@ export async function loginCustomizado(
   );
 
   if (result.data) {
+    // Debug: Log the entire response structure
+    console.log('[API] Login response keys:', Object.keys(result.data));
+    console.log('[API] Has access_token:', !!result.data.access_token);
+    console.log('[API] Has refresh_token:', !!result.data.refresh_token);
+    console.log('[API] Has session:', !!result.data.session);
+    
     // Support both old and new response formats
     const accessToken = result.data.access_token || result.data.session?.token;
     const refreshToken = result.data.refresh_token || result.data.session?.refresh_token;
     const userData = result.data.user || result.data.usuario;
     
+    console.log('[API] Extracted accessToken:', !!accessToken);
+    console.log('[API] Extracted refreshToken:', !!refreshToken);
+    console.log('[API] Extracted userData:', !!userData);
+    
     // Store session token using session service
     if (accessToken) {
       await setSessionToken(accessToken);
       console.log('[API] Access token stored successfully');
+    } else {
+      console.error('[API] No access token found in response!');
     }
     
     // Store refresh token if provided by backend
     if (refreshToken) {
       await saveRefreshToken(refreshToken);
       console.log('[API] Refresh token stored successfully');
+    } else {
+      console.error('[API] No refresh token found in response!');
     }
     
     // Store user data
