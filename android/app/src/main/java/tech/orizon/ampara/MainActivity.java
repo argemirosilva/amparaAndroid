@@ -11,6 +11,7 @@ import com.getcapacitor.BridgeActivity;
 import tech.orizon.ampara.plugins.SecureStoragePlugin;
 import tech.orizon.ampara.plugins.KeepAlivePlugin;
 import tech.orizon.ampara.plugins.BatteryOptimizationPlugin;
+import tech.orizon.ampara.plugins.SessionExpiredListenerPlugin;
 
 public class MainActivity extends BridgeActivity {
     
@@ -56,6 +57,13 @@ public class MainActivity extends BridgeActivity {
             Log.d("AmparaPlugins", "✅ BatteryOptimizationPlugin registered");
         } catch (Exception e) {
             Log.e("AmparaPlugins", "❌ Failed to register BatteryOptimizationPlugin", e);
+        }
+        
+        try {
+            registerPlugin(SessionExpiredListenerPlugin.class);
+            Log.d("AmparaPlugins", "✅ SessionExpiredListenerPlugin registered");
+        } catch (Exception e) {
+            Log.e("AmparaPlugins", "❌ Failed to register SessionExpiredListenerPlugin", e);
         }
         
         Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE ==========");

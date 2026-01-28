@@ -10,6 +10,8 @@ import { initializeSession, isAuthenticated, reloadSession, clearSession } from 
 import { initializeConfigService } from '@/services/configService';
 import { startPingService, stopPingService } from '@/services/connectivityService';
 import { initializeBackgroundStateManager } from '@/services/backgroundStateManager';
+import SessionExpiredListener from '@/plugins/sessionExpiredListener';
+import { PluginListenerHandle } from '@capacitor/core';
 import { PanicActivePage } from "./pages/PanicActive";
 import { RecordingPage } from "./pages/Recording";
 import { PendingPage } from "./pages/Pending";
@@ -105,6 +107,43 @@ const App = () => {
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Listen for session expiration from JavaScript (ConnectivityService)
+  useEffect(() => {
+    const handleSessionExpiredJS = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.error('[App] Session expired event from JavaScript:', customEvent.detail);
+      await handleLogout();
+    };
+    
+    window.addEventListener('session-expired', handleSessionExpiredJS);
+    return () => window.removeEventListener('session-expired', handleSessionExpiredJS);
+  }, []);
+
+  // Listen for session expiration from Native (KeepAliveService)
+  useEffect(() => {
+    let nativeListener: PluginListenerHandle | null = null;
+    
+    const setupNativeListener = async () => {
+      try {
+        nativeListener = await SessionExpiredListener.addListener('sessionExpired', async (data) => {
+          console.error('[App] Session expired event from Native:', data);
+          await handleLogout();
+        });
+        console.log('[App] Native session expired listener registered');
+      } catch (error) {
+        console.error('[App] Failed to register native session expired listener:', error);
+      }
+    };
+    
+    setupNativeListener();
+    
+    return () => {
+      if (nativeListener) {
+        nativeListener.remove();
+      }
+    };
   }, []);
 
   const handleLoginSuccess = () => {

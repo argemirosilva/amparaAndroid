@@ -14,6 +14,7 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.json.JSONObject;
 
@@ -163,7 +164,31 @@ public class KeepAliveService extends Service {
                 int code = conn.getResponseCode();
                 Log.d(TAG, "Native ping response code: " + code);
                 
-                if (code != 200) {
+                // Tratamento especial para HTTP 401 (Sessão Expirada)
+                if (code == 401) {
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                        StringBuilder response = new StringBuilder();
+                        String responseLine;
+                        while ((responseLine = br.readLine()) != null) {
+                            response.append(responseLine.trim());
+                        }
+                        String errorBody = response.toString();
+                        Log.e(TAG, "Session expired (401): " + errorBody);
+                        
+                        // Verificar se é realmente session_expired
+                        try {
+                            JSONObject errorJson = new JSONObject(errorBody);
+                            if (errorJson.optBoolean("session_expired", false)) {
+                                Log.e(TAG, "Session expired confirmed! Notifying JavaScript and stopping service...");
+                                notifyJavaScriptSessionExpired();
+                                stopSelf(); // Para o serviço
+                                return;
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing 401 response: " + e.getMessage());
+                        }
+                    }
+                } else if (code != 200) {
                     try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
                         StringBuilder response = new StringBuilder();
                         String responseLine;
@@ -265,6 +290,20 @@ public class KeepAliveService extends Service {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error releasing WakeLock", e);
+        }
+    }
+    
+    /**
+     * Notifica o JavaScript que a sessão expirou via LocalBroadcast
+     */
+    private void notifyJavaScriptSessionExpired() {
+        try {
+            Intent intent = new Intent("tech.orizon.ampara.SESSION_EXPIRED");
+            intent.putExtra("source", "native-ping");
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+            Log.d(TAG, "Session expired broadcast sent to JavaScript");
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending session expired broadcast", e);
         }
     }
 }

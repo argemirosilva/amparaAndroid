@@ -5,6 +5,7 @@
 
 import { pingMobile } from '@/lib/api';
 import { ensureCriticalDataAvailable, isAppInBackground } from './backgroundStateManager';
+import { clearSession } from './sessionService';
 
 // ============================================
 // Types
@@ -98,6 +99,13 @@ async function executePing(): Promise<void> {
     
     const latency = Date.now() - startTime;
     
+    // Check for session expiration (HTTP 401)
+    if (result.data && result.data.session_expired === true) {
+      console.error('[ConnectivityService] Session expired detected! Triggering logout...');
+      await handleSessionExpired();
+      return;
+    }
+    
     if (result.error || !result.data) {
       const errorMsg = result.error ? JSON.stringify(result.error) : 'No data';
       handlePingFailure('API error: ' + errorMsg, latency);
@@ -187,6 +195,24 @@ function scheduleRetryWithBackoff(): void {
     retryTimeoutId = null;
     executePing();
   }, delay);
+}
+
+/**
+ * Handle session expiration (401 from backend)
+ */
+async function handleSessionExpired(): Promise<void> {
+  console.error('[ConnectivityService] Session expired! Stopping ping service and clearing session...');
+  
+  // 1. Stop ping service immediately
+  stopPingService();
+  
+  // 2. Clear session token from all storages
+  await clearSession();
+  
+  // 3. Dispatch custom event for app to handle (redirect to login)
+  window.dispatchEvent(new CustomEvent('session-expired', {
+    detail: { source: 'connectivity-service' }
+  }));
 }
 
 /**
