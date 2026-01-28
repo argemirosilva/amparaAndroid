@@ -196,6 +196,14 @@
             android:foregroundServiceType="location|dataSync"
             android:stopWithTask="false" />
 
+        <!-- AudioTrigger Service for background audio monitoring -->
+        <service
+            android:name="tech.orizon.ampara.AudioTriggerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="microphone"
+            android:stopWithTask="false" />
+
         <!-- BroadcastReceiver for AlarmManager to wake up in Doze Mode -->
         <receiver
             android:name="tech.orizon.ampara.KeepAliveAlarmReceiver"
