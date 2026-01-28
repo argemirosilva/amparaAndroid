@@ -23,6 +23,7 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForceLogout, setShowForceLogout] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,6 +189,28 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
                   )}
                 </Button>
               </div>
+
+              {/* Force Logout Button (appears after error) */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="pt-2"
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full text-xs text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      console.log('[Logout] Force local logout triggered');
+                      onConfirm();
+                    }}
+                    disabled={isLoading}
+                  >
+                    Forçar Saída Local (sem validação)
+                  </Button>
+                </motion.div>
+              )}
             </form>
           </motion.div>
         </motion.div>
