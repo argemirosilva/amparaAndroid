@@ -181,16 +181,27 @@ export async function loginCustomizado(
   );
 
   if (result.data) {
-    // Store session token, refresh token and user data using session service
-    await setSessionToken(result.data.session.token);
+    // Support both old and new response formats
+    const accessToken = result.data.access_token || result.data.session?.token;
+    const refreshToken = result.data.refresh_token || result.data.session?.refresh_token;
+    const userData = result.data.user || result.data.usuario;
+    
+    // Store session token using session service
+    if (accessToken) {
+      await setSessionToken(accessToken);
+      console.log('[API] Access token stored successfully');
+    }
     
     // Store refresh token if provided by backend
-    if (result.data.session.refresh_token) {
-      await saveRefreshToken(result.data.session.refresh_token);
+    if (refreshToken) {
+      await saveRefreshToken(refreshToken);
       console.log('[API] Refresh token stored successfully');
     }
     
-    await setUserData(JSON.stringify(result.data.usuario));
+    // Store user data
+    if (userData) {
+      await setUserData(JSON.stringify(userData));
+    }
     
     // Store user config in localStorage (not critical for auth)
     localStorage.setItem(
