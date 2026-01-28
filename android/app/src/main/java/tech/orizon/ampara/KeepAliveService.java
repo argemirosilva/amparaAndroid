@@ -94,31 +94,33 @@ public class KeepAliveService extends Service {
         
         long triggerAtMillis = System.currentTimeMillis() + 30000; // 30 segundos
         
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // setExactAndAllowWhileIdle é crucial para Doze Mode
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // setExactAndAllowWhileIdle é crucial para Doze Mode
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
+            } else {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
+            }
+            Log.d(TAG, "Next ping scheduled in 30s (ExactAndAllowWhileIdle)");
+        } catch (SecurityException e) {
+            // Fallback se a permissão de alarme exato não foi concedida (Android 12+)
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
+            Log.w(TAG, "Exact alarm permission not granted, using inexact alarm");
         }
-        
-        Log.d(TAG, "Next ping scheduled in 30s");
     }
     
     private void executeNativePing() {
         executorService.execute(() -> {
             Log.d(TAG, "Executing native ping...");
+            
+            // Garantir que o WakeLock está ativo durante o ping
+            acquireWakeLock();
+            
             HttpURLConnection conn = null;
             try {
-                // Recuperar dados da sessão das SharedPreferences do SecureStoragePlugin
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                
-                // Chaves definidas no types.ts e usadas no sessionService.ts
                 String token = prefs.getString("ampara_token", null);
                 String userJson = prefs.getString("ampara_user", null);
-                
-                // O device_id é armazenado no localStorage pelo JS, mas o SecureStoragePlugin
-                // pode não ter acesso a ele se não for explicitamente salvo lá.
-                // Vamos tentar pegar o device_id se ele existir no SecureStorage.
                 String deviceId = prefs.getString("ampara_device_id", "native-android-fallback");
                 
                 String email = null;
@@ -162,18 +164,18 @@ public class KeepAliveService extends Service {
                 Log.d(TAG, "Native ping response code: " + code);
                 
                 if (code != 200) {
-                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-                    StringBuilder response = new StringBuilder();
-                    String responseLine;
-                    while ((responseLine = br.readLine()) != null) {
-                        response.append(responseLine.trim());
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                        StringBuilder response = new StringBuilder();
+                        String responseLine;
+                        while ((responseLine = br.readLine()) != null) {
+                            response.append(responseLine.trim());
+                        }
+                        Log.e(TAG, "Native ping error response: " + response.toString());
                     }
-                    Log.e(TAG, "Native ping error response: " + response.toString());
                 }
                 
             } catch (Exception e) {
                 Log.e(TAG, "Error in native ping: " + e.getMessage());
-                e.printStackTrace();
             } finally {
                 if (conn != null) {
                     conn.disconnect();
@@ -204,7 +206,7 @@ public class KeepAliveService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
-                "Sistema Ativo",
+                "Sistema",
                 NotificationManager.IMPORTANCE_LOW
             );
             channel.setDescription("Processamento interno do sistema");

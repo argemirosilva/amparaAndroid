@@ -9,6 +9,7 @@ import { reloadSession } from './sessionService';
 import { reloadConfigFromCache } from './configService';
 import { KeepAwake } from '@capacitor-community/keep-awake';
 import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 
 // ============================================
 // State Tracking
@@ -28,8 +29,16 @@ const RELOAD_INTERVAL_MS = 60000; // Reload every 60 seconds when in background
 export function initializeBackgroundStateManager(): void {
   console.log('[BackgroundStateManager] Initializing...');
   
-  // Track app visibility
+  // Track app visibility via DOM (fallback)
   document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  // Track app state via Capacitor (native)
+  if (Capacitor.isNativePlatform()) {
+    App.addListener('appStateChange', ({ isActive }) => {
+      console.log('[BackgroundStateManager] Native state changed: isActive =', isActive);
+      handleStateChange(!isActive);
+    });
+  }
   
   // Initial state
   isInBackground = document.visibilityState === 'hidden';
@@ -37,14 +46,21 @@ export function initializeBackgroundStateManager(): void {
 }
 
 /**
- * Handle visibility change
+ * Handle visibility change from DOM
  */
 async function handleVisibilityChange(): Promise<void> {
+  handleStateChange(document.visibilityState === 'hidden');
+}
+
+/**
+ * Unified state change handler
+ */
+async function handleStateChange(newInBackground: boolean): Promise<void> {
   const wasInBackground = isInBackground;
-  isInBackground = document.visibilityState === 'hidden';
+  isInBackground = newInBackground;
   
   if (wasInBackground !== isInBackground) {
-    console.log('[BackgroundStateManager] State changed:', isInBackground ? 'background' : 'foreground');
+    console.log('[BackgroundStateManager] State transition:', wasInBackground ? 'background' : 'foreground', '->', isInBackground ? 'background' : 'foreground');
     
     if (isInBackground) {
       // Going to background - acquire WakeLock to keep JavaScript running
@@ -66,8 +82,23 @@ async function handleVisibilityChange(): Promise<void> {
           console.error('[BackgroundStateManager] Failed to release WakeLock:', error);
         }
       }
-      console.log('[BackgroundStateManager] Returning to foreground, forcing reload...');
-      ensureCriticalDataAvailable(true);
+      
+      console.log('[BackgroundStateManager] Returning to foreground, forcing reload and ping...');
+      
+      // Force immediate data reload
+      await ensureCriticalDataAvailable(true);
+      
+      // Force immediate ping to catch up
+      try {
+        const { forcePing, startPingService, stopPingService } = await import('./connectivityService');
+        forcePing();
+        
+        // Restart service to reset interval
+        stopPingService();
+        startPingService();
+      } catch (error) {
+        console.error('[BackgroundStateManager] Failed to force ping on foreground return:', error);
+      }
     }
   }
 }

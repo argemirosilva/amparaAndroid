@@ -47,25 +47,28 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
       setHasPermissions(false);
     }
 
-    // 3. Check Battery Optimization (apenas no Android, não bloqueia o app)
+    // 3. Check Battery Optimization & Exact Alarms (apenas no Android)
     if (Capacitor.getPlatform() === 'android') {
       try {
-        console.log('[PermissionGuard] 🔋 Checking battery optimization...');
-        const batteryStatus = await BatteryOptimization.isIgnoringBatteryOptimizations();
-        console.log('[PermissionGuard] Battery optimization status:', batteryStatus);
+        console.log('[PermissionGuard] 🔋 Checking battery & alarm status...');
+        const status = await BatteryOptimization.isIgnoringBatteryOptimizations();
+        console.log('[PermissionGuard] Status:', status);
         
-        if (!batteryStatus.isIgnoring) {
+        // Battery Optimization
+        if (!status.isIgnoring) {
           console.log('[PermissionGuard] ⚠️ App is being optimized, requesting exemption...');
           await BatteryOptimization.requestIgnoreBatteryOptimizations();
-          console.log('[PermissionGuard] ✅ Battery optimization dialog opened');
-        } else {
-          console.log('[PermissionGuard] ✅ App already ignoring battery optimizations');
         }
+        
+        // Exact Alarms (Android 12+)
+        if (!status.canScheduleExactAlarms) {
+          console.log('[PermissionGuard] ⚠️ App cannot schedule exact alarms, requesting permission...');
+          await BatteryOptimization.requestExactAlarmPermission();
+        }
+
       } catch (error) {
-        console.error('[PermissionGuard] ❌ Error with battery optimization:', error);
+        console.error('[PermissionGuard] ❌ Error with battery/alarm optimization:', error);
       }
-    } else {
-      console.log('[PermissionGuard] Skipping battery optimization (not Android)');
     }
 
     // 4. Start KeepAlive Service (apenas no Android)
@@ -77,8 +80,6 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
       } catch (error) {
         console.error('[PermissionGuard] ❌ Error starting KeepAlive service:', error);
       }
-    } else {
-      console.log('[PermissionGuard] Skipping KeepAlive service (not Android)');
     }
   };
 
@@ -94,7 +95,5 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
     );
   }
 
-  // Even if not granted, we let them through to the app, 
-  // but the native pop-ups will have been triggered.
   return <>{children}</>;
 };
