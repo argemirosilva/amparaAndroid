@@ -79,7 +79,7 @@ public class KeepAliveService extends Service {
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
                 "Sistema Ativo",
-                NotificationManager.IMPORTANCE_MIN
+                NotificationManager.IMPORTANCE_LOW
             );
             channel.setDescription("Processamento interno do sistema");
             channel.setShowBadge(false);
@@ -110,10 +110,10 @@ public class KeepAliveService extends Service {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFERRED)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build();
     }
     
@@ -123,13 +123,15 @@ public class KeepAliveService extends Service {
     private void acquireWakeLock() {
         try {
             PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            if (powerManager != null && wakeLock == null) {
-                wakeLock = powerManager.newWakeLock(
-                    PowerManager.PARTIAL_WAKE_LOCK,
-                    WAKELOCK_TAG
-                );
+            if (powerManager != null && (wakeLock == null || !wakeLock.isHeld())) {
+                if (wakeLock == null) {
+                    wakeLock = powerManager.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK,
+                        WAKELOCK_TAG
+                    );
+                }
                 wakeLock.acquire();
-                Log.d(TAG, "WakeLock acquired");
+                Log.d(TAG, "WakeLock acquired and held: " + wakeLock.isHeld());
             }
         } catch (Exception e) {
             Log.e(TAG, "Error acquiring WakeLock", e);
