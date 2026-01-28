@@ -189,23 +189,23 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
                   )}
                 </Button>
               </div>
-
-              {/* Force Logout Button (always visible) */}
-              <div className="pt-2 border-t border-border mt-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full text-xs text-muted-foreground hover:text-destructive"
-                  onClick={() => {
-                    console.log('[Logout] Force local logout triggered');
-                    onConfirm();
-                  }}
-                  disabled={isLoading}
-                >
-                  Forçar Saída Local (sem validação)
-                </Button>
-              </div>
             </form>
+
+            {/* Force Logout Button (outside form, always visible) */}
+            <div className="pt-4 border-t border-border mt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-xs text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  console.log('[Logout] Force local logout triggered');
+                  onConfirm();
+                }}
+                disabled={isLoading}
+              >
+                Forçar Saída Local (sem validação)
+              </Button>
+            </div>
           </motion.div>
         </motion.div>
       )}
