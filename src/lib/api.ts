@@ -3,7 +3,8 @@
 // ============================================
 
 import { getDeviceId } from './deviceId';
-import { setSessionToken as saveSessionToken, setUserData, clearSession, getSessionToken as getToken, getUserData } from '@/services/sessionService';
+import { setSessionToken as saveSessionToken, setRefreshToken as saveRefreshToken, setUserData, clearSession, getSessionToken as getToken, getUserData } from '@/services/sessionService';
+import { refreshAccessToken } from '@/services/tokenRefreshService';
 import {
   ApiResponse,
   LoginResponse,
@@ -101,6 +102,50 @@ async function mobileApi<T>(
       body: JSON.stringify(body),
     });
 
+    // Handle 401 Unauthorized - try to refresh token
+    if (response.status === 401 && requiresAuth) {
+      console.log('[API] Received 401, attempting token refresh...');
+      
+      const refreshed = await refreshAccessToken();
+      
+      if (refreshed) {
+        console.log('[API] Token refreshed, retrying request...');
+        
+        // Retry the request with the new token
+        const newToken = getSessionToken();
+        if (newToken) {
+          body.session_token = newToken;
+          
+          const retryResponse = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          });
+          
+          if (!retryResponse.ok) {
+            const errorData = await retryResponse.json().catch(() => ({}));
+            return { 
+              data: null, 
+              error: errorData.error || errorData.message || `Erro ${retryResponse.status}` 
+            };
+          }
+          
+          const retryData = await retryResponse.json();
+          return { data: retryData, error: null };
+        }
+      }
+      
+      // If refresh failed, return session expired error
+      console.error('[API] Token refresh failed, session expired');
+      return { 
+        data: null, 
+        error: 'Sessão expirada. Faça login novamente.',
+        session_expired: true 
+      } as any;
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return { 
@@ -136,8 +181,15 @@ export async function loginCustomizado(
   );
 
   if (result.data) {
-    // Store session token and user data using session service
+    // Store session token, refresh token and user data using session service
     await setSessionToken(result.data.session.token);
+    
+    // Store refresh token if provided by backend
+    if (result.data.session.refresh_token) {
+      await saveRefreshToken(result.data.session.refresh_token);
+      console.log('[API] Refresh token stored successfully');
+    }
+    
     await setUserData(JSON.stringify(result.data.usuario));
     
     // Store user config in localStorage (not critical for auth)

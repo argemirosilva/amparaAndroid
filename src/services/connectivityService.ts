@@ -99,21 +99,16 @@ async function executePing(): Promise<void> {
     
     const latency = Date.now() - startTime;
     
-    // Check for session expiration (HTTP 401 with session_expired flag)
-    if (result.data && result.data.session_expired === true) {
-      console.error('[ConnectivityService] Session expired detected (flag)! Triggering logout...');
+    // Check for session expiration (handled by api.ts interceptor)
+    // If session_expired is returned, it means refresh token also failed
+    if ((result as any).session_expired === true) {
+      console.error('[ConnectivityService] Session expired and refresh failed! Triggering logout...');
       await handleSessionExpired();
       return;
     }
     
-    // Check for session expiration by error message
     if (result.error) {
       const errorMsg = JSON.stringify(result.error);
-      if (errorMsg.includes('Sessão expirada') || errorMsg.includes('inválida') || errorMsg.includes('SESSION_EXPIRED')) {
-        console.error('[ConnectivityService] Session expired detected (message)! Triggering logout...');
-        await handleSessionExpired();
-        return;
-      }
       handlePingFailure('API error: ' + errorMsg, latency);
     } else if (!result.data) {
       handlePingFailure('API error: No data', latency);
