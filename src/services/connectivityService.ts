@@ -119,6 +119,12 @@ async function executePing(): Promise<void> {
 function handlePingSuccess(latencyMs: number, data: any): void {
   console.log('[ConnectivityService] Ping success', { latency_ms: latencyMs });
   
+  // Se tinha retry pendente/ativo, libera também
+  if (retryTimeoutId) {
+    clearTimeout(retryTimeoutId);
+    retryTimeoutId = null;
+  }
+
   state.isOnline = true;
   state.lastSuccessfulPing = new Date().toISOString();
   state.lastLatencyMs = latencyMs;
@@ -177,6 +183,8 @@ function scheduleRetryWithBackoff(): void {
   });
   
   retryTimeoutId = setTimeout(() => {
+    // IMPORTANTÍSSIMO: libera o “modo retry” antes de pingar
+    retryTimeoutId = null;
     executePing();
   }, delay);
 }
