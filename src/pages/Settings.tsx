@@ -503,6 +503,30 @@ export default function SettingsPage() {
             </Button>
           )}
         </motion.div>
+
+        {/* Emergency Logout Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-destructive/10 border border-destructive/20 rounded-lg p-6"
+        >
+          <h2 className="text-lg font-semibold text-destructive mb-2">Sair do Aplicativo</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Clique no botão abaixo para sair do aplicativo sem validação de senha.
+          </p>
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={() => {
+              console.log('[Settings] Emergency logout triggered');
+              clearSessionToken();
+              navigate('/login', { replace: true });
+            }}
+          >
+            Sair Sem Senha
+          </Button>
+        </motion.div>
       </div>
     </div>
   );
