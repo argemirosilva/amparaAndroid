@@ -17,6 +17,8 @@ import androidx.core.app.NotificationCompat;
 
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -34,7 +36,9 @@ public class KeepAliveService extends Service {
     private static final String CHANNEL_ID = "ampara_keepalive";
     private static final int NOTIFICATION_ID = 9999;
     private static final String WAKELOCK_TAG = "Ampara::KeepAliveLock";
-    private static final String PREFS_NAME = "CapacitorStorage";
+    
+    // Nome das SharedPreferences usado pelo SecureStoragePlugin
+    private static final String PREFS_NAME = "ampara_secure_storage";
     private static final String API_URL = "https://ilikiajeduezvvanjejz.supabase.co/functions/v1/mobile-api";
     
     private PowerManager.WakeLock wakeLock;
@@ -105,32 +109,30 @@ public class KeepAliveService extends Service {
             Log.d(TAG, "Executing native ping...");
             HttpURLConnection conn = null;
             try {
-                // Recuperar dados da sessão das SharedPreferences do Capacitor
+                // Recuperar dados da sessão das SharedPreferences do SecureStoragePlugin
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                
+                // Chaves definidas no types.ts e usadas no sessionService.ts
                 String token = prefs.getString("ampara_token", null);
                 String userJson = prefs.getString("ampara_user", null);
-                String deviceIdJson = prefs.getString("device_id", null);
                 
-                String deviceId = "unknown";
-                if (deviceIdJson != null) {
-                    try {
-                        JSONObject devObj = new JSONObject(deviceIdJson);
-                        deviceId = devObj.getString("device_id");
-                    } catch (Exception e) {
-                        deviceId = deviceIdJson;
-                    }
-                }
+                // O device_id é armazenado no localStorage pelo JS, mas o SecureStoragePlugin
+                // pode não ter acesso a ele se não for explicitamente salvo lá.
+                // Vamos tentar pegar o device_id se ele existir no SecureStorage.
+                String deviceId = prefs.getString("ampara_device_id", "native-android-fallback");
                 
                 String email = null;
                 if (userJson != null) {
                     try {
                         JSONObject userObj = new JSONObject(userJson);
                         email = userObj.getString("email");
-                    } catch (Exception e) {}
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing user JSON: " + e.getMessage());
+                    }
                 }
 
                 if (token == null) {
-                    Log.w(TAG, "No token found in SharedPreferences, skipping native ping");
+                    Log.w(TAG, "No token found in SecureStorage, skipping native ping");
                     return;
                 }
 
@@ -139,8 +141,8 @@ public class KeepAliveService extends Service {
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setDoOutput(true);
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(10000);
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
 
                 JSONObject payload = new JSONObject();
                 payload.put("action", "pingMobile");
@@ -159,8 +161,19 @@ public class KeepAliveService extends Service {
                 int code = conn.getResponseCode();
                 Log.d(TAG, "Native ping response code: " + code);
                 
+                if (code != 200) {
+                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
+                    StringBuilder response = new StringBuilder();
+                    String responseLine;
+                    while ((responseLine = br.readLine()) != null) {
+                        response.append(responseLine.trim());
+                    }
+                    Log.e(TAG, "Native ping error response: " + response.toString());
+                }
+                
             } catch (Exception e) {
                 Log.e(TAG, "Error in native ping: " + e.getMessage());
+                e.printStackTrace();
             } finally {
                 if (conn != null) {
                     conn.disconnect();
