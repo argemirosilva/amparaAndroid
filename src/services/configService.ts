@@ -221,7 +221,7 @@ function transformApiConfigToAppConfig(apiResponse: ConfigSyncResponse): AppConf
     periodos_semana: apiResponse.periodos_semana,
     dentro_horario: apiResponse.dentro_horario ?? false,
     periodo_atual_index: apiResponse.periodo_atual_index ?? null,
-    audio_trigger: apiResponse.audio_trigger_config || DEFAULT_CONFIG.audio_trigger
+    // audio_trigger: NEVER use from API - always use DEFAULT_CONFIG from audioTrigger.ts
   };
 }
 
@@ -251,8 +251,8 @@ async function updateNativeAudioTrigger(config: AppConfig): Promise<void> {
   
   try {
     const nativeConfig = {
-      monitoringPeriods: config.monitoring_periods || [],
-      audioTriggerConfig: config.audio_trigger || {}
+      monitoringPeriods: config.monitoring_periods || []
+      // audioTriggerConfig: NEVER use from API - always use DEFAULT_CONFIG
     };
     
     console.log('[ConfigService] Updating native audio trigger config:', nativeConfig);
