@@ -74,6 +74,21 @@ class AudioTriggerSingleton {
     
     // Set up event callback for state machine
     triggerStateMachine.setEventCallback((event) => this.addEvent(event));
+    
+    // Reset calibration on app restart (not on navigation)
+    // This ensures fresh calibration on each app launch
+    this.resetCalibrationOnly();
+  }
+  
+  /**
+   * Reset only calibration state (not audio capture)
+   * Used on app restart to ensure fresh calibration
+   */
+  private resetCalibrationOnly(): void {
+    console.log('[AudioTriggerSingleton] Resetting calibration state for fresh app session');
+    this.adaptiveNoiseFloor = null;
+    this.isCalibrated = false;
+    this.noiseFloor = -50;
   }
   
   // Add state change listener
