@@ -5,7 +5,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
-import AudioTriggerNative from '@/plugins/audioTriggerNative';
+import { AudioTriggerNative } from '@/plugins/audioTriggerNative';
 import type { AudioTriggerEvent } from '@/plugins/audioTriggerNative';
 
 class HybridAudioTriggerService {
