@@ -2,7 +2,6 @@ package tech.orizon.ampara.plugins;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.JSObject;
@@ -11,6 +10,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
 /**
  * Audio Permission Plugin
@@ -27,7 +27,6 @@ import com.getcapacitor.annotation.Permission;
 )
 public class AudioPermissionPlugin extends Plugin {
     private static final String TAG = "AudioPermissionPlugin";
-    private static final int PERMISSION_REQUEST_CODE = 9001;
 
     @PluginMethod
     public void checkPermission(PluginCall call) {
@@ -54,7 +53,7 @@ public class AudioPermissionPlugin extends Plugin {
 
         // Request permission using Capacitor's permission system
         if (getPermissionState("microphone") != com.getcapacitor.PermissionState.GRANTED) {
-            requestPermissionForAlias("microphone", call, "permissionCallback");
+            requestPermissionForAlias("microphone", call, "handlePermissionResult");
         } else {
             JSObject ret = new JSObject();
             ret.put("granted", true);
@@ -62,8 +61,8 @@ public class AudioPermissionPlugin extends Plugin {
         }
     }
 
-    @PluginMethod
-    public void permissionCallback(PluginCall call) {
+    @PermissionCallback
+    private void handlePermissionResult(PluginCall call) {
         boolean granted = getPermissionState("microphone") == com.getcapacitor.PermissionState.GRANTED;
         
         JSObject ret = new JSObject();
