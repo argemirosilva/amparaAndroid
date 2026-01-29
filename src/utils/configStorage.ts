@@ -68,12 +68,30 @@ export function getFullConfig(): AudioTriggerConfig {
   // 1. Try server config first (cached from last sync)
   const serverConfig = loadServerConfig();
   if (serverConfig) {
-    return serverToClientConfig(serverConfig);
+    const config = serverToClientConfig(serverConfig);
+    
+    // Always override detection thresholds with DEFAULT_CONFIG values
+    // These should not come from server or local storage
+    config.speechDensityMin = DEFAULT_CONFIG.speechDensityMin;
+    config.loudDensityMin = DEFAULT_CONFIG.loudDensityMin;
+    config.vadDeltaDb = DEFAULT_CONFIG.vadDeltaDb;
+    config.loudDeltaDb = DEFAULT_CONFIG.loudDeltaDb;
+    
+    return config;
   }
   
   // 2. Fallback to local config
   const stored = loadConfig();
-  return { ...DEFAULT_CONFIG, ...stored };
+  const config = { ...DEFAULT_CONFIG, ...stored };
+  
+  // Always override detection thresholds with DEFAULT_CONFIG values
+  // These should not come from server or local storage
+  config.speechDensityMin = DEFAULT_CONFIG.speechDensityMin;
+  config.loudDensityMin = DEFAULT_CONFIG.loudDensityMin;
+  config.vadDeltaDb = DEFAULT_CONFIG.vadDeltaDb;
+  config.loudDeltaDb = DEFAULT_CONFIG.loudDeltaDb;
+  
+  return config;
 }
 
 /**
