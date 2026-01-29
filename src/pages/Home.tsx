@@ -183,6 +183,26 @@ export function HomePage({ onLogout }: HomePageProps) {
     return () => clearTimeout(timer);
   }, [hasAllRequired, toast]);
 
+  // Periodic check for monitoring period changes (every minute)
+  // This ensures the app switches modes automatically when entering/exiting periods
+  useEffect(() => {
+    const checkPeriod = () => {
+      const newStatus = getMonitoringGateStatus(new Date(), validPeriods);
+      const wasWithinPeriod = monitoring.dentroHorario;
+      const isWithinPeriod = newStatus.isWithinPeriod;
+      
+      if (wasWithinPeriod !== isWithinPeriod) {
+        console.log('[Home] Period status changed:', { wasWithinPeriod, isWithinPeriod });
+        // Force re-render by updating a dummy state or triggering config refresh
+        window.location.reload(); // Simple solution: reload to pick up new status
+      }
+    };
+    
+    // Check every minute
+    const interval = setInterval(checkPeriod, 60000);
+    return () => clearInterval(interval);
+  }, [monitoring.dentroHorario, validPeriods]);
+
   // Switch AudioTrigger processing mode based on monitoring period
   // FULL mode: inside monitoring period (full analysis)
   // LIGHT mode: outside monitoring period (minimal processing for battery saving)
