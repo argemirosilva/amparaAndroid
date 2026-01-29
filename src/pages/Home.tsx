@@ -26,6 +26,7 @@ import { useStealthNotification } from '@/hooks/useStealthNotification';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBackgroundServices } from '@/hooks/useBackgroundServices';
 import { hybridAudioTrigger } from '@/services/hybridAudioTriggerService';
+import { getMonitoringGateStatus } from '@/services/monitoringGateService';
 
 interface HomePageProps {
   onLogout: () => void;
@@ -54,9 +55,12 @@ export function HomePage({ onLogout }: HomePageProps) {
     ? rawPeriods.filter(p => p && typeof p.inicio === 'string' && typeof p.fim === 'string')
     : [];
   
+  // Calculate monitoring status locally
+  const monitoringStatus = getMonitoringGateStatus(new Date(), validPeriods);
+  
   const monitoring = {
-    dentroHorario: config.currentConfig?.dentro_horario ?? false,
-    periodoAtualIndex: config.currentConfig?.periodo_atual_index ?? null,
+    dentroHorario: monitoringStatus.isWithinPeriod,
+    periodoAtualIndex: monitoringStatus.currentPeriodIndex,
     periodosHoje: validPeriods
   };
   
