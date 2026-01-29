@@ -151,7 +151,9 @@ export function HomePage({ onLogout }: HomePageProps) {
   useEffect(() => {
     if (audioTriggerConfig) {
       console.log('[Home] Setting native audio trigger config');
-      hybridAudioTrigger.setNativeConfig(audioTriggerConfig);
+      hybridAudioTrigger.setNativeConfig(audioTriggerConfig).catch(err => {
+        console.error('[Home] Error setting native config:', err);
+      });
     }
   }, [audioTriggerConfig]);
 

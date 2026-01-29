@@ -154,6 +154,17 @@ public class AudioTriggerService extends Service {
                 }
                 return START_STICKY;
             }
+            
+            if ("UPDATE_CONFIG".equals(action)) {
+                Log.i(TAG, "Config update requested");
+                
+                if (intent.hasExtra("config")) {
+                    String configJson = intent.getStringExtra("config");
+                    applyConfiguration(configJson);
+                    Log.i(TAG, "Configuration updated dynamically");
+                }
+                return START_STICKY;
+            }
         }
         
         // Apply configuration if provided

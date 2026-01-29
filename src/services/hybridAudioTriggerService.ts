@@ -213,10 +213,21 @@ class HybridAudioTriggerService {
   
   /**
    * Set configuration for native audio trigger
+   * If native is already running, updates it dynamically
    */
-  setNativeConfig(config: any) {
+  async setNativeConfig(config: any) {
     this.nativeConfig = config;
     console.log('[HybridAudioTrigger] Native config set:', config);
+    
+    // If native is already running, update it dynamically
+    if (this.isNativeRunning && Capacitor.isNativePlatform()) {
+      try {
+        await AudioTriggerNative.updateConfig({ config });
+        console.log('[HybridAudioTrigger] Native config updated dynamically');
+      } catch (error) {
+        console.error('[HybridAudioTrigger] Error updating native config:', error);
+      }
+    }
   }
   
   getStatus() {

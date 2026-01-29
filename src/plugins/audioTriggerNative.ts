@@ -27,6 +27,11 @@ export interface AudioTriggerNativePlugin {
   stopRecording(): Promise<{ success: boolean }>;
   
   /**
+   * Update native audio trigger configuration dynamically
+   */
+  updateConfig(options: { config: any }): Promise<{ success: boolean }>;
+  
+  /**
    * Add listener for audio trigger events
    */
   addListener(

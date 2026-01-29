@@ -97,6 +97,33 @@ public class AudioTriggerPlugin extends Plugin {
     }
     
     @PluginMethod
+    public void updateConfig(PluginCall call) {
+        try {
+            JSObject config = call.getObject("config");
+            if (config == null) {
+                call.reject("Config is required");
+                return;
+            }
+            
+            Intent intent = new Intent(getContext(), AudioTriggerService.class);
+            intent.setAction("UPDATE_CONFIG");
+            intent.putExtra("config", config.toString());
+            
+            getContext().startService(intent);
+            
+            Log.d(TAG, "AudioTrigger config updated: " + config.toString());
+            
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating AudioTrigger config", e);
+            call.reject("Failed to update config: " + e.getMessage());
+        }
+    }
+    
+    @PluginMethod
     public void stop(PluginCall call) {
         try {
             Intent intent = new Intent(getContext(), AudioTriggerService.class);
