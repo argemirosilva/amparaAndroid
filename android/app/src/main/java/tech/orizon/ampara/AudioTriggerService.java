@@ -207,15 +207,13 @@ public class AudioTriggerService extends Service {
             if (json.has("frameMs")) config.frameMs = json.getInt("frameMs");
             if (json.has("aggregationMs")) config.aggregationMs = json.getInt("aggregationMs");
             
-            // Detection thresholds
-            // DISABLED: Using hardcoded values + adaptive noise floor instead of API config
-            // Adaptive system is authoritative and takes priority
-            // if (json.has("loudDeltaDb")) config.loudDeltaDb = json.getDouble("loudDeltaDb");
-            // if (json.has("vadDeltaDb")) config.vadDeltaDb = json.getDouble("vadDeltaDb");
-            // if (json.has("speechDensityMin")) config.speechDensityMin = json.getDouble("speechDensityMin");
-            // if (json.has("loudDensityMin")) config.loudDensityMin = json.getDouble("loudDensityMin");
+            // Detection thresholds - now using API config
+            if (json.has("loudDeltaDb")) config.loudDeltaDb = json.getDouble("loudDeltaDb");
+            if (json.has("vadDeltaDb")) config.vadDeltaDb = json.getDouble("vadDeltaDb");
+            if (json.has("speechDensityMin")) config.speechDensityMin = json.getDouble("speechDensityMin");
+            if (json.has("loudDensityMin")) config.loudDensityMin = json.getDouble("loudDensityMin");
             
-            Log.i(TAG, "Detection thresholds from API ignored - using adaptive system");
+            Log.i(TAG, "Detection thresholds applied from API");
             
             // Timing windows
             if (json.has("discussionWindowSeconds")) config.discussionWindowSeconds = json.getInt("discussionWindowSeconds");
@@ -346,7 +344,13 @@ public class AudioTriggerService extends Service {
         // Detect speech and loudness
         double noiseFloor = detector.getNoiseFloor();
         boolean isSpeech = AudioDSP.isSpeechLike(rmsDb, zcr);
-        boolean isLoud = AudioDSP.isLoud(rmsDb, noiseFloor + config.loudDeltaDb);
+        
+        // Hybrid threshold: relative (noiseFloor + delta) OR absolute minimum
+        // Ensures detection even in very noisy environments
+        double relativeLoudThreshold = noiseFloor + config.loudDeltaDb;
+        double absoluteLoudThreshold = -20.0; // Absolute minimum for loud detection
+        double loudThreshold = Math.max(relativeLoudThreshold, absoluteLoudThreshold);
+        boolean isLoud = AudioDSP.isLoud(rmsDb, loudThreshold);
         
         // Add to aggregation buffer
         DiscussionDetector.AggregationMetrics metrics = 

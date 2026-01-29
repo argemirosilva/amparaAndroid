@@ -75,13 +75,18 @@ export function detectVAD(
 /**
  * Loud Detection
  * Signal is considered loud if above noise floor + loud delta
+ * Uses hybrid threshold: relative OR absolute minimum
+ * Ensures detection even in very noisy environments
  */
 export function detectLoud(
   dbfs: number,
   noiseFloorDb: number,
   config: AudioTriggerConfig
 ): boolean {
-  const loudThreshold = noiseFloorDb + config.loudDeltaDb;
+  // Hybrid threshold: relative (noiseFloor + delta) OR absolute minimum
+  const relativeLoudThreshold = noiseFloorDb + config.loudDeltaDb;
+  const absoluteLoudThreshold = -20.0; // Absolute minimum for loud detection
+  const loudThreshold = Math.max(relativeLoudThreshold, absoluteLoudThreshold);
   return dbfs > loudThreshold;
 }
 
