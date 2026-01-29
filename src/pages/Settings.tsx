@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { changePassword, updateSchedules, WeekSchedule, validatePassword } from '@/lib/api_settings';
 import { clearSessionToken } from '@/lib/api';
 import { PeriodosSemana } from '@/lib/types';
-import { getCurrentConfig, syncConfig } from '@/services/configService';
+import { getCurrentConfig, forceSyncConfig } from '@/services/configService';
 import { WeeklyScheduleEditor } from '@/components/WeeklyScheduleEditor';
 import { PasswordValidationDialog } from '@/components/PasswordValidationDialog';
 
@@ -272,10 +272,14 @@ export default function SettingsPage() {
         setInitialSchedule({ ...initialSchedule, ...modifiedSchedule });
         setModifiedSchedule({});
 
-        // Trigger config refresh to update monitoring status and native service
-        console.log('[Settings] Syncing config after schedule update...');
-        await syncConfig();
-        console.log('[Settings] Config synced successfully');
+        // Force config refresh to update monitoring status and native service immediately
+        console.log('[Settings] Force syncing config after schedule update (ignoring cache)...');
+        const success = await forceSyncConfig();
+        if (success) {
+          console.log('[Settings] Config force synced successfully');
+        } else {
+          console.warn('[Settings] Config force sync failed, but schedule was saved');
+        }
       } else {
         // Partial success or full error
         const errorMessage = result.data?.message || 'Erro ao atualizar agenda';

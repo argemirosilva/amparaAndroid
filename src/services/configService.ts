@@ -403,6 +403,37 @@ export async function syncConfig(): Promise<void> {
 }
 
 /**
+ * Force config sync - ignores cache and always fetches from remote
+ * Use this after user makes changes in the app to immediately apply them
+ */
+export async function forceSyncConfig(): Promise<boolean> {
+  console.log('[ConfigService] Force sync triggered - ignoring cache');
+  
+  try {
+    // Always fetch from remote, ignoring version check
+    const remoteConfig = await fetchFromRemote(0);
+    
+    if (remoteConfig) {
+      // Save to cache and apply immediately
+      await saveToCache(remoteConfig);
+      applyConfig(remoteConfig, 'remote');
+      state.lastFetchedAt = new Date().toISOString();
+      
+      console.log('[ConfigService] Force sync successful', {
+        version: remoteConfig.version
+      });
+      return true;
+    } else {
+      console.error('[ConfigService] Force sync failed - no config received');
+      return false;
+    }
+  } catch (error) {
+    console.error('[ConfigService] Force sync error:', error);
+    return false;
+  }
+}
+
+/**
  * Get current config state
  */
 export function getConfigState(): ConfigState {
