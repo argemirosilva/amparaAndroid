@@ -21,7 +21,7 @@ import { usePanicContext } from '@/contexts/PanicContext';
 import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
-import { useAudioTriggerController } from '@/hooks/useAudioTriggerController';
+import { useAudioTriggerSingleton } from '@/hooks/useAudioTriggerSingleton';
 import { useStealthNotification } from '@/hooks/useStealthNotification';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBackgroundServices } from '@/hooks/useBackgroundServices';
@@ -69,7 +69,14 @@ export function HomePage({ onLogout }: HomePageProps) {
   const isConfigLoading = config.isLoading;
   const periodosSemana = config.currentConfig?.periodos_semana ?? null;
   
-  const audioTrigger = useAudioTriggerController(undefined, audioTriggerConfig);
+  const audioTrigger = useAudioTriggerSingleton();
+  
+  // Update config when server config changes
+  useEffect(() => {
+    if (audioTriggerConfig) {
+      audioTrigger.updateConfig(audioTriggerConfig);
+    }
+  }, [audioTriggerConfig]);
   
   // Stealth notification - shows "Bem-estar Ativo" when monitoring is active
   useStealthNotification(audioTrigger.isCapturing);
