@@ -4,99 +4,144 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationListener;
+import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
-
 import androidx.core.app.ActivityCompat;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
-
 /**
- * Location Manager for background GPS tracking
+ * Manages location tracking for audio recordings
+ * Uses Android's native LocationManager API
  */
 public class LocationManager {
     private static final String TAG = "LocationManager";
     private static final long UPDATE_INTERVAL_MS = 30000; // 30 seconds
-    private static final long FASTEST_INTERVAL_MS = 10000; // 10 seconds
+    private static final float MIN_DISTANCE_METERS = 10; // 10 meters
     
-    private Context context;
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationCallback locationCallback;
+    private final Context context;
+    private final android.location.LocationManager systemLocationManager;
     private Location lastLocation;
+    private LocationListener locationListener;
     private boolean isTracking = false;
     
     public LocationManager(Context context) {
         this.context = context;
-        this.fusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
+        this.systemLocationManager = (android.location.LocationManager) 
+            context.getSystemService(Context.LOCATION_SERVICE);
     }
     
     /**
-     * Start location tracking
+     * Start tracking location updates
      */
     public void startTracking() {
         if (isTracking) {
-            Log.w(TAG, "Already tracking location");
+            Log.w(TAG, "Location tracking already started");
             return;
         }
         
+        // Check permissions
         if (!hasLocationPermission()) {
             Log.e(TAG, "Location permission not granted");
             return;
         }
         
-        LocationRequest locationRequest = new LocationRequest.Builder(
-            Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-            UPDATE_INTERVAL_MS
-        )
-        .setMinUpdateIntervalMillis(FASTEST_INTERVAL_MS)
-        .build();
-        
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null) return;
-                
-                for (Location location : locationResult.getLocations()) {
+        try {
+            // Create location listener
+            locationListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
                     lastLocation = location;
                     Log.d(TAG, String.format("Location updated: %.6f, %.6f (accuracy: %.1fm)",
                         location.getLatitude(), location.getLongitude(), location.getAccuracy()));
                 }
+                
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+                    // Deprecated but required for older Android versions
+                }
+                
+                @Override
+                public void onProviderEnabled(String provider) {
+                    Log.d(TAG, "Location provider enabled: " + provider);
+                }
+                
+                @Override
+                public void onProviderDisabled(String provider) {
+                    Log.w(TAG, "Location provider disabled: " + provider);
+                }
+            };
+            
+            // Try GPS first (more accurate)
+            if (systemLocationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)) {
+                systemLocationManager.requestLocationUpdates(
+                    android.location.LocationManager.GPS_PROVIDER,
+                    UPDATE_INTERVAL_MS,
+                    MIN_DISTANCE_METERS,
+                    locationListener,
+                    Looper.getMainLooper()
+                );
+                
+                // Get last known location immediately
+                lastLocation = systemLocationManager.getLastKnownLocation(
+                    android.location.LocationManager.GPS_PROVIDER);
+                
+                Log.d(TAG, "GPS location tracking started");
             }
-        };
-        
-        try {
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                Looper.getMainLooper()
-            );
+            
+            // Fallback to network location
+            if (systemLocationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)) {
+                systemLocationManager.requestLocationUpdates(
+                    android.location.LocationManager.NETWORK_PROVIDER,
+                    UPDATE_INTERVAL_MS,
+                    MIN_DISTANCE_METERS,
+                    locationListener,
+                    Looper.getMainLooper()
+                );
+                
+                // Use network location if GPS not available
+                if (lastLocation == null) {
+                    lastLocation = systemLocationManager.getLastKnownLocation(
+                        android.location.LocationManager.NETWORK_PROVIDER);
+                }
+                
+                Log.d(TAG, "Network location tracking started");
+            }
             
             isTracking = true;
-            Log.i(TAG, "Location tracking started");
+            
+            if (lastLocation != null) {
+                Log.d(TAG, String.format("Initial location: %.6f, %.6f",
+                    lastLocation.getLatitude(), lastLocation.getLongitude()));
+            } else {
+                Log.w(TAG, "No initial location available");
+            }
             
         } catch (SecurityException e) {
             Log.e(TAG, "Security exception starting location tracking", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting location tracking", e);
         }
     }
     
     /**
-     * Stop location tracking
+     * Stop tracking location updates
      */
     public void stopTracking() {
-        if (!isTracking) return;
-        
-        if (locationCallback != null) {
-            fusedLocationClient.removeLocationUpdates(locationCallback);
-            locationCallback = null;
+        if (!isTracking) {
+            return;
         }
         
-        isTracking = false;
-        Log.i(TAG, "Location tracking stopped");
+        try {
+            if (locationListener != null) {
+                systemLocationManager.removeUpdates(locationListener);
+                locationListener = null;
+            }
+            isTracking = false;
+            Log.d(TAG, "Location tracking stopped");
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping location tracking", e);
+        }
     }
     
     /**
@@ -131,7 +176,7 @@ public class LocationManager {
     }
     
     /**
-     * Check if currently tracking
+     * Check if location tracking is active
      */
     public boolean isTracking() {
         return isTracking;
