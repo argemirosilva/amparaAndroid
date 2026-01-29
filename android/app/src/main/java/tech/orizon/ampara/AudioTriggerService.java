@@ -192,10 +192,14 @@ public class AudioTriggerService extends Service {
             if (json.has("aggregationMs")) config.aggregationMs = json.getInt("aggregationMs");
             
             // Detection thresholds
-            if (json.has("loudDeltaDb")) config.loudDeltaDb = json.getDouble("loudDeltaDb");
-            if (json.has("vadDeltaDb")) config.vadDeltaDb = json.getDouble("vadDeltaDb");
-            if (json.has("speechDensityMin")) config.speechDensityMin = json.getDouble("speechDensityMin");
-            if (json.has("loudDensityMin")) config.loudDensityMin = json.getDouble("loudDensityMin");
+            // DISABLED: Using hardcoded values + adaptive noise floor instead of API config
+            // Adaptive system is authoritative and takes priority
+            // if (json.has("loudDeltaDb")) config.loudDeltaDb = json.getDouble("loudDeltaDb");
+            // if (json.has("vadDeltaDb")) config.vadDeltaDb = json.getDouble("vadDeltaDb");
+            // if (json.has("speechDensityMin")) config.speechDensityMin = json.getDouble("speechDensityMin");
+            // if (json.has("loudDensityMin")) config.loudDensityMin = json.getDouble("loudDensityMin");
+            
+            Log.i(TAG, "Detection thresholds from API ignored - using adaptive system");
             
             // Timing windows
             if (json.has("discussionWindowSeconds")) config.discussionWindowSeconds = json.getInt("discussionWindowSeconds");
