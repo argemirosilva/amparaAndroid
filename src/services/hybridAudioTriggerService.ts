@@ -50,21 +50,9 @@ class HybridAudioTriggerService {
    */
   async start() {
     console.log('[HybridAudioTrigger] Starting audio monitoring');
-    // Always start JavaScript first to activate RECORD_AUDIO permission
-    // Android 14+ requires microphone to be used in foreground before background service
+    // Always use JavaScript (works in both foreground and background)
+    // Native service disabled due to Android 14+ permission issues
     await this.startJavaScript();
-    
-    // If app is in background, schedule switch to native after 3 seconds
-    if (!this.appIsActive) {
-      console.log('[HybridAudioTrigger] App in background - will switch to native in 3s');
-      setTimeout(async () => {
-        if (!this.appIsActive && this.isJavaScriptRunning) {
-          console.log('[HybridAudioTrigger] Switching to native after permission activation');
-          await this.stopJavaScript();
-          await this.startNative();
-        }
-      }, 3000);
-    }
   }
   
   /**
@@ -167,14 +155,18 @@ class HybridAudioTriggerService {
   }
   
   private async handleStateChange() {
-    // When app goes to background, switch to native
+    // DISABLED: Switching to native causes crash on Android 14+
+    // JavaScript continues running in background (works but uses more battery)
+    // TODO: Fix RECORD_AUDIO permission for foreground service
+    
+    // When app goes to background, keep JavaScript running
     if (!this.appIsActive && this.isJavaScriptRunning) {
-      console.log('[HybridAudioTrigger] Switching to native (background)');
-      await this.stopJavaScript();
-      await this.startNative();
+      console.log('[HybridAudioTrigger] App in background - keeping JavaScript active');
+      // await this.stopJavaScript();
+      // await this.startNative();
     }
     
-    // When app comes to foreground, switch to JavaScript
+    // When app comes to foreground, switch to JavaScript if native is running
     if (this.appIsActive && this.isNativeRunning) {
       console.log('[HybridAudioTrigger] Switching to JavaScript (foreground)');
       await this.stopNative();
