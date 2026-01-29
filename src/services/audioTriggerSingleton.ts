@@ -62,6 +62,7 @@ class AudioTriggerSingleton {
   
   // Debug frame counter
   private frameCount: number = 0;
+  private aggregationCount: number = 0;
   
   // State change listeners
   private stateListeners: Array<() => void> = [];
@@ -201,8 +202,11 @@ class AudioTriggerSingleton {
         timestamp: now,
       };
       
-      // Debug log every 5 seconds
-      if (this.frameCount % 250 === 0) {
+      // Increment aggregation count
+      this.aggregationCount++;
+      
+      // Debug log every 10 aggregations (~5 seconds)
+      if (this.aggregationCount % 10 === 0) {
         console.log(`[AudioTrigger] Score: ${discussionResult.score} | speechDensity: ${speechDensity.toFixed(2)} | loudDensity: ${loudDensity.toFixed(2)} | speechOn: ${this.speechOn} | loudOn: ${this.loudOn}`);
       }
       
