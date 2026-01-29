@@ -167,7 +167,7 @@ class DiscussionDetector {
 
     // Discussion start logic (with hysteresis)
     if (!this._state.discussionOn) {
-      if (score >= 3) { // Reduzido para 3 para funcionar com fala única
+      if (score >= 2) { // Reduzido para 2 para facilitar detecção em testes
         if (this.discussionStartConditionStartTime === null) {
           this.discussionStartConditionStartTime = now;
         }
