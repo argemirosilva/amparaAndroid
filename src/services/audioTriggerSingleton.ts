@@ -175,7 +175,7 @@ class AudioTriggerSingleton {
     
     // FULL mode: complete analysis
     const frameMetrics = processFrame(samples, sampleRate, this.noiseFloor);
-    this.frameBuffer.push(frameMetrics);
+    this.frameBuffer.add(frameMetrics);
     
     // Aggregate every FRAMES_PER_AGGREGATION frames (500ms)
     if (this.frameBuffer.isFull() && now - this.lastAggregationTime >= 500) {
