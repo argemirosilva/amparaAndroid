@@ -226,33 +226,7 @@ export function AudioTriggerMeter({
             strokeLinecap="round"
           />
           
-          {/* Calibration indicator - shows spin during calibration, green when calibrated */}
-          {dentroHorario && (
-            <motion.circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius + 8}
-              fill="none"
-              stroke={isCalibrated ? '#16a34a' : '#ca8a04'}
-              strokeWidth={2}
-              strokeDasharray={isCalibrated ? '0' : '10 5'}
-              strokeLinecap="round"
-              animate={isCalibrated ? {} : {
-                rotate: 360,
-              }}
-              transition={{
-                rotate: {
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: 'linear',
-                },
-              }}
-              style={{
-                transformOrigin: 'center',
-                opacity: 0.6,
-              }}
-            />
-          )}
+
           
           {/* Progress arc with gradient color - ONLY show when within monitoring period */}
           {dentroHorario && (
@@ -395,6 +369,11 @@ export function AudioTriggerMeter({
               </div>
               <span className="text-[10px] text-muted-foreground">
                 Termina em {formatTimeDiff(parseTime(currentPeriod.fim))}
+              </span>
+              <span className={`text-[10px] font-medium ${
+                isCalibrated ? 'text-emerald-500' : 'text-amber-500'
+              }`}>
+                {isCalibrated ? 'Calibrado' : 'Calibrando...'}
               </span>
             </>
           )}

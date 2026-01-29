@@ -6,6 +6,9 @@
 import { syncConfigMobile, getCachedConfig } from '@/lib/api';
 import SecureStorage from '@/plugins/SecureStorage';
 import type { ConfigSyncResponse } from '@/lib/types';
+import { hybridAudioTrigger } from './hybridAudioTriggerService';
+import { AudioTriggerNative } from '@/plugins/audioTriggerNative';
+import { Capacitor } from '@capacitor/core';
 
 // ============================================
 // Types
@@ -234,8 +237,33 @@ function applyConfig(config: AppConfig, source: 'cache' | 'remote' | 'default'):
   
   notifyListeners();
   
-  // TODO: Trigger app-wide config update events here
-  // For example, update monitoring periods, audio thresholds, etc.
+  // Update native audio trigger service with new config
+  updateNativeAudioTrigger(config);
+}
+
+/**
+ * Update native audio trigger service with new config
+ */
+async function updateNativeAudioTrigger(config: AppConfig): Promise<void> {
+  if (!Capacitor.isNativePlatform()) {
+    return;
+  }
+  
+  try {
+    const nativeConfig = {
+      monitoringPeriods: config.monitoring_periods || [],
+      audioTriggerConfig: config.audio_trigger || {}
+    };
+    
+    console.log('[ConfigService] Updating native audio trigger config:', nativeConfig);
+    
+    // Update via hybrid service (handles both running and stopped states)
+    await hybridAudioTrigger.setNativeConfig(nativeConfig);
+    
+    console.log('[ConfigService] Native audio trigger config updated successfully');
+  } catch (error) {
+    console.error('[ConfigService] Failed to update native audio trigger:', error);
+  }
 }
 
 /**
