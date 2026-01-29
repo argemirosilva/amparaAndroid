@@ -129,12 +129,7 @@ class AudioTriggerSingleton {
       console.log('[AudioTrigger] First frame processed');
     }
     
-    // Update adaptive noise floor with current frame
-    if (this.adaptiveNoiseFloor) {
-      const frameMetrics = processFrame(samples, sampleRate, this.noiseFloor);
-      this.adaptiveNoiseFloor.addSample(frameMetrics.loudDb);
-      this.noiseFloor = this.adaptiveNoiseFloor.getNoiseFloor();
-    }
+    // Adaptive noise floor will be updated in aggregation block (every 500ms)
     
     // Process based on mode
     if (mode === 'LIGHT') {
@@ -158,6 +153,12 @@ class AudioTriggerSingleton {
       const vadDb = calculateMedian(frames.map(f => f.vadDb));
       const speechDensity = frames.filter(f => f.speechOn).length / frames.length;
       const loudDensity = frames.filter(f => f.loudOn).length / frames.length;
+      
+      // Update adaptive noise floor with aggregated loudDb (every 500ms)
+      if (this.adaptiveNoiseFloor) {
+        this.adaptiveNoiseFloor.addSample(loudDb);
+        this.noiseFloor = this.adaptiveNoiseFloor.getNoiseFloor();
+      }
       
       // Estimate F0 and classify gender
       const f0 = estimateF0(samples, sampleRate);
