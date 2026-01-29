@@ -37,7 +37,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   const { toast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-  const [isCalibrated, setIsCalibrated] = useState(false);
+  const [, forceUpdate] = useState({});
   
   // Permissions check
   const { permissions, isLoading: isPermissionsLoading, hasAllRequired, requestAll } = usePermissions();
@@ -142,7 +142,7 @@ export function HomePage({ onLogout }: HomePageProps) {
       
       if (event.event === 'calibrationStatus') {
         console.log('[Home] Calibration status changed:', event.isCalibrated);
-        setIsCalibrated(event.isCalibrated ?? false);
+        // State is already managed in audioTrigger.isCalibrated, no need for local state
       }
     };
     
@@ -193,8 +193,8 @@ export function HomePage({ onLogout }: HomePageProps) {
       
       if (wasWithinPeriod !== isWithinPeriod) {
         console.log('[Home] Period status changed:', { wasWithinPeriod, isWithinPeriod });
-        // Force re-render by updating a dummy state or triggering config refresh
-        window.location.reload(); // Simple solution: reload to pick up new status
+        // Force re-render without losing state
+        forceUpdate({});
       }
     };
     
@@ -429,7 +429,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               periodoAtualIndex={monitoring.periodoAtualIndex}
               periodosHoje={monitoring.periodosHoje}
               periodosSemana={periodosSemana}
-              isCalibrated={audioTrigger.isCalibrated || isCalibrated}
+              isCalibrated={audioTrigger.isCalibrated}
               isLoading={isConfigLoading}
             />
           </div>
