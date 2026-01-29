@@ -216,6 +216,7 @@ class AudioTriggerSingleton {
       if (this.aggregationCount % 10 === 0) {
         console.log(`[AudioTrigger] Score: ${discussionResult.score} | speechDensity: ${speechDensity.toFixed(2)} | loudDensity: ${loudDensity.toFixed(2)} | speechOn: ${this.speechOn} | loudOn: ${this.loudOn}`);
         console.log(`[AudioTrigger] Config: speechDensityMin=${this.config.speechDensityMin} | loudDensityMin=${this.config.loudDensityMin}`);
+        console.log(`[AudioTrigger] discussionOn: ${discussionResult.discussionOn} | v3.0.0`);
       }
       
       // State machine
