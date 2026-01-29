@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
+import AudioPermission from '@/plugins/audioPermission';
 
 export type PermissionStatus = 'granted' | 'denied' | 'prompt';
 
@@ -111,12 +112,19 @@ class PermissionsService {
    */
   async requestMicrophone(): Promise<boolean> {
     try {
+      // On native, request RECORD_AUDIO permission at Android level
+      if (this.isNative) {
+        console.log('[PermissionsService] Requesting native RECORD_AUDIO permission...');
+        const result = await AudioPermission.requestPermission();
+        console.log('[PermissionsService] Native permission result:', result.granted);
+        this.setCachedMicrophonePermission(result.granted ? 'granted' : 'denied');
+        return result.granted;
+      }
+      
+      // On web, use getUserMedia
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       // Stop tracks immediately after getting permission
       stream.getTracks().forEach(track => track.stop());
-      if (this.isNative) {
-        this.setCachedMicrophonePermission('granted');
-      }
       return true;
     } catch (error) {
       console.error('Microphone permission denied:', error);

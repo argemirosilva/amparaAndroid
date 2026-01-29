@@ -14,6 +14,7 @@ import tech.orizon.ampara.plugins.BatteryOptimizationPlugin;
 import tech.orizon.ampara.plugins.SessionExpiredListenerPlugin;
 import tech.orizon.ampara.plugins.DeviceInfoExtendedPlugin;
 import tech.orizon.ampara.plugins.AudioTriggerPlugin;
+import tech.orizon.ampara.plugins.AudioPermissionPlugin;
 
 public class MainActivity extends BridgeActivity {
     
@@ -73,6 +74,13 @@ public class MainActivity extends BridgeActivity {
             Log.d("AmparaPlugins", "✅ DeviceInfoExtendedPlugin registered");
         } catch (Exception e) {
             Log.e("AmparaPlugins", "❌ Failed to register DeviceInfoExtendedPlugin", e);
+        }
+        
+        try {
+            registerPlugin(AudioPermissionPlugin.class);
+            Log.d("AmparaPlugins", "✅ AudioPermissionPlugin registered");
+        } catch (Exception e) {
+            Log.e("AmparaPlugins", "❌ Failed to register AudioPermissionPlugin", e);
         }
         
         try {

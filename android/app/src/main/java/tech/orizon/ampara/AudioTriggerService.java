@@ -14,6 +14,9 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+import android.content.pm.PackageManager;
+import android.Manifest;
 
 import org.json.JSONObject;
 
@@ -64,6 +67,14 @@ public class AudioTriggerService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "AudioTriggerService created");
+        
+        // Check RECORD_AUDIO permission before starting foreground service
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) 
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "RECORD_AUDIO permission not granted! Cannot start foreground service.");
+            stopSelf();
+            return;
+        }
         
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, createNotification());
