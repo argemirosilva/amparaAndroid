@@ -14,6 +14,7 @@ public class DiscussionDetector {
     private final Queue<AggregationMetrics> window;
     private double noiseFloor = -50.0;
     private final AdaptiveNoiseFloor adaptiveNoiseFloor;
+    private AdaptiveNoiseFloor.CalibrationCallback calibrationCallback;
     
     private enum State {
         IDLE,
@@ -58,6 +59,11 @@ public class DiscussionDetector {
             noiseFloor,
             config.noiseFloorLearningRate
         );
+    }
+    
+    public void setCalibrationCallback(AdaptiveNoiseFloor.CalibrationCallback callback) {
+        this.calibrationCallback = callback;
+        this.adaptiveNoiseFloor.setCalibrationCallback(callback);
         
         Log.i(TAG, "DiscussionDetector initialized with adaptive noise floor");
     }

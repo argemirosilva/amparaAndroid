@@ -25,6 +25,8 @@ interface AudioTriggerMeterProps {
   periodosHoje?: MonitoringPeriod[];
   periodosSemana?: PeriodosSemana | null;
   isLoading?: boolean;
+  // Calibration status
+  isCalibrated?: boolean;
 }
 
 // Linear interpolation between two hex colors
@@ -75,6 +77,7 @@ export function AudioTriggerMeter({
   periodosHoje = [],
   periodosSemana = null,
   isLoading = false,
+  isCalibrated = false,
 }: AudioTriggerMeterProps) {
   const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
@@ -222,6 +225,34 @@ export function AudioTriggerMeter({
             strokeDashoffset={0}
             strokeLinecap="round"
           />
+          
+          {/* Calibration indicator - shows spin during calibration, green when calibrated */}
+          {dentroHorario && (
+            <motion.circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius + 8}
+              fill="none"
+              stroke={isCalibrated ? '#16a34a' : '#ca8a04'}
+              strokeWidth={2}
+              strokeDasharray={isCalibrated ? '0' : '10 5'}
+              strokeLinecap="round"
+              animate={isCalibrated ? {} : {
+                rotate: 360,
+              }}
+              transition={{
+                rotate: {
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'linear',
+                },
+              }}
+              style={{
+                transformOrigin: 'center',
+                opacity: 0.6,
+              }}
+            />
+          )}
           
           {/* Progress arc with gradient color - ONLY show when within monitoring period */}
           {dentroHorario && (

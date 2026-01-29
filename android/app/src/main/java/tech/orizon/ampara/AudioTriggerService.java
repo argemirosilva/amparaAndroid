@@ -77,6 +77,11 @@ public class AudioTriggerService extends Service {
         silenceDetector = new SilenceDetector();
         uploadQueue = new UploadQueue(this, uploader);
         
+        // Setup calibration callback
+        detector.setCalibrationCallback(isCalibrated -> {
+            notifyCalibrationStatus(isCalibrated);
+        });
+        
         // Setup recorder callback
         recorder.setSegmentCallback((filePath, segmentIndex, sessionId) -> {
             Log.i(TAG, String.format("Segment complete: %d", segmentIndex));
@@ -474,6 +479,15 @@ public class AudioTriggerService extends Service {
         intent.putExtra("pending", pending);
         intent.putExtra("success", success);
         intent.putExtra("failure", failure);
+        intent.putExtra("timestamp", System.currentTimeMillis());
+        sendBroadcast(intent);
+    }
+    
+    private void notifyCalibrationStatus(boolean isCalibrated) {
+        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
+        intent.setPackage(getPackageName());
+        intent.putExtra("event", "calibrationStatus");
+        intent.putExtra("isCalibrated", isCalibrated);
         intent.putExtra("timestamp", System.currentTimeMillis());
         sendBroadcast(intent);
     }

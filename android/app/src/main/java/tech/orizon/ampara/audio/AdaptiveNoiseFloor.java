@@ -43,6 +43,14 @@ public class AdaptiveNoiseFloor {
     private int totalSamples;
     private long lastLogTime;
     
+    // Calibration callback
+    private CalibrationCallback callback;
+    private boolean wasCalibrated = false;
+    
+    public interface CalibrationCallback {
+        void onCalibrationChanged(boolean isCalibrated);
+    }
+    
     public AdaptiveNoiseFloor(double initialNoiseFloor, double learningRate) {
         this.initialNoiseFloor = initialNoiseFloor;
         this.noiseFloor = initialNoiseFloor;
@@ -50,9 +58,14 @@ public class AdaptiveNoiseFloor {
         this.rmsBuffer = new LinkedList<>();
         this.totalSamples = 0;
         this.lastLogTime = 0;
+        this.wasCalibrated = false;
         
         Log.i(TAG, String.format("Initialized with initial noise floor: %.1f dB, learning rate: %.3f",
             initialNoiseFloor, learningRate));
+    }
+    
+    public void setCalibrationCallback(CalibrationCallback callback) {
+        this.callback = callback;
     }
     
     /**
@@ -73,6 +86,16 @@ public class AdaptiveNoiseFloor {
         // Update noise floor if we have enough samples
         if (rmsBuffer.size() >= MIN_SAMPLES) {
             updateNoiseFloor();
+        }
+        
+        // Check calibration status change
+        boolean isNowCalibrated = isCalibrated();
+        if (isNowCalibrated != wasCalibrated) {
+            wasCalibrated = isNowCalibrated;
+            if (callback != null) {
+                callback.onCalibrationChanged(isNowCalibrated);
+            }
+            Log.i(TAG, "Calibration status changed: " + (isNowCalibrated ? "CALIBRATED" : "CALIBRATING"));
         }
         
         // Log periodically (every 30 samples = ~30 seconds)

@@ -37,6 +37,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   const { toast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [isCalibrated, setIsCalibrated] = useState(false);
   
   // Permissions check
   const { permissions, isLoading: isPermissionsLoading, hasAllRequired, requestAll } = usePermissions();
@@ -110,7 +111,7 @@ export function HomePage({ onLogout }: HomePageProps) {
 
   // Listen to native audio trigger events (discussion detected in background)
   useEffect(() => {
-    const handleNativeEvent = (event: { event: string; reason?: string; sessionId?: string; segmentIndex?: number }) => {
+    const handleNativeEvent = (event: { event: string; reason?: string; sessionId?: string; segmentIndex?: number; isCalibrated?: boolean }) => {
       console.log('[Home] Native audio trigger event:', event);
       
       if (event.event === 'discussionDetected') {
@@ -137,6 +138,11 @@ export function HomePage({ onLogout }: HomePageProps) {
           description: 'Áudio enviado com sucesso',
           duration: 3000,
         });
+      }
+      
+      if (event.event === 'calibrationStatus') {
+        console.log('[Home] Calibration status changed:', event.isCalibrated);
+        setIsCalibrated(event.isCalibrated ?? false);
       }
     };
     
@@ -404,6 +410,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               periodosHoje={monitoring.periodosHoje}
               periodosSemana={periodosSemana}
               isLoading={isConfigLoading}
+              isCalibrated={isCalibrated}
             />
           </div>
         )}
