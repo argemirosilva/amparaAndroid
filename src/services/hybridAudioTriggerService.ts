@@ -166,11 +166,20 @@ class HybridAudioTriggerService {
   }
   
   private async handleStateChange() {
-    // When app goes to background, switch to native (more efficient)
+    // When app goes to background, wait before switching to native
+    // This allows JavaScript to "activate" the RECORD_AUDIO permission first
     if (!this.appIsActive && this.isJavaScriptRunning) {
-      console.log('[HybridAudioTrigger] Switching to native (background)');
-      await this.stopJavaScript();
-      await this.startNative();
+      console.log('[HybridAudioTrigger] App in background - will switch to native in 5s');
+      
+      // Wait 5 seconds for permission activation
+      setTimeout(async () => {
+        // Only switch if still in background and JavaScript still running
+        if (!this.appIsActive && this.isJavaScriptRunning) {
+          console.log('[HybridAudioTrigger] Switching to native after permission activation');
+          await this.stopJavaScript();
+          await this.startNative();
+        }
+      }, 5000);
     }
     
     // When app comes to foreground, switch to JavaScript
