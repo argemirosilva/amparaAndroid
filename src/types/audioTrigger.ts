@@ -151,9 +151,9 @@ export const DEFAULT_CONFIG: AudioTriggerConfig = {
   noiseFloorLearningRate: 0.01,
   loudDeltaDb: 12,
   vadDeltaDb: 7,
-  speechDensityMin: 0.15,
-  loudDensityMin: 0.10,
-  turnTakingMin: 6,
+  speechDensityMin: 0.10, // Reduzido para detectar fala única
+  loudDensityMin: 0.05,    // Reduzido para detectar fala única
+  turnTakingMin: 2,        // Reduzido para detectar fala única
   speechDensityEnd: 0.15,
   loudDensityEnd: 0.05,
   maleBiasEnabled: true,
