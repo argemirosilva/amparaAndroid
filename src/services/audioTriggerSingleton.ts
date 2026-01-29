@@ -186,9 +186,9 @@ class AudioTriggerSingleton {
       
       // Detect noisy environment
       // Environment is considered noisy if:
-      // 1. NoiseFloor is very high (> -30 dB) OR
-      // 2. Average loudDb is consistently high (> -20 dB)
-      const isNoisy = this.noiseFloor > -30 || loudDb > -20;
+      // 1. NoiseFloor is high (> -40 dB) OR
+      // 2. Average loudDb is consistently high (> -25 dB)
+      const isNoisy = this.noiseFloor > -40 || loudDb > -25;
       
       // Update metrics
       this.metrics = {
