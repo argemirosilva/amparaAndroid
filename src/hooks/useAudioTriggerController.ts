@@ -374,15 +374,21 @@ export function useAudioTriggerController(
         animationFrameRef.current = requestAnimationFrame(processLoop);
       };
 
-      // Initialize adaptive noise floor
-      const initialNoiseFloor = config.noiseFloorDb || -50;
-      const learningRate = 0.1; // Same as native
-      adaptiveNoiseFloorRef.current = new AdaptiveNoiseFloor(initialNoiseFloor, learningRate);
-      adaptiveNoiseFloorRef.current.setCalibrationCallback((calibrated) => {
-        console.log('[AudioTrigger] Calibration status changed:', calibrated);
-        setIsCalibrated(calibrated);
-      });
-      console.log('[AudioTrigger] Adaptive noise floor initialized');
+      // Initialize adaptive noise floor (only if not already initialized)
+      if (!adaptiveNoiseFloorRef.current) {
+        const initialNoiseFloor = config.noiseFloorDb || -50;
+        const learningRate = 0.1; // Same as native
+        adaptiveNoiseFloorRef.current = new AdaptiveNoiseFloor(initialNoiseFloor, learningRate);
+        adaptiveNoiseFloorRef.current.setCalibrationCallback((calibrated) => {
+          console.log('[AudioTrigger] Calibration status changed:', calibrated);
+          setIsCalibrated(calibrated);
+        });
+        console.log('[AudioTrigger] Adaptive noise floor initialized');
+      } else {
+        console.log('[AudioTrigger] Reusing existing adaptive noise floor (calibration preserved)');
+        // Update isCalibrated state from existing instance
+        setIsCalibrated(adaptiveNoiseFloorRef.current.isCalibrated());
+      }
       
       console.log('[AudioTrigger] Starting process loop');
       animationFrameRef.current = requestAnimationFrame(processLoop);
