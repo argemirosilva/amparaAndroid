@@ -11,7 +11,7 @@ const NOTIFICATION_CHANNEL_ID = 'ampara_monitoring';
 const FOREGROUND_CONFIG = {
   title: 'Bem-estar Ativo',
   body: 'Monitorando sua saúde',
-  smallIcon: 'ic_stat_hearing',
+  smallIcon: 'ic_notification', // Use default Capacitor icon
   channelId: NOTIFICATION_CHANNEL_ID,
 };
 
