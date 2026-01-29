@@ -170,12 +170,15 @@ class AudioTriggerSingleton {
       this.currentGender = gender;
       
       // Discussion detection
-      const discussionResult = discussionDetector.process({
-        speechOn: this.speechOn,
-        loudOn: this.loudOn,
+      const aggregation = {
+        speechRatio: speechDensity,
+        loudRatio: loudDensity,
+      };
+      const discussionResult = discussionDetector.processAggregation(
+        aggregation,
         gender,
-        timestamp: now,
-      });
+        this.config
+      );
       
       this.discussionOn = discussionResult.discussionOn;
       
