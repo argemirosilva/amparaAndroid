@@ -166,23 +166,16 @@ class HybridAudioTriggerService {
   }
   
   private async handleStateChange() {
-    // DISABLED: Native foreground service not supported on Android 15 (targetSDK 35)
-    // Android 15 requires app to be in "eligible state" for FGS with microphone
-    // Even after using microphone in foreground, system rejects FGS start
-    // 
-    // JavaScript continues running in background (throttled to ~3 fps)
-    // This is sufficient for detecting long discussions (>10s)
-    // Trade-off: Higher battery usage, slower detection vs no crashes
-    
+    // Switch to native when app goes to background
     if (!this.appIsActive && this.isJavaScriptRunning) {
-      console.log('[HybridAudioTrigger] App in background - keeping JavaScript active');
-      console.log('[HybridAudioTrigger] Native service disabled due to Android 15 restrictions');
+      console.log('[HybridAudioTrigger] App in background - switching to native');
+      await this.stopJavaScript();
+      await this.startNative();
     }
     
-    // When app comes to foreground, switch to JavaScript if native is running
-    // (This should never happen since native is disabled, but kept for safety)
+    // Switch to JavaScript when app comes to foreground
     if (this.appIsActive && this.isNativeRunning) {
-      console.log('[HybridAudioTrigger] Switching to JavaScript (foreground)');
+      console.log('[HybridAudioTrigger] App in foreground - switching to JavaScript');
       await this.stopNative();
       await this.startJavaScript();
     }

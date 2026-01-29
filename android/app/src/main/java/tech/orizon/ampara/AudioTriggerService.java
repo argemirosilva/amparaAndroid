@@ -76,8 +76,8 @@ public class AudioTriggerService extends Service {
             return;
         }
         
-        createNotificationChannel();
-        startForeground(NOTIFICATION_ID, createNotification());
+        // DO NOT call startForeground() here - we already have a ForegroundService running
+        // This service runs as a background service under the main ForegroundService
         acquireWakeLock();
         
         config = new AudioTriggerConfig();
