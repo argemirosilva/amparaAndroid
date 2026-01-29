@@ -17,7 +17,7 @@ export type CalibrationCallback = (isCalibrated: boolean) => void;
 
 export class AdaptiveNoiseFloor {
   private static readonly WINDOW_SIZE = 30; // 30 aggregations = 30 seconds
-  private static readonly MIN_SAMPLES = 10; // Minimum samples before calibrated
+  private static readonly MIN_SAMPLES = 60; // Minimum samples before calibrated (60 aggregations × 500ms = 30s)
   
   private rmsBuffer: number[] = [];
   private noiseFloor: number;
