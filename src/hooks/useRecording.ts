@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { reportarStatusGravacao } from '@/lib/api';
 import { OrigemGravacao } from '@/lib/types';
 import { AudioTriggerNative } from '@/plugins/audioTriggerNative';
-import { getSessionToken, getUserEmail } from '@/lib/auth';
+import { getSessionToken, getUserEmail } from '@/lib/api';
 
 interface RecordingState {
   isRecording: boolean;
