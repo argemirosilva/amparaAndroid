@@ -86,9 +86,24 @@ class AudioTriggerSingleton {
    */
   private resetCalibrationOnly(): void {
     console.log('[AudioTriggerSingleton] Resetting calibration state for fresh app session');
+    
+    // Reset adaptive noise floor
     this.adaptiveNoiseFloor = null;
     this.isCalibrated = false;
     this.noiseFloor = -50;
+    
+    // Reset frame buffer and processing state
+    this.frameBuffer.clear();
+    this.lastAggregationTime = 0;
+    this.frameCount = 0;
+    
+    // Reset detection state
+    this.speechOn = false;
+    this.loudOn = false;
+    this.currentGender = 'UNKNOWN';
+    this.discussionOn = false;
+    
+    console.log('[AudioTriggerSingleton] All calibration and processing state cleared');
   }
   
   // Add state change listener
