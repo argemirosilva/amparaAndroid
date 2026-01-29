@@ -201,6 +201,11 @@ class AudioTriggerSingleton {
         timestamp: now,
       };
       
+      // Debug log every 5 seconds
+      if (this.frameCount % 250 === 0) {
+        console.log(`[AudioTrigger] Score: ${discussionResult.score} | speechDensity: ${speechDensity.toFixed(2)} | loudDensity: ${loudDensity.toFixed(2)} | speechOn: ${this.speechOn} | loudOn: ${this.loudOn}`);
+      }
+      
       // State machine
       const newState = triggerStateMachine.process({
         discussionOn: this.discussionOn,
