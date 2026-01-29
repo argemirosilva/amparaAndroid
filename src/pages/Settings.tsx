@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { changePassword, updateSchedules, WeekSchedule, validatePassword } from '@/lib/api_settings';
 import { clearSessionToken } from '@/lib/api';
 import { PeriodosSemana } from '@/lib/types';
-import { getCurrentConfig } from '@/services/configService';
+import { getCurrentConfig, syncConfig } from '@/services/configService';
 import { WeeklyScheduleEditor } from '@/components/WeeklyScheduleEditor';
 import { PasswordValidationDialog } from '@/components/PasswordValidationDialog';
 
@@ -272,8 +272,10 @@ export default function SettingsPage() {
         setInitialSchedule({ ...initialSchedule, ...modifiedSchedule });
         setModifiedSchedule({});
 
-        // TODO: Trigger config refresh to update monitoring status
-        // This should update any component showing "próximo período"
+        // Trigger config refresh to update monitoring status and native service
+        console.log('[Settings] Syncing config after schedule update...');
+        await syncConfig();
+        console.log('[Settings] Config synced successfully');
       } else {
         // Partial success or full error
         const errorMessage = result.data?.message || 'Erro ao atualizar agenda';
