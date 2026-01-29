@@ -19,7 +19,7 @@ export interface AudioTriggerNativePlugin {
   /**
    * Start native recording manually
    */
-  startRecording(): Promise<{ success: boolean }>;
+  startRecording(options?: { sessionToken?: string; emailUsuario?: string; origemGravacao?: string }): Promise<{ success: boolean }>;
   
   /**
    * Stop native recording manually
@@ -51,8 +51,6 @@ export interface AudioTriggerEvent {
   timestamp: number;
 }
 
-const AudioTriggerNative = registerPlugin<AudioTriggerNativePlugin>('AudioTriggerNative', {
+export const AudioTriggerNative = registerPlugin<AudioTriggerNativePlugin>('AudioTriggerNative', {
   web: () => import('./audioTriggerNativeWeb').then(m => new m.AudioTriggerNativeWeb()),
 });
-
-export default AudioTriggerNative;
