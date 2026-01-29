@@ -168,6 +168,12 @@ export function HomePage({ onLogout }: HomePageProps) {
   useEffect(() => {
     if (!hasAllRequired) return; // Don't start monitoring without permissions
     
+    // Only start if not already capturing (prevents restart on navigation)
+    if (audioTrigger.isCapturing) {
+      console.log('[Home] Audio trigger already capturing, skipping auto-start');
+      return;
+    }
+    
     // Start hybrid audio trigger (automatically switches between JS and Native)
     console.log('[Home] Auto-starting hybrid audio trigger (keeps app alive)');
     const timer = setTimeout(() => {
@@ -181,7 +187,7 @@ export function HomePage({ onLogout }: HomePageProps) {
       });
     }, 500);
     return () => clearTimeout(timer);
-  }, [hasAllRequired, toast]);
+  }, [hasAllRequired, toast, audioTrigger.isCapturing]);
 
   // Periodic check for monitoring period changes (every minute)
   // This ensures the app switches modes automatically when entering/exiting periods
