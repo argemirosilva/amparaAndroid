@@ -87,8 +87,11 @@ class AudioTriggerSingleton {
   private resetCalibrationOnly(): void {
     console.log('[AudioTriggerSingleton] Resetting calibration state for fresh app session');
     
-    // Reset adaptive noise floor
-    this.adaptiveNoiseFloor = null;
+    // Reset adaptive noise floor (call reset() to clear buffer, don't set to null)
+    if (this.adaptiveNoiseFloor) {
+      this.adaptiveNoiseFloor.reset();
+      console.log('[AudioTriggerSingleton] AdaptiveNoiseFloor buffer cleared');
+    }
     this.isCalibrated = false;
     this.noiseFloor = -50;
     
