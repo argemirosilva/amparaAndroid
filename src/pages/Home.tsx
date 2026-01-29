@@ -22,7 +22,7 @@ import { useRecording } from '@/hooks/useRecording';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioTriggerSingleton } from '@/hooks/useAudioTriggerSingleton';
-import { useStealthNotification } from '@/hooks/useStealthNotification';
+// import { useStealthNotification } from '@/hooks/useStealthNotification'; // REMOVED: useBackgroundServices already manages ForegroundService
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBackgroundServices } from '@/hooks/useBackgroundServices';
 import { hybridAudioTrigger } from '@/services/hybridAudioTriggerService';
@@ -79,7 +79,8 @@ export function HomePage({ onLogout }: HomePageProps) {
   }, [audioTriggerConfig]);
   
   // Stealth notification - shows "Bem-estar Ativo" when monitoring is active
-  useStealthNotification(audioTrigger.isCapturing);
+  // REMOVED: useBackgroundServices already manages ForegroundService
+  // useStealthNotification(audioTrigger.isCapturing);
   
   // Ref to track if we auto-started the recording (to avoid duplicate toasts)
   const autoRecordingStartedRef = useRef(false);
