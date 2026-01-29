@@ -122,6 +122,17 @@ class HybridAudioTriggerService {
     }
     
     try {
+      // Check RECORD_AUDIO permission before starting
+      const AudioPermission = (await import('@/plugins/audioPermission')).default;
+      const permissionResult = await AudioPermission.checkPermission();
+      
+      if (!permissionResult.granted) {
+        console.error('[HybridAudioTrigger] RECORD_AUDIO permission not granted, cannot start native service');
+        console.log('[HybridAudioTrigger] Falling back to JavaScript');
+        await this.startJavaScript();
+        return;
+      }
+      
       console.log('[HybridAudioTrigger] Starting native audio trigger');
       
       // Pass configuration if available
@@ -155,18 +166,14 @@ class HybridAudioTriggerService {
   }
   
   private async handleStateChange() {
-    // DISABLED: Switching to native causes crash on Android 14+
-    // JavaScript continues running in background (works but uses more battery)
-    // TODO: Fix RECORD_AUDIO permission for foreground service
-    
-    // When app goes to background, keep JavaScript running
+    // When app goes to background, switch to native (more efficient)
     if (!this.appIsActive && this.isJavaScriptRunning) {
-      console.log('[HybridAudioTrigger] App in background - keeping JavaScript active');
-      // await this.stopJavaScript();
-      // await this.startNative();
+      console.log('[HybridAudioTrigger] Switching to native (background)');
+      await this.stopJavaScript();
+      await this.startNative();
     }
     
-    // When app comes to foreground, switch to JavaScript if native is running
+    // When app comes to foreground, switch to JavaScript
     if (this.appIsActive && this.isNativeRunning) {
       console.log('[HybridAudioTrigger] Switching to JavaScript (foreground)');
       await this.stopNative();
