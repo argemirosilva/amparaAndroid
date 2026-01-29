@@ -219,11 +219,9 @@ class AudioTriggerSingleton {
       }
       
       // State machine
-      const newState = triggerStateMachine.process({
-        discussionOn: this.discussionOn,
-        timestamp: now,
-      });
+      triggerStateMachine.process(speechDensity, this.discussionOn, this.config);
       
+      const newState = triggerStateMachine.state;
       if (newState !== this.triggerState) {
         this.triggerState = newState;
       }
