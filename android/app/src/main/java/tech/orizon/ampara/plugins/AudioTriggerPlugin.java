@@ -32,16 +32,34 @@ public class AudioTriggerPlugin extends Plugin {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String event = intent.getStringExtra("event");
-                String reason = intent.getStringExtra("reason");
-                long timestamp = intent.getLongExtra("timestamp", 0);
                 
                 Log.d(TAG, "Received event from native: " + event);
                 
                 // Notify JavaScript
                 JSObject ret = new JSObject();
                 ret.put("event", event);
-                ret.put("reason", reason);
-                ret.put("timestamp", timestamp);
+                ret.put("timestamp", intent.getLongExtra("timestamp", 0));
+                
+                // Add event-specific fields
+                if (intent.hasExtra("reason")) {
+                    ret.put("reason", intent.getStringExtra("reason"));
+                }
+                if (intent.hasExtra("sessionId")) {
+                    ret.put("sessionId", intent.getStringExtra("sessionId"));
+                }
+                if (intent.hasExtra("segmentIndex")) {
+                    ret.put("segmentIndex", intent.getIntExtra("segmentIndex", 0));
+                }
+                if (intent.hasExtra("pending")) {
+                    ret.put("pending", intent.getIntExtra("pending", 0));
+                }
+                if (intent.hasExtra("success")) {
+                    ret.put("success", intent.getIntExtra("success", 0));
+                }
+                if (intent.hasExtra("failure")) {
+                    ret.put("failure", intent.getIntExtra("failure", 0));
+                }
+                
                 notifyListeners("audioTriggerEvent", ret);
             }
         };
@@ -102,6 +120,60 @@ public class AudioTriggerPlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("isRunning", false);
         call.resolve(ret);
+    }
+    
+    @PluginMethod
+    public void startRecording(PluginCall call) {
+        try {
+            Intent intent = new Intent(getContext(), AudioTriggerService.class);
+            intent.setAction("START_RECORDING");
+            
+            // Pass credentials and origem from call
+            String sessionToken = call.getString("sessionToken");
+            String emailUsuario = call.getString("emailUsuario");
+            String origemGravacao = call.getString("origemGravacao", "manual");
+            
+            if (sessionToken != null && emailUsuario != null) {
+                intent.putExtra("sessionToken", sessionToken);
+                intent.putExtra("emailUsuario", emailUsuario);
+                intent.putExtra("origemGravacao", origemGravacao);
+                
+                Log.d(TAG, "Start recording with credentials: " + emailUsuario + ", origem: " + origemGravacao);
+            } else {
+                Log.w(TAG, "Start recording without credentials");
+            }
+            
+            getContext().startService(intent);
+            
+            Log.d(TAG, "Start recording command sent");
+            
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending start recording command", e);
+            call.reject("Failed to start recording: " + e.getMessage());
+        }
+    }
+    
+    @PluginMethod
+    public void stopRecording(PluginCall call) {
+        try {
+            Intent intent = new Intent(getContext(), AudioTriggerService.class);
+            intent.setAction("STOP_RECORDING");
+            getContext().startService(intent);
+            
+            Log.d(TAG, "Stop recording command sent");
+            
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending stop recording command", e);
+            call.reject("Failed to stop recording: " + e.getMessage());
+        }
     }
     
     @Override

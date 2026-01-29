@@ -106,7 +106,7 @@ export function HomePage({ onLogout }: HomePageProps) {
 
   // Listen to native audio trigger events (discussion detected in background)
   useEffect(() => {
-    const handleNativeEvent = (event: { event: string; reason?: string; filePath?: string }) => {
+    const handleNativeEvent = (event: { event: string; reason?: string; sessionId?: string; segmentIndex?: number }) => {
       console.log('[Home] Native audio trigger event:', event);
       
       if (event.event === 'discussionDetected') {
@@ -120,23 +120,19 @@ export function HomePage({ onLogout }: HomePageProps) {
         });
       }
       
-      if (event.event === 'nativeRecordingComplete' && event.filePath) {
-        // Native recording completed - process and upload
-        console.log('[Home] Native recording completed:', event.filePath);
-        
-        // Check if within monitoring period before uploading
-        if (monitoring.dentroHorario && !panic.isPanicActive) {
-          console.log('[Home] Processing native recording for upload');
-          // TODO: Implement upload of native recording file
-          // For now, just notify user
-          toast({
-            title: 'Gravação concluída',
-            description: 'Discussão finalizada - processando gravação',
-            duration: 3000,
-          });
-        } else {
-          console.log('[Home] Native recording completed but outside monitoring period');
-        }
+      if (event.event === 'nativeRecordingStarted') {
+        console.log('[Home] Native recording started:', event.sessionId);
+        appState.setStatus('recording');
+      }
+      
+      if (event.event === 'nativeRecordingStopped') {
+        console.log('[Home] Native recording stopped:', event.sessionId);
+        appState.setStatus('idle');
+        toast({
+          title: 'Gravação finalizada',
+          description: 'Áudio enviado com sucesso',
+          duration: 3000,
+        });
       }
     };
     
@@ -145,7 +141,7 @@ export function HomePage({ onLogout }: HomePageProps) {
     return () => {
       hybridAudioTrigger.removeListener(handleNativeEvent);
     };
-  }, [monitoring.dentroHorario, panic.isPanicActive, toast]);
+  }, [monitoring.dentroHorario, panic.isPanicActive, toast, appState]);
 
   // Set native config when available
   useEffect(() => {

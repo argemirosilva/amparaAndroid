@@ -4,7 +4,7 @@ export interface AudioTriggerNativePlugin {
   /**
    * Start native audio trigger service
    */
-  start(): Promise<{ success: boolean }>;
+  start(options?: { config?: any }): Promise<{ success: boolean }>;
   
   /**
    * Stop native audio trigger service
@@ -15,6 +15,16 @@ export interface AudioTriggerNativePlugin {
    * Check if native audio trigger is running
    */
   isRunning(): Promise<{ isRunning: boolean }>;
+  
+  /**
+   * Start native recording manually
+   */
+  startRecording(): Promise<{ success: boolean }>;
+  
+  /**
+   * Stop native recording manually
+   */
+  stopRecording(): Promise<{ success: boolean }>;
   
   /**
    * Add listener for audio trigger events
@@ -31,8 +41,13 @@ export interface AudioTriggerNativePlugin {
 }
 
 export interface AudioTriggerEvent {
-  event: 'discussionDetected' | 'discussionEnded';
-  reason: string;
+  event: 'discussionDetected' | 'discussionEnded' | 'nativeRecordingStarted' | 'nativeRecordingStopped' | 'nativeRecordingProgress' | 'nativeUploadProgress';
+  reason?: string;
+  sessionId?: string;
+  segmentIndex?: number;
+  pending?: number;
+  success?: number;
+  failure?: number;
   timestamp: number;
 }
 

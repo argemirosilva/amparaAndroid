@@ -2,6 +2,8 @@ package tech.orizon.ampara.audio;
 
 import android.content.Context;
 import android.media.MediaRecorder;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import java.io.File;
@@ -11,30 +13,67 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * Native Audio Recorder
+ * Native Audio Recorder with 30-second segmentation
  * Records audio in background using MediaRecorder
  */
 public class NativeRecorder {
     private static final String TAG = "NativeRecorder";
+    private static final int SEGMENT_DURATION_MS = 30000; // 30 seconds
     
     private MediaRecorder mediaRecorder;
     private String currentFilePath;
+    private String sessionId;
+    private int segmentIndex = 0;
     private boolean isRecording = false;
     private Context context;
+    private Handler handler;
+    private Runnable segmentRunnable;
+    private SegmentCallback segmentCallback;
+    
+    public interface SegmentCallback {
+        void onSegmentComplete(String filePath, int segmentIndex, String sessionId);
+    }
     
     public NativeRecorder(Context context) {
         this.context = context;
+        this.handler = new Handler(Looper.getMainLooper());
     }
     
     /**
-     * Start recording audio
-     * @return File path of the recording, or null if failed
+     * Set callback for segment completion
+     */
+    public void setSegmentCallback(SegmentCallback callback) {
+        this.segmentCallback = callback;
+    }
+    
+    /**
+     * Start recording audio with automatic segmentation
+     * @return Session ID, or null if failed
      */
     public String startRecording() {
         if (isRecording) {
             Log.w(TAG, "Already recording");
-            return currentFilePath;
+            return sessionId;
         }
+        
+        // Generate session ID
+        sessionId = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
+        segmentIndex = 0;
+        isRecording = true;
+        
+        Log.i(TAG, "Starting recording session: " + sessionId);
+        
+        // Start first segment
+        startSegment();
+        
+        return sessionId;
+    }
+    
+    /**
+     * Start a new segment
+     */
+    private void startSegment() {
+        if (!isRecording) return;
         
         try {
             // Create recordings directory
@@ -43,9 +82,8 @@ public class NativeRecorder {
                 recordingsDir.mkdirs();
             }
             
-            // Generate filename with timestamp
-            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
-            String filename = "native_" + timestamp + ".m4a";
+            // Generate filename: session_segment.m4a
+            String filename = String.format(Locale.US, "%s_%03d.m4a", sessionId, segmentIndex);
             File outputFile = new File(recordingsDir, filename);
             currentFilePath = outputFile.getAbsolutePath();
             
@@ -55,31 +93,74 @@ public class NativeRecorder {
             mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
             mediaRecorder.setAudioEncodingBitRate(128000);
-            mediaRecorder.setAudioSamplingRate(44100);
+            mediaRecorder.setAudioSamplingRate(16000); // Match AudioTrigger sample rate
             mediaRecorder.setOutputFile(currentFilePath);
             
             mediaRecorder.prepare();
             mediaRecorder.start();
             
-            isRecording = true;
-            Log.i(TAG, "Recording started: " + currentFilePath);
+            Log.i(TAG, String.format("Segment %d started: %s", segmentIndex, currentFilePath));
             
-            return currentFilePath;
+            // Schedule next segment
+            segmentRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (isRecording) {
+                        stopSegment();
+                        segmentIndex++;
+                        startSegment();
+                    }
+                }
+            };
+            handler.postDelayed(segmentRunnable, SEGMENT_DURATION_MS);
             
         } catch (IOException e) {
-            Log.e(TAG, "Failed to start recording", e);
+            Log.e(TAG, "Failed to start segment", e);
             releaseRecorder();
-            return null;
+            isRecording = false;
         } catch (Exception e) {
-            Log.e(TAG, "Unexpected error starting recording", e);
+            Log.e(TAG, "Unexpected error starting segment", e);
             releaseRecorder();
-            return null;
+            isRecording = false;
         }
     }
     
     /**
-     * Stop recording audio
-     * @return File path of the recording, or null if failed
+     * Stop current segment
+     */
+    private void stopSegment() {
+        if (mediaRecorder == null) return;
+        
+        try {
+            mediaRecorder.stop();
+            String filePath = currentFilePath;
+            int index = segmentIndex;
+            
+            releaseRecorder();
+            
+            // Verify file exists and has content
+            File file = new File(filePath);
+            if (file.exists() && file.length() > 0) {
+                Log.i(TAG, String.format("Segment %d stopped: %s (%d bytes)", 
+                    index, filePath, file.length()));
+                
+                // Notify callback
+                if (segmentCallback != null) {
+                    segmentCallback.onSegmentComplete(filePath, index, sessionId);
+                }
+            } else {
+                Log.e(TAG, "Segment file is empty or doesn't exist");
+            }
+            
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Failed to stop segment", e);
+            releaseRecorder();
+        }
+    }
+    
+    /**
+     * Stop recording completely
+     * @return Session ID, or null if not recording
      */
     public String stopRecording() {
         if (!isRecording) {
@@ -87,28 +168,23 @@ public class NativeRecorder {
             return null;
         }
         
-        try {
-            mediaRecorder.stop();
-            String filePath = currentFilePath;
-            
-            releaseRecorder();
-            isRecording = false;
-            
-            // Verify file exists and has content
-            File file = new File(filePath);
-            if (file.exists() && file.length() > 0) {
-                Log.i(TAG, "Recording stopped: " + filePath + " (" + file.length() + " bytes)");
-                return filePath;
-            } else {
-                Log.e(TAG, "Recording file is empty or doesn't exist");
-                return null;
-            }
-            
-        } catch (RuntimeException e) {
-            Log.e(TAG, "Failed to stop recording", e);
-            releaseRecorder();
-            return null;
+        Log.i(TAG, "Stopping recording session: " + sessionId);
+        
+        // Cancel scheduled segment
+        if (segmentRunnable != null) {
+            handler.removeCallbacks(segmentRunnable);
+            segmentRunnable = null;
         }
+        
+        // Stop current segment
+        stopSegment();
+        
+        isRecording = false;
+        String completedSessionId = sessionId;
+        sessionId = null;
+        segmentIndex = 0;
+        
+        return completedSessionId;
     }
     
     /**
@@ -119,10 +195,17 @@ public class NativeRecorder {
     }
     
     /**
-     * Get current recording file path
+     * Get current session ID
      */
-    public String getCurrentFilePath() {
-        return currentFilePath;
+    public String getSessionId() {
+        return sessionId;
+    }
+    
+    /**
+     * Get current segment index
+     */
+    public int getSegmentIndex() {
+        return segmentIndex;
     }
     
     /**

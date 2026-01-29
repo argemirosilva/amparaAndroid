@@ -21,10 +21,6 @@ import tech.orizon.ampara.audio.AudioDSP;
 import tech.orizon.ampara.audio.AudioTriggerConfig;
 import tech.orizon.ampara.audio.DiscussionDetector;
 import tech.orizon.ampara.audio.NativeRecorder;
-import tech.orizon.ampara.audio.AudioUploader;
-import tech.orizon.ampara.audio.LocationManager;
-import tech.orizon.ampara.audio.SilenceDetector;
-import tech.orizon.ampara.audio.UploadQueue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,14 +42,6 @@ public class AudioTriggerService extends Service {
     private AudioTriggerConfig config;
     private DiscussionDetector detector;
     private NativeRecorder recorder;
-    private AudioUploader uploader;
-    private LocationManager locationManager;
-    private SilenceDetector silenceDetector;
-    private UploadQueue uploadQueue;
-    
-    private String sessionToken;
-    private String emailUsuario;
-    private String currentOrigemGravacao = "automatico";
     
     private short[] frameBuffer;
     private List<DiscussionDetector.AggregationMetrics> aggregationBuffer;
@@ -72,36 +60,6 @@ public class AudioTriggerService extends Service {
         config = new AudioTriggerConfig();
         detector = new DiscussionDetector(config);
         recorder = new NativeRecorder(this);
-        uploader = new AudioUploader(this);
-        locationManager = new LocationManager(this);
-        silenceDetector = new SilenceDetector();
-        uploadQueue = new UploadQueue(this, uploader);
-        
-        // Setup recorder callback
-        recorder.setSegmentCallback((filePath, segmentIndex, sessionId) -> {
-            Log.i(TAG, String.format("Segment complete: %d", segmentIndex));
-            
-            // Enqueue for upload
-            UploadQueue.UploadTask task = new UploadQueue.UploadTask(
-                filePath,
-                segmentIndex,
-                sessionId,
-                locationManager.getLatitude(),
-                locationManager.getLongitude(),
-                currentOrigemGravacao
-            );
-            uploadQueue.enqueue(task);
-            
-            // Notify JavaScript
-            notifyRecordingProgress(sessionId, segmentIndex);
-        });
-        
-        // Setup upload progress callback
-        uploadQueue.setProgressCallback((pending, success, failure) -> {
-            Log.d(TAG, String.format("Upload progress: pending=%d, success=%d, failure=%d",
-                pending, success, failure));
-            notifyUploadProgress(pending, success, failure);
-        });
         
         int frameSamples = config.getFrameSamples();
         frameBuffer = new short[frameSamples];
@@ -118,39 +76,19 @@ public class AudioTriggerService extends Service {
             
             if ("START_RECORDING".equals(action)) {
                 Log.i(TAG, "Manual recording start requested");
-                
-                // Get credentials and origem from intent
-                if (intent.hasExtra("sessionToken")) {
-                    sessionToken = intent.getStringExtra("sessionToken");
-                    emailUsuario = intent.getStringExtra("emailUsuario");
-                    currentOrigemGravacao = intent.getStringExtra("origemGravacao");
-                    
-                    uploader.setCredentials(sessionToken, emailUsuario);
-                }
-                
-                // Start recording, location tracking, and upload queue
-                String sessionId = recorder.startRecording();
-                if (sessionId != null) {
-                    locationManager.startTracking();
-                    uploadQueue.start();
-                    uploadQueue.resetStats();
-                    silenceDetector.reset();
-                    
-                    Log.i(TAG, "Manual recording started: " + sessionId);
-                    notifyRecordingStarted(sessionId);
+                String filePath = recorder.startRecording();
+                if (filePath != null) {
+                    Log.i(TAG, "Manual recording started: " + filePath);
                 }
                 return START_STICKY;
             }
             
             if ("STOP_RECORDING".equals(action)) {
                 Log.i(TAG, "Manual recording stop requested");
-                
-                String sessionId = recorder.stopRecording();
-                if (sessionId != null) {
-                    locationManager.stopTracking();
-                    
-                    Log.i(TAG, "Manual recording stopped: " + sessionId);
-                    notifyRecordingStopped(sessionId);
+                String filePath = recorder.stopRecording();
+                if (filePath != null) {
+                    Log.i(TAG, "Manual recording stopped: " + filePath);
+                    notifyRecordingComplete(filePath);
                 }
                 return START_STICKY;
             }
@@ -361,45 +299,23 @@ public class AudioTriggerService extends Service {
             Log.i(TAG, String.format("DISCUSSION DETECTED! Reason: %s, Speech: %.2f, Loud: %.2f",
                 result.reason, result.speechDensity, result.loudDensity));
             
-            // Start native recording with auto mode
-            currentOrigemGravacao = "automatico";
-            String sessionId = recorder.startRecording();
-            if (sessionId != null) {
-                locationManager.startTracking();
-                uploadQueue.start();
-                uploadQueue.resetStats();
-                silenceDetector.reset();
-                
-                Log.i(TAG, "Native recording started: " + sessionId);
-                notifyRecordingStarted(sessionId);
+            // Start native recording
+            String filePath = recorder.startRecording();
+            if (filePath != null) {
+                Log.i(TAG, "Native recording started: " + filePath);
             }
             
             notifyJavaScript("discussionDetected", result.reason);
-        }
-        
-        // Check silence detector during recording
-        if (recorder.isRecording()) {
-            if (silenceDetector.processFrame(avgRmsDb)) {
-                Log.i(TAG, "Silence timeout reached, stopping recording");
-                
-                String sessionId = recorder.stopRecording();
-                if (sessionId != null) {
-                    locationManager.stopTracking();
-                    Log.i(TAG, "Recording stopped due to silence: " + sessionId);
-                    notifyRecordingStopped(sessionId);
-                }
-            }
         }
         
         if (result.shouldStopRecording) {
             Log.i(TAG, String.format("DISCUSSION ENDED! Reason: %s", result.reason));
             
             // Stop native recording
-            String sessionId = recorder.stopRecording();
-            if (sessionId != null) {
-                locationManager.stopTracking();
-                Log.i(TAG, "Native recording stopped: " + sessionId);
-                notifyRecordingStopped(sessionId);
+            String filePath = recorder.stopRecording();
+            if (filePath != null) {
+                Log.i(TAG, "Native recording stopped: " + filePath);
+                notifyRecordingComplete(filePath);
             }
             
             notifyJavaScript("discussionEnded", result.reason);
@@ -418,49 +334,16 @@ public class AudioTriggerService extends Service {
         Log.d(TAG, "Broadcast sent: " + event);
     }
     
-    private void notifyRecordingStarted(String sessionId) {
+    private void notifyRecordingComplete(String filePath) {
+        // Send broadcast with recording file path
         Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
         intent.setPackage(getPackageName());
-        intent.putExtra("event", "nativeRecordingStarted");
-        intent.putExtra("sessionId", sessionId);
+        intent.putExtra("event", "nativeRecordingComplete");
+        intent.putExtra("filePath", filePath);
         intent.putExtra("timestamp", System.currentTimeMillis());
         sendBroadcast(intent);
         
-        Log.d(TAG, "Recording started broadcast sent: " + sessionId);
-    }
-    
-    private void notifyRecordingStopped(String sessionId) {
-        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
-        intent.setPackage(getPackageName());
-        intent.putExtra("event", "nativeRecordingStopped");
-        intent.putExtra("sessionId", sessionId);
-        intent.putExtra("timestamp", System.currentTimeMillis());
-        sendBroadcast(intent);
-        
-        Log.d(TAG, "Recording stopped broadcast sent: " + sessionId);
-    }
-    
-    private void notifyRecordingProgress(String sessionId, int segmentIndex) {
-        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
-        intent.setPackage(getPackageName());
-        intent.putExtra("event", "nativeRecordingProgress");
-        intent.putExtra("sessionId", sessionId);
-        intent.putExtra("segmentIndex", segmentIndex);
-        intent.putExtra("timestamp", System.currentTimeMillis());
-        sendBroadcast(intent);
-        
-        Log.d(TAG, String.format("Recording progress broadcast sent: %s segment %d", sessionId, segmentIndex));
-    }
-    
-    private void notifyUploadProgress(int pending, int success, int failure) {
-        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
-        intent.setPackage(getPackageName());
-        intent.putExtra("event", "nativeUploadProgress");
-        intent.putExtra("pending", pending);
-        intent.putExtra("success", success);
-        intent.putExtra("failure", failure);
-        intent.putExtra("timestamp", System.currentTimeMillis());
-        sendBroadcast(intent);
+        Log.d(TAG, "Recording complete broadcast sent: " + filePath);
     }
     
     private void createNotificationChannel() {
@@ -522,16 +405,6 @@ public class AudioTriggerService extends Service {
         // Stop recording if active
         if (recorder != null) {
             recorder.destroy();
-        }
-        
-        // Stop location tracking
-        if (locationManager != null) {
-            locationManager.stopTracking();
-        }
-        
-        // Stop upload queue
-        if (uploadQueue != null) {
-            uploadQueue.stop();
         }
         
         stopAudioCapture();
