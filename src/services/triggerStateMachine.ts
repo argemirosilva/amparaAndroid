@@ -146,23 +146,32 @@ class TriggerStateMachine {
         if (speechRatio > 0.30) {
           if (!this._state.preTriggerStartTime) {
             this._state.preTriggerStartTime = now;
+            console.log(`[StateMachine] IDLE: speechRatio > 0.30 detected, starting preTrigger timer`);
           }
           const duration = (now - this._state.preTriggerStartTime) / 1000;
+          console.log(`[StateMachine] IDLE: speechRatio=${speechRatio.toFixed(2)}, preTrigger duration=${duration.toFixed(1)}s / ${config.preTriggerSeconds}s`);
           if (duration >= config.preTriggerSeconds) {
+            console.log(`[StateMachine] IDLE -> PRE_TRIGGER: preTrigger duration reached`);
             this.transitionTo('PRE_TRIGGER');
           }
         } else {
+          if (this._state.preTriggerStartTime) {
+            console.log(`[StateMachine] IDLE: speechRatio dropped to ${speechRatio.toFixed(2)}, resetting preTrigger timer`);
+          }
           this._state.preTriggerStartTime = null;
         }
         break;
 
       case 'PRE_TRIGGER':
         // PRE_TRIGGER -> RECORDING: Discussion ON
+        console.log(`[StateMachine] PRE_TRIGGER: discussionOn=${discussionOn}, speechRatio=${speechRatio.toFixed(2)}`);
         if (discussionOn) {
+          console.log(`[StateMachine] PRE_TRIGGER -> RECORDING: discussion detected!`);
           this.transitionTo('RECORDING');
         }
         // PRE_TRIGGER -> IDLE: sem fala por 5s
         else if (this._state.lastSpeechTime && (now - this._state.lastSpeechTime) > 5000) {
+          console.log(`[StateMachine] PRE_TRIGGER -> IDLE: no speech for 5s`);
           this.transitionTo('IDLE');
         }
         break;
