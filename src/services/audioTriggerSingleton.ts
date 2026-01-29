@@ -67,6 +67,8 @@ class AudioTriggerSingleton {
   private stateListeners: Array<() => void> = [];
   
   constructor() {
+    console.log('[AudioTriggerSingleton] ✅ SINGLETON INITIALIZED - Calibration will persist across navigation');
+    
     // Load config from storage
     this.config = getFullConfig();
     
@@ -209,7 +211,7 @@ class AudioTriggerSingleton {
   // Start audio capture
   async start(): Promise<void> {
     if (this.isCapturing) {
-      console.log('[AudioTriggerSingleton] Already capturing');
+      console.log('[AudioTriggerSingleton] ✅ ALREADY CAPTURING - Skipping restart (calibration preserved)');
       return;
     }
     
@@ -265,9 +267,10 @@ class AudioTriggerSingleton {
         });
         console.log('[AudioTrigger] Adaptive noise floor initialized');
       } else {
-        console.log('[AudioTrigger] Reusing existing adaptive noise floor (calibration preserved)');
+        const wasCalibrated = this.adaptiveNoiseFloor.isCalibrated();
+        console.log(`[AudioTrigger] ✅ REUSING EXISTING ADAPTIVE NOISE FLOOR - Calibration preserved: ${wasCalibrated}`);
         // Update isCalibrated state from existing instance
-        this.isCalibrated = this.adaptiveNoiseFloor.isCalibrated();
+        this.isCalibrated = wasCalibrated;
       }
       
       console.log('[AudioTrigger] Starting process loop');
