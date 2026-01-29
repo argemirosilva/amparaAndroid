@@ -23,6 +23,7 @@ import { RingBuffer, calculateMedian } from '@/utils/ringBuffer';
 import { getFullConfig, saveConfig, saveServerConfig } from '@/utils/configStorage';
 import { serverToClientConfig } from '@/utils/configConverter';
 import { backgroundService } from '@/services/backgroundService';
+import { AdaptiveNoiseFloor } from '@/lib/AdaptiveNoiseFloor';
 
 // Buffer sizes
 const MAX_EVENTS = 100;
@@ -43,6 +44,7 @@ export interface AudioTriggerControllerReturn {
   config: AudioTriggerConfig;
   isRecording: boolean;
   discussionOn: boolean;
+  isCalibrated: boolean;
   
   // Actions
   start: () => Promise<void>;
@@ -100,6 +102,10 @@ export function useAudioTriggerController(
   const currentGenderRef = useRef<GenderClass>('UNKNOWN');
   const discussionOnRef = useRef<boolean>(false);
   const configRef = useRef(config);
+  
+  // Adaptive noise floor
+  const adaptiveNoiseFloorRef = useRef<AdaptiveNoiseFloor | null>(null);
+  const [isCalibrated, setIsCalibrated] = useState(false);
 
   // Keep config ref updated
   useEffect(() => {
@@ -232,6 +238,13 @@ export function useAudioTriggerController(
           });
         }
 
+        // Update adaptive noise floor (only when NOT in discussion)
+        if (adaptiveNoiseFloorRef.current && !discussionOnRef.current) {
+          adaptiveNoiseFloorRef.current.addSample(dbfsMedian);
+          // Update noise floor reference with adaptive value
+          noiseFloorRef.current = adaptiveNoiseFloorRef.current.getNoiseFloor();
+        }
+
         // Process discussion detection
         const discussionState = discussionDetector.processAggregation(
           { timestamp: now, dbfsMedian, speechRatio, loudRatio },
@@ -361,6 +374,16 @@ export function useAudioTriggerController(
         animationFrameRef.current = requestAnimationFrame(processLoop);
       };
 
+      // Initialize adaptive noise floor
+      const initialNoiseFloor = config.noiseFloorDb || -50;
+      const learningRate = 0.1; // Same as native
+      adaptiveNoiseFloorRef.current = new AdaptiveNoiseFloor(initialNoiseFloor, learningRate);
+      adaptiveNoiseFloorRef.current.setCalibrationCallback((calibrated) => {
+        console.log('[AudioTrigger] Calibration status changed:', calibrated);
+        setIsCalibrated(calibrated);
+      });
+      console.log('[AudioTrigger] Adaptive noise floor initialized');
+      
       console.log('[AudioTrigger] Starting process loop');
       animationFrameRef.current = requestAnimationFrame(processLoop);
       setIsCapturing(true);
@@ -509,6 +532,7 @@ export function useAudioTriggerController(
     config,
     isRecording: triggerState === 'RECORDING',
     discussionOn: metrics?.discussionOn ?? false,
+    isCalibrated,
     start,
     stop,
     reset,

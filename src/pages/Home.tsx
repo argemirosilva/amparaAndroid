@@ -409,8 +409,8 @@ export function HomePage({ onLogout }: HomePageProps) {
               periodoAtualIndex={monitoring.periodoAtualIndex}
               periodosHoje={monitoring.periodosHoje}
               periodosSemana={periodosSemana}
+              isCalibrated={audioTrigger.isCalibrated || isCalibrated}
               isLoading={isConfigLoading}
-              isCalibrated={isCalibrated}
             />
           </div>
         )}
