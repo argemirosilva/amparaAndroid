@@ -92,8 +92,10 @@ class AudioTriggerSingleton {
     this.isCalibrated = false;
     this.noiseFloor = -50;
     
-    // Reset frame buffer and processing state
-    this.frameBuffer.clear();
+    // Reset frame buffer and processing state (only if already initialized)
+    if (this.frameBuffer) {
+      this.frameBuffer.clear();
+    }
     this.lastAggregationTime = 0;
     this.frameCount = 0;
     
