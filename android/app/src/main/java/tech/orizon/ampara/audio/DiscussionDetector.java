@@ -13,6 +13,7 @@ public class DiscussionDetector {
     private final AudioTriggerConfig config;
     private final Queue<AggregationMetrics> window;
     private double noiseFloor = -50.0;
+    private final AdaptiveNoiseFloor adaptiveNoiseFloor;
     
     private enum State {
         IDLE,
@@ -51,6 +52,14 @@ public class DiscussionDetector {
     public DiscussionDetector(AudioTriggerConfig config) {
         this.config = config;
         this.window = new LinkedList<>();
+        
+        // Initialize adaptive noise floor with config learning rate
+        this.adaptiveNoiseFloor = new AdaptiveNoiseFloor(
+            noiseFloor,
+            config.noiseFloorLearningRate
+        );
+        
+        Log.i(TAG, "DiscussionDetector initialized with adaptive noise floor");
     }
     
     /**
@@ -59,10 +68,15 @@ public class DiscussionDetector {
     public DetectionResult process(AggregationMetrics metrics) {
         DetectionResult result = new DetectionResult();
         
-        // Update noise floor
-        if (!metrics.isSpeech && !metrics.isLoud) {
-            noiseFloor = AudioDSP.updateNoiseFloor(noiseFloor, metrics.rmsDb, config.noiseFloorLearningRate);
+        // Update adaptive noise floor (only during non-discussion periods)
+        if (state == State.IDLE || state == State.COOLDOWN) {
+            if (!metrics.isSpeech && !metrics.isLoud) {
+                adaptiveNoiseFloor.addSample(metrics.rmsDb);
+            }
         }
+        
+        // Use adaptive noise floor
+        noiseFloor = adaptiveNoiseFloor.getNoiseFloor();
         
         // Add to window
         window.add(metrics);
@@ -182,6 +196,8 @@ public class DiscussionDetector {
         state = State.IDLE;
         stateStartTime = System.currentTimeMillis();
         noiseFloor = -50.0;
+        adaptiveNoiseFloor.reset();
+        Log.i(TAG, "DiscussionDetector reset (including adaptive noise floor)");
     }
     
     public State getState() {
