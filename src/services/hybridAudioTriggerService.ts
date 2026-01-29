@@ -50,13 +50,20 @@ class HybridAudioTriggerService {
    */
   async start() {
     console.log('[HybridAudioTrigger] Starting audio monitoring');
+    // Always start JavaScript first to activate RECORD_AUDIO permission
+    // Android 14+ requires microphone to be used in foreground before background service
+    await this.startJavaScript();
     
-    if (this.appIsActive) {
-      // App is in foreground - use JavaScript (more sophisticated)
-      await this.startJavaScript();
-    } else {
-      // App is in background - use Native (works in Doze Mode)
-      await this.startNative();
+    // If app is in background, schedule switch to native after 3 seconds
+    if (!this.appIsActive) {
+      console.log('[HybridAudioTrigger] App in background - will switch to native in 3s');
+      setTimeout(async () => {
+        if (!this.appIsActive && this.isJavaScriptRunning) {
+          console.log('[HybridAudioTrigger] Switching to native after permission activation');
+          await this.stopJavaScript();
+          await this.startNative();
+        }
+      }, 3000);
     }
   }
   
