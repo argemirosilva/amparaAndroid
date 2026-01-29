@@ -159,3 +159,7 @@ class BackgroundService {
 
 // Export singleton instance
 export const backgroundService = new BackgroundService();
+
+// Force cache invalidation - v2
+export const BACKGROUND_SERVICE_VERSION = '2.0.0';
+export type BackgroundServiceType = BackgroundService;
