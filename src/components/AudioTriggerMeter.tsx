@@ -27,6 +27,8 @@ interface AudioTriggerMeterProps {
   isLoading?: boolean;
   // Calibration status
   isCalibrated?: boolean;
+  // Noisy environment
+  isNoisy?: boolean;
 }
 
 // Linear interpolation between two hex colors
@@ -78,6 +80,7 @@ export function AudioTriggerMeter({
   periodosSemana = null,
   isLoading = false,
   isCalibrated = false,
+  isNoisy = false,
 }: AudioTriggerMeterProps) {
   const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
@@ -370,11 +373,17 @@ export function AudioTriggerMeter({
               <span className="text-[10px] text-muted-foreground">
                 Termina em {formatTimeDiff(parseTime(currentPeriod.fim))}
               </span>
-              <span className={`text-[10px] font-medium ${
-                isCalibrated ? 'text-emerald-500' : 'text-amber-500'
-              }`}>
-                {isCalibrated ? 'Calibrado' : 'Calibrando...'}
-              </span>
+              {isNoisy ? (
+                <span className="text-[10px] font-medium text-orange-500">
+                  ⚠️ Ambiente ruidoso
+                </span>
+              ) : (
+                <span className={`text-[10px] font-medium ${
+                  isCalibrated ? 'text-emerald-500' : 'text-amber-500'
+                }`}>
+                  {isCalibrated ? 'Calibrado' : 'Calibrando...'}
+                </span>
+              )}
             </>
           )}
 

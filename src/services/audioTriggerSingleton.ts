@@ -184,6 +184,12 @@ class AudioTriggerSingleton {
       
       this.discussionOn = discussionResult.discussionOn;
       
+      // Detect noisy environment
+      // Environment is considered noisy if:
+      // 1. NoiseFloor is very high (> -30 dB) OR
+      // 2. Average loudDb is consistently high (> -20 dB)
+      const isNoisy = this.noiseFloor > -30 || loudDb > -20;
+      
       // Update metrics
       this.metrics = {
         loudDb,
@@ -199,6 +205,7 @@ class AudioTriggerSingleton {
         discussionOn: this.discussionOn,
         discussionDuration: discussionResult.discussionDuration,
         score: discussionResult.score,
+        isNoisy,
         timestamp: now,
       };
       

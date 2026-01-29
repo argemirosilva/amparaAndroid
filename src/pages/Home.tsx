@@ -443,6 +443,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               periodosHoje={monitoring.periodosHoje}
               periodosSemana={periodosSemana}
               isCalibrated={audioTrigger.isCalibrated}
+              isNoisy={audioTrigger.metrics?.isNoisy ?? false}
               isLoading={isConfigLoading}
             />
           </div>

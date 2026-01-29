@@ -96,6 +96,7 @@ export interface AudioTriggerMetrics {
   recordingOn: boolean;
   recordingDuration: number;
   state: TriggerState;
+  isNoisy: boolean; // Ambiente muito ruidoso - detecção comprometida
 }
 
 // Configuração unificada
