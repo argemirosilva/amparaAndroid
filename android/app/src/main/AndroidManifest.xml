@@ -182,8 +182,9 @@
         </activity-alias>
 
         <!-- Foreground Service for background operation -->
+        <receiver android:name="io.capawesome.capacitorjs.plugins.foregroundservice.NotificationActionBroadcastReceiver" />
         <service
-            android:name="com.capawesome.capacitor.android.foregroundservice.ForegroundService"
+            android:name="io.capawesome.capacitorjs.plugins.foregroundservice.AndroidForegroundService"
             android:foregroundServiceType="location|microphone"
             android:stopWithTask="false"
             android:exported="false" />

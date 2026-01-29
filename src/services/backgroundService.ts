@@ -7,10 +7,12 @@ import { Capacitor } from '@capacitor/core';
 
 // Configuration for the foreground service notification
 const FOREGROUND_SERVICE_ID = 9999;
+const NOTIFICATION_CHANNEL_ID = 'ampara_monitoring';
 const FOREGROUND_CONFIG = {
   title: 'Bem-estar Ativo',
   body: 'Monitorando sua saúde',
   smallIcon: 'ic_stat_hearing',
+  channelId: NOTIFICATION_CHANNEL_ID,
 };
 
 // Text variations for natural appearance
@@ -67,6 +69,20 @@ class BackgroundService {
     }
 
     try {
+      // Create notification channel first (required for Android 8+)
+      try {
+        console.log('[BackgroundService] Creating notification channel...');
+        await plugin.createNotificationChannel({
+          id: NOTIFICATION_CHANNEL_ID,
+          name: 'Monitoramento Ampara',
+          description: 'Notificação de monitoramento ativo',
+          importance: 3, // IMPORTANCE_DEFAULT
+        });
+        console.log('[BackgroundService] Notification channel created');
+      } catch (channelError) {
+        console.warn('[BackgroundService] Channel creation error (may already exist):', channelError);
+      }
+
       // Select a random text variation
       const variation = TEXT_VARIATIONS[Math.floor(Math.random() * TEXT_VARIATIONS.length)];
 
@@ -77,6 +93,7 @@ class BackgroundService {
         body: variation.body,
         smallIcon: FOREGROUND_CONFIG.smallIcon,
         silent: true,
+        notificationChannelId: NOTIFICATION_CHANNEL_ID, // CRITICAL!
         foregroundServiceTypes: ['location', 'microphone'], // Use location + microphone to keep app alive
       });
       console.log('[BackgroundService] startForegroundService returned:', result);
