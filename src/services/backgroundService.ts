@@ -76,7 +76,7 @@ class BackgroundService {
           id: NOTIFICATION_CHANNEL_ID,
           name: 'Monitoramento Ampara',
           description: 'Notificação de monitoramento ativo',
-          importance: 3, // IMPORTANCE_DEFAULT
+          importance: 4, // IMPORTANCE_HIGH - force visibility
         });
         console.log('[BackgroundService] Notification channel created');
       } catch (channelError) {
@@ -92,7 +92,7 @@ class BackgroundService {
         title: variation.title,
         body: variation.body,
         smallIcon: FOREGROUND_CONFIG.smallIcon,
-        silent: true,
+        silent: false, // MUST be false to show notification
         notificationChannelId: NOTIFICATION_CHANNEL_ID, // CRITICAL!
         foregroundServiceTypes: ['location', 'microphone'], // Use location + microphone to keep app alive
       });
