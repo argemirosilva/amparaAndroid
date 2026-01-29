@@ -25,7 +25,7 @@ import {
   startLocationTracking, 
   stopLocationTracking 
 } from '@/services/locationService';
-import { backgroundService } from '@/services/backgroundService';
+import { backgroundService, BACKGROUND_SERVICE_VERSION } from '@/services/backgroundService';
 
 export interface BackgroundServicesState {
   connectivity: ConnectivityState;
@@ -49,9 +49,10 @@ export function useBackgroundServices() {
     const init = async () => {
       try {
         // Start foreground service FIRST (critical for background survival)
-        console.log('[useBackgroundServices] Starting foreground service...');
-        await backgroundService.start();
-        console.log('[useBackgroundServices] Foreground service started successfully');
+        console.log('[useBackgroundServices] Starting foreground service v' + BACKGROUND_SERVICE_VERSION + '...');
+        const startResult = await backgroundService.start();
+        console.log('[useBackgroundServices] Foreground service start result:', startResult);
+        console.log('[useBackgroundServices] Service running state:', backgroundService.isServiceRunning());
 
         if (!mounted) return;
 
