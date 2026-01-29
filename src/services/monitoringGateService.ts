@@ -44,6 +44,12 @@ export function getMonitoringGateStatus(
   periods: MonitoringPeriod[]
 ): MonitoringGateStatus {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  console.log('[MonitoringGate] Checking status:', {
+    currentTime: `${now.getHours()}:${now.getMinutes()}`,
+    currentMinutes,
+    periodsCount: periods.length,
+    periods: periods.map(p => `${p.inicio}-${p.fim}`)
+  });
   
   // Check if within any period
   for (let i = 0; i < periods.length; i++) {
@@ -51,8 +57,17 @@ export function getMonitoringGateStatus(
     const startMinutes = parseTimeToMinutes(period.inicio);
     const endMinutes = parseTimeToMinutes(period.fim);
     
+    console.log(`[MonitoringGate] Checking period ${i}:`, {
+      period: `${period.inicio}-${period.fim}`,
+      startMinutes,
+      endMinutes,
+      currentMinutes,
+      isWithin: currentMinutes >= startMinutes && currentMinutes < endMinutes
+    });
+    
     if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
       // Found active period
+      console.log('[MonitoringGate] ✅ WITHIN PERIOD!');
       return {
         isWithinPeriod: true,
         currentPeriod: period,
