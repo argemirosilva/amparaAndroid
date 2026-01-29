@@ -139,7 +139,7 @@ class AudioTriggerSingleton {
     }
     
     // FULL mode: complete analysis
-    const frameMetrics = processFrame(samples, sampleRate, this.noiseFloor);
+    const frameMetrics = processFrame(samples, this.noiseFloor, this.config);
     this.frameBuffer.push(frameMetrics);
     
     // Aggregate every FRAMES_PER_AGGREGATION frames (500ms)
@@ -149,10 +149,10 @@ class AudioTriggerSingleton {
       const frames = this.frameBuffer.toArray();
       
       // Calculate aggregated metrics
-      const loudDb = calculateMedian(frames.map(f => f.loudDb));
-      const vadDb = calculateMedian(frames.map(f => f.vadDb));
-      const speechDensity = frames.filter(f => f.speechOn).length / frames.length;
-      const loudDensity = frames.filter(f => f.loudOn).length / frames.length;
+      const loudDb = calculateMedian(frames.map(f => f.dbfs));
+      const vadDb = calculateMedian(frames.map(f => f.dbfs));
+      const speechDensity = frames.filter(f => f.isSpeech).length / frames.length;
+      const loudDensity = frames.filter(f => f.isLoud).length / frames.length;
       
       // Update adaptive noise floor with aggregated loudDb (every 500ms)
       if (this.adaptiveNoiseFloor) {
