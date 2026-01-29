@@ -121,7 +121,7 @@ export class AdaptiveNoiseFloor {
    * Check if the noise floor is well-calibrated
    */
   isCalibrated(): boolean {
-    return this.rmsBuffer.length >= AdaptiveNoiseFloor.MIN_SAMPLES;
+    return this.totalSamples >= AdaptiveNoiseFloor.MIN_SAMPLES;
   }
   
   /**
