@@ -197,6 +197,7 @@ class AudioTriggerSingleton {
         noiseFloor: this.noiseFloor,
         discussionOn: this.discussionOn,
         discussionDuration: discussionResult.discussionDuration,
+        score: discussionResult.score,
         timestamp: now,
       };
       
