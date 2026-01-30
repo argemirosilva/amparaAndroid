@@ -38,60 +38,30 @@ export function loadConfig(): Partial<AudioTriggerConfig> | null {
 
 /**
  * Save server config to localStorage for offline fallback
+ * DISABLED: audio_trigger_config from API is now ignored
  */
 export function saveServerConfig(config: ServerAudioTriggerConfig): void {
-  try {
-    localStorage.setItem(SERVER_CONFIG_KEY, JSON.stringify(config));
-  } catch (error) {
-    console.error('Failed to save server config:', error);
-  }
+  console.log('[configStorage] saveServerConfig called -> IGNORED (use local defaults only)');
+  // Do nothing - server config is no longer used
 }
 
 /**
  * Load server config from localStorage
+ * DISABLED: audio_trigger_config from API is now ignored
  */
 export function loadServerConfig(): ServerAudioTriggerConfig | null {
-  try {
-    const stored = localStorage.getItem(SERVER_CONFIG_KEY);
-    if (!stored) return null;
-    return JSON.parse(stored);
-  } catch (error) {
-    console.error('Failed to load server config:', error);
-    return null;
-  }
+  console.log('[configStorage] loadServerConfig called -> returning null (use local defaults only)');
+  return null;
 }
 
 /**
- * Get full config with defaults, prioritizing server config
+ * Get full config with defaults
+ * CHANGED: Always use DEFAULT_CONFIG, never from server
  */
 export function getFullConfig(): AudioTriggerConfig {
-  // 1. Try server config first (cached from last sync)
-  const serverConfig = loadServerConfig();
-  if (serverConfig) {
-    const config = serverToClientConfig(serverConfig);
-    
-    // Always override detection thresholds with DEFAULT_CONFIG values
-    // These should not come from server or local storage
-    config.speechDensityMin = DEFAULT_CONFIG.speechDensityMin;
-    config.loudDensityMin = DEFAULT_CONFIG.loudDensityMin;
-    config.vadDeltaDb = DEFAULT_CONFIG.vadDeltaDb;
-    config.loudDeltaDb = DEFAULT_CONFIG.loudDeltaDb;
-    
-    return config;
-  }
-  
-  // 2. Fallback to local config
-  const stored = loadConfig();
-  const config = { ...DEFAULT_CONFIG, ...stored };
-  
-  // Always override detection thresholds with DEFAULT_CONFIG values
-  // These should not come from server or local storage
-  config.speechDensityMin = DEFAULT_CONFIG.speechDensityMin;
-  config.loudDensityMin = DEFAULT_CONFIG.loudDensityMin;
-  config.vadDeltaDb = DEFAULT_CONFIG.vadDeltaDb;
-  config.loudDeltaDb = DEFAULT_CONFIG.loudDeltaDb;
-  
-  return config;
+  console.log('[configStorage] getFullConfig -> using DEFAULT_CONFIG only');
+  // Always return DEFAULT_CONFIG (no server config, no local storage)
+  return { ...DEFAULT_CONFIG };
 }
 
 /**

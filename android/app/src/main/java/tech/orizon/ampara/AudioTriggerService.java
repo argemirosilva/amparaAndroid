@@ -91,7 +91,9 @@ public class AudioTriggerService extends Service {
         
         acquireWakeLock();
         
-        config = new AudioTriggerConfig();
+        // Use fixed local defaults (NEVER from API)
+        config = tech.orizon.ampara.audio.AudioTriggerDefaults.INSTANCE.getDefaultConfig();
+        tech.orizon.ampara.audio.AudioTriggerDefaults.INSTANCE.logConfigSource(TAG);
         detector = new DiscussionDetector(config);
         recorder = new NativeRecorder(this);
         uploader = new AudioUploader(this);
@@ -253,53 +255,13 @@ public class AudioTriggerService extends Service {
     }
     
     private void applyConfiguration(String configJson) {
-        try {
-            JSONObject json = new JSONObject(configJson);
-            
-            Log.d(TAG, "Applying configuration from API: " + configJson);
-            
-            // Audio capture settings
-            if (json.has("sampleRate")) config.sampleRate = json.getInt("sampleRate");
-            if (json.has("frameMs")) config.frameMs = json.getInt("frameMs");
-            if (json.has("aggregationMs")) config.aggregationMs = json.getInt("aggregationMs");
-            
-            // Detection thresholds - now using API config
-            if (json.has("loudDeltaDb")) config.loudDeltaDb = json.getDouble("loudDeltaDb");
-            if (json.has("vadDeltaDb")) config.vadDeltaDb = json.getDouble("vadDeltaDb");
-            if (json.has("speechDensityMin")) config.speechDensityMin = json.getDouble("speechDensityMin");
-            if (json.has("loudDensityMin")) config.loudDensityMin = json.getDouble("loudDensityMin");
-            
-            Log.i(TAG, "Detection thresholds applied from API");
-            
-            // Timing windows
-            if (json.has("discussionWindowSeconds")) config.discussionWindowSeconds = json.getInt("discussionWindowSeconds");
-            if (json.has("preTriggerSeconds")) config.preTriggerSeconds = json.getInt("preTriggerSeconds");
-            if (json.has("startHoldSeconds")) config.startHoldSeconds = json.getInt("startHoldSeconds");
-            if (json.has("endHoldSeconds")) config.endHoldSeconds = json.getInt("endHoldSeconds");
-            if (json.has("cooldownSeconds")) config.cooldownSeconds = json.getInt("cooldownSeconds");
-            
-            // Noise floor learning
-            if (json.has("noiseFloorLearningRate")) config.noiseFloorLearningRate = json.getDouble("noiseFloorLearningRate");
-            
-            // Turn-taking detection
-            if (json.has("turnTakingMin")) config.turnTakingMin = json.getInt("turnTakingMin");
-            
-            // End detection
-            if (json.has("speechDensityEnd")) config.speechDensityEnd = json.getDouble("speechDensityEnd");
-            if (json.has("loudDensityEnd")) config.loudDensityEnd = json.getDouble("loudDensityEnd");
-            if (json.has("silenceDecaySeconds")) config.silenceDecaySeconds = json.getInt("silenceDecaySeconds");
-            if (json.has("silenceDecayRate")) config.silenceDecayRate = json.getDouble("silenceDecayRate");
-            
-            // ZCR thresholds
-            if (json.has("zcrMinVoice")) config.zcrMinVoice = json.getDouble("zcrMinVoice");
-            if (json.has("zcrMaxVoice")) config.zcrMaxVoice = json.getDouble("zcrMaxVoice");
-            
-            Log.i(TAG, String.format("Configuration applied: speechDensityMin=%.2f, loudDensityMin=%.2f, endHoldSeconds=%d",
-                config.speechDensityMin, config.loudDensityMin, config.endHoldSeconds));
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error parsing configuration JSON", e);
-        }
+        // REGRA MESTRE: IGNORAR audio_trigger_config da API
+        // Thresholds são SEMPRE os defaults locais (AudioTriggerDefaults)
+        Log.w(TAG, "[AudioTriggerService] Remote audio_trigger_config received -> IGNORED BY DESIGN");
+        Log.i(TAG, "[AudioTriggerService] Thresholds source = LOCAL DEFAULTS (AudioTriggerDefaults)");
+        
+        // API pode enviar apenas monitoringEnabled + monitoringPeriods (não implementado aqui)
+        // Thresholds NÃO mudam
     }
     
     private void startAudioCapture() {

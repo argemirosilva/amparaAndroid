@@ -65,18 +65,14 @@ export function HomePage({ onLogout }: HomePageProps) {
     periodosHoje: validPeriods
   };
   
-  const audioTriggerConfig = config.currentConfig?.audio_trigger;
+  // REMOVED: audioTriggerConfig from API (use local defaults only)
   const isConfigLoading = config.isLoading;
   const periodosSemana = config.currentConfig?.periodos_semana ?? null;
   
   const audioTrigger = useAudioTriggerSingleton();
   
-  // Update config when server config changes
-  useEffect(() => {
-    if (audioTriggerConfig) {
-      audioTrigger.updateConfig(audioTriggerConfig);
-    }
-  }, [audioTriggerConfig]);
+  // REMOVED: Update config from server (use local defaults only)
+  // audioTrigger.updateConfig() no longer called
   
   // Stealth notification - shows "Bem-estar Ativo" when monitoring is active
   // REMOVED: useBackgroundServices already manages ForegroundService
@@ -168,15 +164,8 @@ export function HomePage({ onLogout }: HomePageProps) {
     };
   }, [monitoring.dentroHorario, panic.isPanicActive, toast, appState]);
 
-  // Set native config when available
-  useEffect(() => {
-    if (audioTriggerConfig) {
-      console.log('[Home] Setting native audio trigger config');
-      hybridAudioTrigger.setNativeConfig(audioTriggerConfig).catch(err => {
-        console.error('[Home] Error setting native config:', err);
-      });
-    }
-  }, [audioTriggerConfig]);
+  // REMOVED: setNativeConfig (use local defaults only)
+  // Native thresholds are now hardcoded in AudioTriggerDefaults.kt
 
   // Phase 4: Auto-start audio monitoring on login (keeps app alive 24/7)
   // Only stops on logout

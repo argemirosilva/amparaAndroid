@@ -18,7 +18,6 @@ interface MonitoringState {
 interface ConfigState {
   config: UserConfig | null;
   monitoring: MonitoringState;
-  audioTriggerConfig: ServerAudioTriggerConfig | null;
   periodosSemana: PeriodosSemana | null;
   isLoading: boolean;
   lastSync: string | null;
@@ -39,7 +38,6 @@ export function useConfig() {
   const [state, setState] = useState<ConfigState>(() => ({
     config: getCachedConfig(),
     monitoring: initialMonitoringState,
-    audioTriggerConfig: loadServerConfig(),
     periodosSemana: null,
     isLoading: false,
     lastSync: null,
@@ -61,9 +59,9 @@ export function useConfig() {
       return false;
     }
 
-    // Cache server audio config if present
+    // IGNORED: audio_trigger_config from API (use local defaults only)
     if (result.data.audio_trigger_config) {
-      saveServerConfig(result.data.audio_trigger_config);
+      console.log('[useConfig] audio_trigger_config from API -> IGNORED');
     }
 
     setState({
@@ -77,7 +75,7 @@ export function useConfig() {
         periodosHoje: result.data.periodos_hoje ?? [],
         gravacaoDias: result.data.gravacao_dias ?? [],
       },
-      audioTriggerConfig: result.data.audio_trigger_config ?? null,
+      // audioTriggerConfig removed - use local defaults only
       periodosSemana: result.data.periodos_semana ?? null,
       isLoading: false,
       lastSync: result.data.ultima_atualizacao || new Date().toISOString(),
@@ -88,9 +86,11 @@ export function useConfig() {
   }, []);
 
   // Get audio trigger config converted to client format
+  // REMOVED: Always use local defaults, never from API
   const getAudioTriggerConfig = useCallback((): AudioTriggerConfig => {
-    return getConfigFromServer(state.audioTriggerConfig);
-  }, [state.audioTriggerConfig]);
+    console.log('[useConfig] getAudioTriggerConfig called -> returning null (use local defaults)');
+    return getConfigFromServer(null);
+  }, []);
 
   // Get support contacts (guardians)
   const getGuardians = useCallback((): SupportContact[] => {
