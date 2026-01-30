@@ -402,15 +402,17 @@ public class AudioTriggerService extends Service {
         
         // Detect speech and loudness
         double noiseFloor = detector.getNoiseFloor();
-        boolean isSpeech = AudioDSP.isSpeechLike(rmsDb, zcr, config);
+        boolean isSpeech = AudioDSP.isSpeechLike(rmsDb, zcr, config, noiseFloor);
         
         // Diagnostic: log when RMS is high but speech is not detected
         if (rmsDb > -55 && !isSpeech && System.currentTimeMillis() - lastDiagnosticLog > 3000) {
-            boolean hasEnergy = rmsDb > -40;
+            double vadThreshold = noiseFloor + config.vadDeltaDb;
+            boolean hasEnergy = rmsDb > vadThreshold;
             boolean hasVoiceZCR = zcr >= config.zcrMinVoice && zcr <= config.zcrMaxVoice;
-            String reason = !hasEnergy ? "RMS too low" : !hasVoiceZCR ? "ZCR out of range" : "unknown";
-            Log.w(TAG, String.format("[DIAGNOSTIC] Speech=false despite RMS=%.1f dB, ZCR=%.3f (range: %.2f-%.2f), Reason: %s",
-                rmsDb, zcr, config.zcrMinVoice, config.zcrMaxVoice, reason));
+            String reason = !hasEnergy ? String.format("RMS too low (%.1f < %.1f)", rmsDb, vadThreshold) : 
+                           !hasVoiceZCR ? "ZCR out of range" : "unknown";
+            Log.w(TAG, String.format("[DIAGNOSTIC] Speech=false: RMS=%.1f dB (threshold=%.1f), ZCR=%.3f (range: %.2f-%.2f), NoiseFloor=%.1f, Reason: %s",
+                rmsDb, vadThreshold, zcr, config.zcrMinVoice, config.zcrMaxVoice, noiseFloor, reason));
             lastDiagnosticLog = System.currentTimeMillis();
         }
         
@@ -459,6 +461,9 @@ public class AudioTriggerService extends Service {
             Log.d(TAG, String.format("[METRICS] RMS: %.1f dB, ZCR: %.3f, Speech: %b, Loud: %b, State: %s",
                 avgRmsDb, avgZcr, isSpeech, isLoud, detector.getState()));
         }
+        
+        // Send metrics to JS for UI updates (every aggregation = ~1s)
+        notifyMetrics(avgRmsDb, avgZcr, isSpeech, isLoud, detector.getState(), result.discussionScore);
         
         // Log detection
         if (result.shouldStartRecording) {
@@ -520,6 +525,20 @@ public class AudioTriggerService extends Service {
             
             notifyJavaScript("discussionEnded", result.reason);
         }
+    }
+    
+    private void notifyMetrics(double rmsDb, double zcr, boolean isSpeech, boolean isLoud, String state, double score) {
+        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
+        intent.setPackage(getPackageName());
+        intent.putExtra("event", "audioMetrics");
+        intent.putExtra("rmsDb", rmsDb);
+        intent.putExtra("zcr", zcr);
+        intent.putExtra("isSpeech", isSpeech);
+        intent.putExtra("isLoud", isLoud);
+        intent.putExtra("state", state);
+        intent.putExtra("score", score);
+        intent.putExtra("timestamp", System.currentTimeMillis());
+        sendBroadcast(intent);
     }
     
     private void notifyJavaScript(String event, String reason) {

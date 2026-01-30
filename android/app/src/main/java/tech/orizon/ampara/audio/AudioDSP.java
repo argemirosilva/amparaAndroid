@@ -54,11 +54,12 @@ public class AudioDSP {
      * @param config Audio trigger configuration
      * @return true if likely speech
      */
-    public static boolean isSpeechLike(double rmsDb, double zcr, AudioTriggerConfig config) {
+    public static boolean isSpeechLike(double rmsDb, double zcr, AudioTriggerConfig config, double noiseFloor) {
         // Speech typically has:
-        // - RMS above noise floor + VAD threshold
+        // - RMS above noise floor + VAD threshold (adaptive)
         // - ZCR within voice range (configurable)
-        boolean hasEnergy = rmsDb > -40;
+        double vadThreshold = noiseFloor + config.vadDeltaDb;
+        boolean hasEnergy = rmsDb > vadThreshold;
         boolean hasVoiceZCR = zcr >= config.zcrMinVoice && zcr <= config.zcrMaxVoice;
         return hasEnergy && hasVoiceZCR;
     }

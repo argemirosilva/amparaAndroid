@@ -69,6 +69,25 @@ public class AudioTriggerPlugin extends Plugin {
                 if (intent.hasExtra("noiseFloorDb")) {
                     ret.put("noiseFloorDb", intent.getDoubleExtra("noiseFloorDb", 0.0));
                 }
+                // Audio metrics fields
+                if (intent.hasExtra("rmsDb")) {
+                    ret.put("rmsDb", intent.getDoubleExtra("rmsDb", 0.0));
+                }
+                if (intent.hasExtra("zcr")) {
+                    ret.put("zcr", intent.getDoubleExtra("zcr", 0.0));
+                }
+                if (intent.hasExtra("isSpeech")) {
+                    ret.put("isSpeech", intent.getBooleanExtra("isSpeech", false));
+                }
+                if (intent.hasExtra("isLoud")) {
+                    ret.put("isLoud", intent.getBooleanExtra("isLoud", false));
+                }
+                if (intent.hasExtra("state")) {
+                    ret.put("state", intent.getStringExtra("state"));
+                }
+                if (intent.hasExtra("score")) {
+                    ret.put("score", intent.getDoubleExtra("score", 0.0));
+                }
                 
                 notifyListeners("audioTriggerEvent", ret);
             }
