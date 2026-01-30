@@ -144,16 +144,16 @@ export const DEFAULT_CONFIG: AudioTriggerConfig = {
   frameMs: 20,
   aggregationMs: 500,
   discussionWindowSeconds: 10,
-  preTriggerSeconds: 3,
-  startHoldSeconds: 10, // Reduzido para testes - produção: 35
-  endHoldSeconds: 30,
-  cooldownSeconds: 45,
+  preTriggerSeconds: 1,
+  startHoldSeconds: 2, // Reduzido para testes rápidos
+  endHoldSeconds: 10,
+  cooldownSeconds: 10,
   noiseFloorLearningRate: 0.01,
-  loudDeltaDb: 12,
-  vadDeltaDb: 7,
-  speechDensityMin: 0.10, // Reduzido para detectar fala única
-  loudDensityMin: 0.05,    // Reduzido para detectar fala única
-  turnTakingMin: 2,        // Reduzido para detectar fala única
+  loudDeltaDb: 10,
+  vadDeltaDb: 5,
+  speechDensityMin: 0.05, // Muito sensível para teste
+  loudDensityMin: 0.03,    // Muito sensível para teste
+  turnTakingMin: 1,        // Muito sensível para teste
   speechDensityEnd: 0.15,
   loudDensityEnd: 0.05,
   maleBiasEnabled: true,
