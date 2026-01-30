@@ -60,6 +60,15 @@ public class AudioTriggerPlugin extends Plugin {
                 if (intent.hasExtra("failure")) {
                     ret.put("failure", intent.getIntExtra("failure", 0));
                 }
+                if (intent.hasExtra("isCalibrated")) {
+                    ret.put("isCalibrated", intent.getBooleanExtra("isCalibrated", false));
+                }
+                if (intent.hasExtra("status")) {
+                    ret.put("status", intent.getStringExtra("status"));
+                }
+                if (intent.hasExtra("noiseFloorDb")) {
+                    ret.put("noiseFloorDb", intent.getDoubleExtra("noiseFloorDb", 0.0));
+                }
                 
                 notifyListeners("audioTriggerEvent", ret);
             }
