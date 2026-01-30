@@ -153,8 +153,10 @@ public class AudioTriggerService extends Service {
                     uploader.setCredentials(sessionToken, emailUsuario);
                 }
                 
-                // Pause monitoring to release microphone
-                pauseMonitoring();
+                // Pause monitoring to release microphone (only if already monitoring)
+                if (currentMicState == MicrophoneState.MONITORING) {
+                    pauseMonitoring();
+                }
                 currentMicState = MicrophoneState.RECORDING;
                 
                 // Start recording, location tracking, and upload queue
@@ -414,8 +416,10 @@ public class AudioTriggerService extends Service {
             Log.i(TAG, String.format("DISCUSSION DETECTED! Reason: %s, Speech: %.2f, Loud: %.2f",
                 result.reason, result.speechDensity, result.loudDensity));
             
-            // Pause monitoring to release microphone
-            pauseMonitoring();
+            // Pause monitoring to release microphone (only if already monitoring)
+            if (currentMicState == MicrophoneState.MONITORING) {
+                pauseMonitoring();
+            }
             currentMicState = MicrophoneState.RECORDING;
             
             // Start native recording with auto mode
