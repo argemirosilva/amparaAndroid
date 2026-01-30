@@ -59,7 +59,16 @@ export function PanicActivePage() {
   };
 
   const handleHoldStart = () => {
-    if (!panic.canCancel() || isCancelling) return;
+    console.log('[PanicActive] handleHoldStart called');
+    console.log('[PanicActive] canCancel:', panic.canCancel());
+    console.log('[PanicActive] isCancelling:', isCancelling);
+    
+    if (!panic.canCancel() || isCancelling) {
+      console.log('[PanicActive] Hold blocked - canCancel:', panic.canCancel(), 'isCancelling:', isCancelling);
+      return;
+    }
+    
+    console.log('[PanicActive] Starting hold timer...');
     
     setHoldProgress(0);
     
@@ -73,6 +82,7 @@ export function PanicActivePage() {
     
     // Trigger password dialog after hold duration
     holdTimerRef.current = setTimeout(() => {
+      console.log('[PanicActive] Hold completed, opening password dialog');
       clearInterval(progressIntervalRef.current!);
       setHoldProgress(100);
       setShowPasswordDialog(true);
@@ -80,6 +90,7 @@ export function PanicActivePage() {
   };
 
   const handleHoldEnd = () => {
+    console.log('[PanicActive] handleHoldEnd called, holdProgress:', holdProgress);
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
@@ -123,11 +134,17 @@ export function PanicActivePage() {
 
       {/* Cancel button with hold-to-cancel */}
       <motion.button
+        onTouchStart={(e) => {
+          e.preventDefault();
+          handleHoldStart();
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          handleHoldEnd();
+        }}
         onMouseDown={handleHoldStart}
         onMouseUp={handleHoldEnd}
         onMouseLeave={handleHoldEnd}
-        onTouchStart={handleHoldStart}
-        onTouchEnd={handleHoldEnd}
         disabled={!canCancel || isCancelling}
         className={`
           relative w-40 h-40 rounded-full bg-gradient-safe 
@@ -170,13 +187,16 @@ export function PanicActivePage() {
               {isHolding ? 'Segure...' : 'Cancelar'}
             </span>
             <span className="text-xs text-white/80 mt-1">
-              {isHolding ? '' : 'Agora estou segura'}
+              {isHolding ? `${Math.floor(holdProgress)}%` : 'Agora estou segura'}
             </span>
           </>
         ) : isCancelling ? (
           <span className="text-lg font-bold text-white">Cancelando...</span>
         ) : (
-          <span className="text-lg font-bold text-white">Aguarde 5s...</span>
+          <>
+            <span className="text-lg font-bold text-white">Aguarde...</span>
+            <span className="text-xs text-white/80 mt-1">Botão disponível em 5s</span>
+          </>
         )}
       </motion.button>
     </div>
