@@ -182,8 +182,9 @@ export function HomePage({ onLogout }: HomePageProps) {
       return;
     }
     
-    // Start hybrid audio trigger (automatically switches between JS and Native)
-    console.log('[Home] Auto-starting hybrid audio trigger (keeps app alive)');
+    // GUARD: Only auto-start in foreground
+    // HybridAudioTrigger will handle background transitions automatically
+    console.log('[Home] Auto-starting hybrid audio trigger (foreground only)');
     const timer = setTimeout(() => {
       hybridAudioTrigger.start().catch(err => {
         console.error('[Home] Failed to auto-start hybrid audio trigger:', err);

@@ -1,6 +1,17 @@
 /**
  * Hybrid Audio Trigger Service
  * Manages both JavaScript (foreground) and Native (background) audio triggers
+ * 
+ * State Machine Implementation:
+ * - STOPPED: No audio monitoring active
+ * - JS: JavaScript/WebAudio monitoring (foreground only)
+ * - NATIVE: Native Android service monitoring (background/lock)
+ * 
+ * Transition Rules:
+ * - Foreground → JS mode
+ * - Background → NATIVE mode
+ * - Debounce: 2s between transitions
+ * - No JS start in background (hard block)
  */
 
 import { Capacitor } from '@capacitor/core';
@@ -8,14 +19,31 @@ import { App } from '@capacitor/app';
 import { AudioTriggerNative } from '@/plugins/audioTriggerNative';
 import type { AudioTriggerEvent } from '@/plugins/audioTriggerNative';
 
+enum Mode {
+  STOPPED = 'STOPPED',
+  JS = 'JS',
+  NATIVE = 'NATIVE'
+}
+
 class HybridAudioTriggerService {
-  private isNativeRunning = false;
-  private isJavaScriptRunning = false;
+  // State machine
+  private currentMode: Mode = Mode.STOPPED;
+  private transitionInProgress = false;
+  private lastTransitionAt = 0;
+  private readonly TRANSITION_DEBOUNCE_MS = 2000;
+  
+  // App state
   private appIsActive = true;
   
+  // Event handling
   private eventListeners: Array<(event: AudioTriggerEvent) => void> = [];
+  private nativeListenerRegistered = false;
+  
+  // JavaScript callbacks
   private jsStartCallback: (() => Promise<void>) | null = null;
   private jsStopCallback: (() => Promise<void>) | null = null;
+  
+  // Native config
   private nativeConfig: any = null;
   
   constructor() {
@@ -28,94 +56,156 @@ class HybridAudioTriggerService {
       return;
     }
     
-    // Listen to app state changes
+    // Listen to app state changes (SINGLE listener)
     App.addListener('appStateChange', ({ isActive }) => {
-      console.log('[HybridAudioTrigger] App state changed:', isActive ? 'active' : 'background');
+      console.log(`[HybridAudioTrigger] 🔄 App state changed: ${isActive ? 'FOREGROUND' : 'BACKGROUND'}`);
       this.appIsActive = isActive;
-      this.handleStateChange();
+      this.onAppStateChange(isActive);
     });
     
-    // Listen to native audio trigger events
-    AudioTriggerNative.addListener('audioTriggerEvent', (event) => {
-      console.log('[HybridAudioTrigger] Native event received:', event);
-      this.notifyListeners(event);
-    });
+    console.log('[HybridAudioTrigger] ✅ Initialized');
+  }
+  
+  /**
+   * App state change handler - triggers mode transitions
+   */
+  private async onAppStateChange(isActive: boolean) {
+    if (isActive) {
+      // Foreground → JS mode
+      console.log('[HybridAudioTrigger] 📱 FOREGROUND detected');
+      await this.ensureMode(Mode.JS);
+    } else {
+      // Background → NATIVE mode
+      console.log('[HybridAudioTrigger] 🌙 BACKGROUND detected');
+      await this.ensureMode(Mode.NATIVE);
+    }
+  }
+  
+  /**
+   * Ensure the system is in the target mode
+   * Handles all transitions with debounce and locks
+   */
+  private async ensureMode(targetMode: Mode) {
+    // Check if already in target mode
+    if (this.currentMode === targetMode) {
+      console.log(`[HybridAudioTrigger] Already in ${targetMode} mode, skipping`);
+      return;
+    }
     
-    console.log('[HybridAudioTrigger] Initialized');
+    // Check if transition is in progress
+    if (this.transitionInProgress) {
+      console.warn(`[HybridAudioTrigger] ⚠️ Transition already in progress, ignoring request for ${targetMode}`);
+      return;
+    }
+    
+    // Debounce: ignore rapid transitions
+    const now = Date.now();
+    const timeSinceLastTransition = now - this.lastTransitionAt;
+    if (timeSinceLastTransition < this.TRANSITION_DEBOUNCE_MS) {
+      console.warn(`[HybridAudioTrigger] ⚠️ Debounce active (${timeSinceLastTransition}ms < ${this.TRANSITION_DEBOUNCE_MS}ms), ignoring transition to ${targetMode}`);
+      return;
+    }
+    
+    // Lock transition
+    this.transitionInProgress = true;
+    this.lastTransitionAt = now;
+    
+    console.log(`[HybridAudioTrigger] 🔄 MODE_SWITCH: ${this.currentMode} → ${targetMode}`);
+    
+    try {
+      // Stop current mode
+      if (this.currentMode === Mode.JS) {
+        await this.stopJS();
+      } else if (this.currentMode === Mode.NATIVE) {
+        await this.stopNative();
+      }
+      
+      // Start target mode
+      if (targetMode === Mode.JS) {
+        await this.startJS();
+      } else if (targetMode === Mode.NATIVE) {
+        await this.startNative();
+      }
+      
+      this.currentMode = targetMode;
+      console.log(`[HybridAudioTrigger] ✅ MODE_SWITCH complete: now in ${targetMode}`);
+    } catch (error) {
+      console.error(`[HybridAudioTrigger] ❌ MODE_SWITCH failed:`, error);
+    } finally {
+      // Unlock transition
+      this.transitionInProgress = false;
+    }
   }
   
   /**
    * Start audio monitoring
-   * Automatically switches between JavaScript and Native based on app state
+   * Automatically determines mode based on app state
    */
   async start() {
-    console.log('[HybridAudioTrigger] Starting audio monitoring');
-    // Always use JavaScript (works in both foreground and background)
-    // Native service disabled due to Android 14+ permission issues
-    await this.startJavaScript();
+    console.log('[HybridAudioTrigger] 🚀 start() called');
+    
+    if (this.appIsActive) {
+      await this.ensureMode(Mode.JS);
+    } else {
+      await this.ensureMode(Mode.NATIVE);
+    }
   }
   
   /**
    * Stop audio monitoring
    */
   async stop() {
-    console.log('[HybridAudioTrigger] Stopping audio monitoring');
-    await this.stopJavaScript();
-    await this.stopNative();
+    console.log('[HybridAudioTrigger] 🛑 stop() called');
+    await this.ensureMode(Mode.STOPPED);
   }
   
-  private async startJavaScript() {
-    if (this.isJavaScriptRunning) {
-      console.log('[HybridAudioTrigger] JavaScript already running');
+  /**
+   * Start JavaScript audio trigger (FOREGROUND ONLY)
+   */
+  private async startJS() {
+    // HARD BLOCK: Never start JS in background
+    if (!this.appIsActive) {
+      console.error('[HybridAudioTrigger] ❌ BLOCKED: Cannot start JS in background!');
       return;
     }
     
-    console.log('[HybridAudioTrigger] Starting JavaScript audio trigger');
-    
-    // Stop native if running
-    if (this.isNativeRunning) {
-      await this.stopNative();
-    }
+    console.log('[HybridAudioTrigger] 🟢 JS_STARTING');
     
     // Call JavaScript start callback if registered
     if (this.jsStartCallback) {
       try {
         await this.jsStartCallback();
-        this.isJavaScriptRunning = true;
-        console.log('[HybridAudioTrigger] JavaScript audio trigger started via callback');
+        console.log('[HybridAudioTrigger] ✅ JS_STARTED');
       } catch (error) {
-        console.error('[HybridAudioTrigger] Error starting JavaScript audio trigger:', error);
+        console.error('[HybridAudioTrigger] ❌ JS_START_FAILED:', error);
+        throw error;
       }
     } else {
-      console.warn('[HybridAudioTrigger] No JavaScript start callback registered');
-      this.isJavaScriptRunning = true;
+      console.warn('[HybridAudioTrigger] ⚠️ No JS start callback registered');
     }
   }
   
-  private async stopJavaScript() {
-    if (!this.isJavaScriptRunning) return;
-    
-    console.log('[HybridAudioTrigger] Stopping JavaScript audio trigger');
+  /**
+   * Stop JavaScript audio trigger
+   */
+  private async stopJS() {
+    console.log('[HybridAudioTrigger] 🔴 JS_STOPPING');
     
     // Call JavaScript stop callback if registered
     if (this.jsStopCallback) {
       try {
         await this.jsStopCallback();
-        console.log('[HybridAudioTrigger] JavaScript audio trigger stopped via callback');
+        console.log('[HybridAudioTrigger] ✅ JS_STOPPED');
       } catch (error) {
-        console.error('[HybridAudioTrigger] Error stopping JavaScript audio trigger:', error);
+        console.error('[HybridAudioTrigger] ❌ JS_STOP_FAILED:', error);
       }
     }
-    
-    this.isJavaScriptRunning = false;
   }
   
+  /**
+   * Start Native audio trigger (BACKGROUND/LOCK)
+   */
   private async startNative() {
-    if (this.isNativeRunning) {
-      console.log('[HybridAudioTrigger] Native already running');
-      return;
-    }
-    
     if (!Capacitor.isNativePlatform()) {
       console.log('[HybridAudioTrigger] Cannot start native on web platform');
       return;
@@ -127,57 +217,50 @@ class HybridAudioTriggerService {
       const permissionResult = await AudioPermission.checkPermission();
       
       if (!permissionResult.granted) {
-        console.error('[HybridAudioTrigger] RECORD_AUDIO permission not granted, cannot start native service');
-        console.log('[HybridAudioTrigger] Falling back to JavaScript');
-        await this.startJavaScript();
-        return;
+        console.error('[HybridAudioTrigger] ❌ RECORD_AUDIO permission not granted');
+        throw new Error('RECORD_AUDIO permission required');
       }
       
-      console.log('[HybridAudioTrigger] Starting native audio trigger');
+      console.log('[HybridAudioTrigger] 🟢 NATIVE_STARTING');
+      
+      // Register native event listener (ONCE)
+      if (!this.nativeListenerRegistered) {
+        AudioTriggerNative.addListener('audioTriggerEvent', (event) => {
+          console.log('[HybridAudioTrigger] 📡 Native event received:', event);
+          this.notifyListeners(event);
+        });
+        this.nativeListenerRegistered = true;
+        console.log('[HybridAudioTrigger] 📡 Native listener registered (once)');
+      }
       
       // Pass configuration if available
       const options = this.nativeConfig ? { config: this.nativeConfig } : {};
       const result = await AudioTriggerNative.start(options);
       
       if (result.success) {
-        this.isNativeRunning = true;
-        console.log('[HybridAudioTrigger] Native audio trigger started successfully');
+        console.log('[HybridAudioTrigger] ✅ NATIVE_STARTED');
       } else {
-        console.error('[HybridAudioTrigger] Failed to start native audio trigger');
+        console.error('[HybridAudioTrigger] ❌ NATIVE_START_FAILED');
+        throw new Error('Native start failed');
       }
     } catch (error) {
-      console.error('[HybridAudioTrigger] Error starting native audio trigger:', error);
+      console.error('[HybridAudioTrigger] ❌ NATIVE_START_ERROR:', error);
+      throw error;
     }
   }
   
+  /**
+   * Stop Native audio trigger
+   */
   private async stopNative() {
-    if (!this.isNativeRunning) return;
-    
     if (!Capacitor.isNativePlatform()) return;
     
     try {
-      console.log('[HybridAudioTrigger] Stopping native audio trigger');
+      console.log('[HybridAudioTrigger] 🔴 NATIVE_STOPPING');
       await AudioTriggerNative.stop();
-      this.isNativeRunning = false;
-      console.log('[HybridAudioTrigger] Native audio trigger stopped');
+      console.log('[HybridAudioTrigger] ✅ NATIVE_STOPPED');
     } catch (error) {
-      console.error('[HybridAudioTrigger] Error stopping native audio trigger:', error);
-    }
-  }
-  
-  private async handleStateChange() {
-    // Switch to native when app goes to background
-    if (!this.appIsActive && this.isJavaScriptRunning) {
-      console.log('[HybridAudioTrigger] App in background - switching to native');
-      await this.stopJavaScript();
-      await this.startNative();
-    }
-    
-    // Switch to JavaScript when app comes to foreground
-    if (this.appIsActive && this.isNativeRunning) {
-      console.log('[HybridAudioTrigger] App in foreground - switching to JavaScript');
-      await this.stopNative();
-      await this.startJavaScript();
+      console.error('[HybridAudioTrigger] ❌ NATIVE_STOP_ERROR:', error);
     }
   }
   
@@ -210,37 +293,42 @@ class HybridAudioTriggerService {
   
   /**
    * Register callbacks to control JavaScript audio trigger
+   * MUST be called once during app initialization
    */
   registerJavaScriptCallbacks(start: () => Promise<void>, stop: () => Promise<void>) {
+    if (this.jsStartCallback || this.jsStopCallback) {
+      console.warn('[HybridAudioTrigger] ⚠️ JS callbacks already registered, overwriting');
+    }
     this.jsStartCallback = start;
     this.jsStopCallback = stop;
-    console.log('[HybridAudioTrigger] JavaScript callbacks registered');
+    console.log('[HybridAudioTrigger] ✅ JavaScript callbacks registered');
   }
   
   /**
    * Set configuration for native audio trigger
-   * If native is already running, updates it dynamically
+   * Hot reload: updates config without restart if native is running
    */
   async setNativeConfig(config: any) {
     this.nativeConfig = config;
-    console.log('[HybridAudioTrigger] Native config set:', config);
+    console.log('[HybridAudioTrigger] 🔧 Native config set:', config);
     
-    // If native is already running, update it dynamically
-    if (this.isNativeRunning && Capacitor.isNativePlatform()) {
+    // Hot reload: update config if native is already running
+    if (this.currentMode === Mode.NATIVE && Capacitor.isNativePlatform()) {
       try {
         await AudioTriggerNative.updateConfig({ config });
-        console.log('[HybridAudioTrigger] Native config updated dynamically');
+        console.log('[HybridAudioTrigger] ✅ Native config hot-reloaded');
       } catch (error) {
-        console.error('[HybridAudioTrigger] Error updating native config:', error);
+        console.error('[HybridAudioTrigger] ❌ Native config hot-reload failed:', error);
       }
     }
   }
   
   getStatus() {
     return {
-      isNativeRunning: this.isNativeRunning,
-      isJavaScriptRunning: this.isJavaScriptRunning,
-      appIsActive: this.appIsActive
+      currentMode: this.currentMode,
+      transitionInProgress: this.transitionInProgress,
+      appIsActive: this.appIsActive,
+      lastTransitionAt: this.lastTransitionAt
     };
   }
 }

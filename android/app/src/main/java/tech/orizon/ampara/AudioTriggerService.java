@@ -85,8 +85,20 @@ public class AudioTriggerService extends Service {
             return;
         }
         
-        // DO NOT call startForeground() here - we already have a ForegroundService running
-        // This service runs as a background service under the main ForegroundService
+        // Start as Foreground Service to prevent Android from killing it
+        createNotificationChannel();
+        Notification notification = createNotification();
+        
+        // CRITICAL: Must call startForeground within 5 seconds on Android 8+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android 10+ requires foregroundServiceType
+            startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+        } else {
+            startForeground(NOTIFICATION_ID, notification);
+        }
+        
+        Log.d(TAG, "[MicState] Foreground Service started with microphone type");
+        
         acquireWakeLock();
         
         config = new AudioTriggerConfig();

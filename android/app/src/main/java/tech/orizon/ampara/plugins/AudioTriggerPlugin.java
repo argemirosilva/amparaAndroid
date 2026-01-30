@@ -82,9 +82,14 @@ public class AudioTriggerPlugin extends Plugin {
                 Log.d(TAG, "Starting AudioTrigger service with config: " + config.toString());
             }
             
-            getContext().startService(intent);
-            
-            Log.d(TAG, "AudioTrigger service started");
+            // Use startForegroundService on Android 8+ to ensure service runs in background
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                getContext().startForegroundService(intent);
+                Log.d(TAG, "AudioTrigger foreground service started (Android 8+)");
+            } else {
+                getContext().startService(intent);
+                Log.d(TAG, "AudioTrigger service started");
+            }
             
             JSObject ret = new JSObject();
             ret.put("success", true);
