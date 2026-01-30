@@ -210,6 +210,10 @@ public class DiscussionDetector {
         return state;
     }
     
+    public String getStateString() {
+        return state.name();
+    }
+    
     public double getNoiseFloor() {
         return noiseFloor;
     }
