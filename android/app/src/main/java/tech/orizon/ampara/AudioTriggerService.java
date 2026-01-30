@@ -137,22 +137,37 @@ public class AudioTriggerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "AudioTriggerService onStartCommand");
+        Log.i(TAG, "FGS_MICROPHONE_START_REQUEST");
         
-        // Start as Foreground Service on first command
+        // Start as Foreground Service IMMEDIATELY on first command
         // This ensures we're in "eligible state" (app recently interacted)
+        // CRITICAL: Must call startForeground() within 5 seconds of service start
         try {
             Notification notification = createNotification();
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 // Android 10+ requires foregroundServiceType
+                // Android 14/15 requires app to be in eligible state
                 startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
             } else {
                 startForeground(NOTIFICATION_ID, notification);
             }
             
+            Log.i(TAG, "FGS_MICROPHONE_STARTED_OK");
             Log.d(TAG, "[MicState] Foreground Service started with microphone type");
+        } catch (SecurityException se) {
+            // Android 14/15: App not in eligible state to start microphone FGS
+            Log.e(TAG, "FGS_MICROPHONE_SECURITY_EXCEPTION: " + se.getMessage());
+            Log.e(TAG, "FGS_MIC_NOT_ELIGIBLE: App must be in foreground to start microphone service");
+            
+            // Notify JavaScript about the failure
+            notifyFgsNotEligible();
+            
+            // Stop gracefully without crashing
+            stopSelf();
+            return START_NOT_STICKY;
         } catch (Exception e) {
-            Log.e(TAG, "Failed to start foreground service", e);
+            Log.e(TAG, "FGS_MICROPHONE_START_FAILED: " + e.getMessage(), e);
             // If we can't start foreground, stop the service
             stopSelf();
             return START_NOT_STICKY;
@@ -558,6 +573,17 @@ public class AudioTriggerService extends Service {
         intent.putExtra("isCalibrated", isCalibrated);
         intent.putExtra("timestamp", System.currentTimeMillis());
         sendBroadcast(intent);
+    }
+    
+    private void notifyFgsNotEligible() {
+        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
+        intent.setPackage(getPackageName());
+        intent.putExtra("event", "fgsNotEligible");
+        intent.putExtra("reason", "App must be in foreground to start microphone service on Android 14+");
+        intent.putExtra("timestamp", System.currentTimeMillis());
+        sendBroadcast(intent);
+        
+        Log.d(TAG, "FGS not eligible broadcast sent");
     }
     
     private void createNotificationChannel() {

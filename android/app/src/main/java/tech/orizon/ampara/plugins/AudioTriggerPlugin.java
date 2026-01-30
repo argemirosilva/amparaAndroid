@@ -22,6 +22,7 @@ public class AudioTriggerPlugin extends Plugin {
     private static final String TAG = "AudioTriggerPlugin";
     
     private BroadcastReceiver eventReceiver;
+    private static boolean serviceRunning = false;
     
     @Override
     public void load() {
@@ -73,6 +74,16 @@ public class AudioTriggerPlugin extends Plugin {
     @PluginMethod
     public void start(PluginCall call) {
         try {
+            // IDEMPOTENT: If service already running, just return success
+            if (serviceRunning) {
+                Log.d(TAG, "AudioTrigger service already running, skipping start (idempotent)");
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("alreadyRunning", true);
+                call.resolve(ret);
+                return;
+            }
+            
             Intent intent = new Intent(getContext(), AudioTriggerService.class);
             
             // Pass configuration if provided
@@ -83,20 +94,25 @@ public class AudioTriggerPlugin extends Plugin {
             }
             
             // Use startForegroundService on Android 8+ to ensure service runs in background
+            // IMPORTANT: This must be called while app is in FOREGROUND (eligible state)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                Log.i(TAG, "NATIVE_START_REQUEST: Starting foreground service (Android 8+)");
                 getContext().startForegroundService(intent);
-                Log.d(TAG, "AudioTrigger foreground service started (Android 8+)");
+                Log.i(TAG, "NATIVE_START_SENT: startForegroundService called");
             } else {
                 getContext().startService(intent);
                 Log.d(TAG, "AudioTrigger service started");
             }
             
+            serviceRunning = true;
+            
             JSObject ret = new JSObject();
             ret.put("success", true);
+            ret.put("alreadyRunning", false);
             call.resolve(ret);
             
         } catch (Exception e) {
-            Log.e(TAG, "Error starting AudioTrigger service", e);
+            Log.e(TAG, "NATIVE_START_ERROR: " + e.getMessage(), e);
             call.reject("Failed to start AudioTrigger service: " + e.getMessage());
         }
     }
@@ -134,6 +150,7 @@ public class AudioTriggerPlugin extends Plugin {
             Intent intent = new Intent(getContext(), AudioTriggerService.class);
             getContext().stopService(intent);
             
+            serviceRunning = false;
             Log.d(TAG, "AudioTrigger service stopped");
             
             JSObject ret = new JSObject();
@@ -148,9 +165,8 @@ public class AudioTriggerPlugin extends Plugin {
     
     @PluginMethod
     public void isRunning(PluginCall call) {
-        // TODO: Implement service status check
         JSObject ret = new JSObject();
-        ret.put("isRunning", false);
+        ret.put("isRunning", serviceRunning);
         call.resolve(ret);
     }
     

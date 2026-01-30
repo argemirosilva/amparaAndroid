@@ -30,7 +30,7 @@ interface AudioTriggerMeterProps {
   // Noisy environment
   isNoisy?: boolean;
   // Trigger mode (for showing correct status)
-  triggerMode?: 'STOPPED' | 'WAITING_PERMISSION' | 'WAITING_JS_CALLBACKS' | 'JS' | 'NATIVE';
+  triggerMode?: 'STOPPED' | 'WAITING_PERMISSION' | 'RUNNING';
 }
 
 // Linear interpolation between two hex colors
@@ -384,13 +384,13 @@ export function AudioTriggerMeter({
                 <span className={`text-[10px] font-medium ${
                   isCalibrated ? 'text-emerald-500' : 
                   triggerMode === 'WAITING_PERMISSION' ? 'text-red-500' :
-                  triggerMode === 'WAITING_JS_CALLBACKS' ? 'text-yellow-500' :
                   triggerMode === 'STOPPED' ? 'text-gray-500' :
+                  triggerMode === 'RUNNING' ? 'text-emerald-500' :
                   'text-amber-500'
                 }`}>
                   {triggerMode === 'WAITING_PERMISSION' ? 'Permissão pendente' :
-                   triggerMode === 'WAITING_JS_CALLBACKS' ? 'Inicializando...' :
                    triggerMode === 'STOPPED' ? 'Aguardando...' :
+                   triggerMode === 'RUNNING' ? (isCalibrated ? 'Monitorando' : 'Calibrando...') :
                    isCalibrated ? 'Calibrado' : 'Calibrando...'}
                 </span>
               )}

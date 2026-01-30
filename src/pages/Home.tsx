@@ -109,22 +109,20 @@ export function HomePage({ onLogout }: HomePageProps) {
     hybridAudioTrigger.init();
   }, []);
 
-  // Phase 3: Register JavaScript audio trigger callbacks with hybrid service
+  // Phase 3: Register JavaScript callbacks (optional, for UI updates only)
+  // Native-first architecture: NATIVE service handles all audio processing
   useEffect(() => {
-    console.log('[Home] Registering JavaScript callbacks...');
-    hybridAudioTrigger.registerJavaScriptCallbacks(
-      {
-        start: async () => {
-          console.log('[Home] Hybrid service starting JavaScript audio trigger');
-          await audioTrigger.start();
-        },
-        stop: async () => {
-          console.log('[Home] Hybrid service stopping JavaScript audio trigger');
-          await audioTrigger.stop();
-        },
-      }
-    );
-  }, [audioTrigger]);
+    console.log('[Home] Registering JavaScript callbacks (optional, for UI)...');
+    hybridAudioTrigger.registerJavaScriptCallbacks({
+      onStateChange: (mode) => {
+        console.log('[Home] HybridAudioTrigger state changed:', mode);
+        forceUpdate({});
+      },
+      onDebug: (data) => {
+        console.log('[Home] HybridAudioTrigger debug:', data);
+      },
+    });
+  }, []);
 
   // Listen to native audio trigger events (discussion detected in background)
   useEffect(() => {
