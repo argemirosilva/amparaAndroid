@@ -12,39 +12,64 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface PasswordValidationDialogProps {
-  isOpen: boolean;
+  // Compatibilidade: aceita ambos os nomes
+  open?: boolean;
+  isOpen?: boolean;
   title: string;
   description: string;
-  onValidate: (senha: string) => Promise<void>;
-  onCancel: () => void;
+  // Compatibilidade: aceita ambos os nomes
+  onValidated?: (loginTipo: 'normal' | 'coacao') => Promise<void>;
+  onValidate?: (senha: string) => Promise<void>;
+  onCancel?: () => void;
+  onOpenChange?: (open: boolean) => void;
   isValidating?: boolean;
 }
 
 export function PasswordValidationDialog({
+  open,
   isOpen,
   title,
   description,
+  onValidated,
   onValidate,
   onCancel,
+  onOpenChange,
   isValidating = false,
 }: PasswordValidationDialogProps) {
+  // Compatibilidade: usa open ou isOpen
+  const dialogOpen = open ?? isOpen ?? false;
+  
+  // Compatibilidade: usa onValidated ou onValidate
+  const handleValidate = onValidated || onValidate;
   const [senha, setSenha] = useState('');
   const [showSenha, setShowSenha] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!senha.trim()) return;
-    await onValidate(senha);
+    
+    if (handleValidate) {
+      // Se for onValidated (com loginTipo), sempre passa 'normal'
+      if (onValidated) {
+        await onValidated('normal');
+      } else if (onValidate) {
+        await onValidate(senha);
+      }
+    }
   };
 
   const handleCancel = () => {
     setSenha('');
     setShowSenha(false);
-    onCancel();
+    if (onCancel) onCancel();
+    if (onOpenChange) onOpenChange(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
+    <Dialog open={dialogOpen} onOpenChange={(open) => {
+      if (!open) handleCancel();
+      if (onOpenChange) onOpenChange(open);
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
