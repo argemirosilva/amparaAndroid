@@ -469,6 +469,16 @@ class AudioTriggerSingleton {
   getIsCalibrated(): boolean {
     return this.isCalibrated;
   }
+  
+  /**
+   * Set calibration status from native service
+   * This allows native calibration to update UI state
+   */
+  setCalibrationStatus(calibrated: boolean) {
+    console.log('[AudioTriggerSingleton] Setting calibration status from native:', calibrated);
+    this.isCalibrated = calibrated;
+    this.notifyStateChange();
+  }
 }
 
 // Export singleton instance

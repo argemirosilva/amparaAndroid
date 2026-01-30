@@ -280,6 +280,15 @@ class HybridAudioTriggerService {
         this.notifyStateChange();
       }
       
+      // Handle calibration status from native
+      if (event.event === 'calibrationStatus' && event.isCalibrated !== undefined) {
+        console.log('[HybridAudioTrigger] 📡 Native calibration status:', event.isCalibrated);
+        // Update audioTriggerSingleton state
+        import('@/services/audioTriggerSingleton').then(({ audioTriggerSingleton }) => {
+          audioTriggerSingleton.setCalibrationStatus(event.isCalibrated);
+        });
+      }
+      
       // Forward to event listeners
       this.notifyListeners(event);
       
