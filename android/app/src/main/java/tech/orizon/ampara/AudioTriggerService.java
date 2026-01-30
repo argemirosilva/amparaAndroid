@@ -465,7 +465,7 @@ public class AudioTriggerService extends Service {
         // Send metrics to JS for UI updates (every aggregation = ~1s)
         // Calculate discussion score from densities
         double discussionScore = (result.speechDensity + result.loudDensity) / 2.0;
-        notifyMetrics(avgRmsDb, avgZcr, isSpeech, isLoud, detector.getState(), discussionScore);
+        notifyMetrics(avgRmsDb, avgZcr, isSpeech, isLoud, detector.getState().toString(), discussionScore);
         
         // Log detection
         if (result.shouldStartRecording) {
