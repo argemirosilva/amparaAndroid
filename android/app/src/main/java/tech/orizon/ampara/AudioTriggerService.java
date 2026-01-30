@@ -71,6 +71,7 @@ public class AudioTriggerService extends Service {
     private List<DiscussionDetector.AggregationMetrics> aggregationBuffer;
     private int frameCounter = 0;
     private int aggregationCounter = 0;
+    private long lastDiagnosticLog = 0;
     
     @Override
     public void onCreate() {
@@ -348,6 +349,8 @@ public class AudioTriggerService extends Service {
     
     private void processAudioLoop() {
         Log.d(TAG, "Audio processing loop started");
+        Log.i(TAG, String.format("[CONFIG] ZCR range: %.2f-%.2f, VAD delta: %.1f dB, Loud delta: %.1f dB",
+            config.zcrMinVoice, config.zcrMaxVoice, config.vadDeltaDb, config.loudDeltaDb));
         
         int frameSamples = config.getFrameSamples();
         int aggregationFrames = config.getAggregationFrames();
@@ -399,7 +402,17 @@ public class AudioTriggerService extends Service {
         
         // Detect speech and loudness
         double noiseFloor = detector.getNoiseFloor();
-        boolean isSpeech = AudioDSP.isSpeechLike(rmsDb, zcr);
+        boolean isSpeech = AudioDSP.isSpeechLike(rmsDb, zcr, config);
+        
+        // Diagnostic: log when RMS is high but speech is not detected
+        if (rmsDb > -55 && !isSpeech && System.currentTimeMillis() - lastDiagnosticLog > 3000) {
+            boolean hasEnergy = rmsDb > -40;
+            boolean hasVoiceZCR = zcr >= config.zcrMinVoice && zcr <= config.zcrMaxVoice;
+            String reason = !hasEnergy ? "RMS too low" : !hasVoiceZCR ? "ZCR out of range" : "unknown";
+            Log.w(TAG, String.format("[DIAGNOSTIC] Speech=false despite RMS=%.1f dB, ZCR=%.3f (range: %.2f-%.2f), Reason: %s",
+                rmsDb, zcr, config.zcrMinVoice, config.zcrMaxVoice, reason));
+            lastDiagnosticLog = System.currentTimeMillis();
+        }
         
         // Hybrid threshold: relative (noiseFloor + delta) OR absolute minimum
         // Ensures detection even in very noisy environments

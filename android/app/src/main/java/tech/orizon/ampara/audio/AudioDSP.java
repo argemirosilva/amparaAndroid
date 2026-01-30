@@ -51,13 +51,16 @@ public class AudioDSP {
      * Detect if audio contains speech-like characteristics
      * @param rmsDb RMS in dB
      * @param zcr Zero Crossing Rate
+     * @param config Audio trigger configuration
      * @return true if likely speech
      */
-    public static boolean isSpeechLike(double rmsDb, double zcr) {
+    public static boolean isSpeechLike(double rmsDb, double zcr, AudioTriggerConfig config) {
         // Speech typically has:
-        // - RMS above -40 dB
-        // - ZCR between 0.02 and 0.2
-        return rmsDb > -40 && zcr > 0.02 && zcr < 0.2;
+        // - RMS above noise floor + VAD threshold
+        // - ZCR within voice range (configurable)
+        boolean hasEnergy = rmsDb > -40;
+        boolean hasVoiceZCR = zcr >= config.zcrMinVoice && zcr <= config.zcrMaxVoice;
+        return hasEnergy && hasVoiceZCR;
     }
     
     /**

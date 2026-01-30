@@ -36,7 +36,7 @@ public class AudioTriggerConfig {
     
     // ZCR thresholds for voice detection
     public double zcrMinVoice = 0.02;
-    public double zcrMaxVoice = 0.2;
+    public double zcrMaxVoice = 0.35; // Increased from 0.2 to be more permissive
     
     /**
      * Get frame size in samples
