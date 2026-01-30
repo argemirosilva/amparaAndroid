@@ -5,6 +5,7 @@ import KeepAlive from '../plugins/keepAlive';
 import { getDeviceId } from '../lib/deviceId';
 import { UnifiedPermissionsScreen } from './UnifiedPermissionsScreen';
 import { checkPermissions } from '@/services/permissionsService';
+import { PermissionFlowState } from '@/services/permissionFlowState';
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -13,6 +14,11 @@ interface PermissionGuardProps {
 export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) => {
   console.log('🚨🚨🚨 [PermissionGuard] COMPONENT MOUNTED! 🚨🚨🚨');
   const [hasPermissions, setHasPermissions] = useState<boolean | null>(null);
+
+  // Initialize PermissionFlowState
+  useEffect(() => {
+    PermissionFlowState.init();
+  }, []);
 
   const checkAndRequestPermissions = async () => {
     try {
@@ -24,12 +30,22 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
         permissions.microphone === 'granted' &&
         permissions.location === 'granted';
       
+      // Update PermissionFlowState
+      PermissionFlowState.setMissing({
+        audio: permissions.microphone !== 'granted',
+        location: permissions.location !== 'granted',
+      });
+
       if (allGranted) {
         console.log('[PermissionGuard] ✅ All basic permissions granted');
         setHasPermissions(true);
+        // Permission flow ended (basic permissions OK)
+        PermissionFlowState.setInFlow(false, 'basic permissions granted');
       } else {
         console.log('[PermissionGuard] ⚠️ Missing permissions, showing unified screen');
         setHasPermissions(false);
+        // Permission flow active (showing permission screen)
+        PermissionFlowState.setInFlow(true, 'missing basic permissions');
       }
     } catch (error) {
       console.error('[PermissionGuard] Error checking permissions:', error);
@@ -43,16 +59,26 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
         const status = await BatteryOptimization.isIgnoringBatteryOptimizations();
         console.log('[PermissionGuard] Status:', status);
         
+        // Update PermissionFlowState
+        PermissionFlowState.setMissing({
+          batteryOpt: !status.isIgnoring,
+          exactAlarm: !status.canScheduleExactAlarms,
+        });
+
         // Battery Optimization
         if (!status.isIgnoring) {
           console.log('[PermissionGuard] ⚠️ App is being optimized, requesting exemption...');
+          PermissionFlowState.setInFlow(true, 'requesting battery optimization');
           await BatteryOptimization.requestIgnoreBatteryOptimizations();
+          // Note: User will be taken to system settings, app will pause
         }
         
         // Exact Alarms (Android 12+)
         if (!status.canScheduleExactAlarms) {
           console.log('[PermissionGuard] ⚠️ App cannot schedule exact alarms, requesting permission...');
+          PermissionFlowState.setInFlow(true, 'requesting exact alarm permission');
           await BatteryOptimization.requestExactAlarmPermission();
+          // Note: User will be taken to system settings, app will pause
         }
 
       } catch (error) {

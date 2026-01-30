@@ -103,16 +103,25 @@ export function HomePage({ onLogout }: HomePageProps) {
     }
   }, [hasAllRequired, isPermissionsLoading, requestAll]);
 
-  // Register JavaScript audio trigger callbacks with hybrid service
+  // Phase 1: Initialize HybridAudioTrigger (once)
   useEffect(() => {
+    console.log('[Home] Initializing HybridAudioTrigger...');
+    hybridAudioTrigger.init();
+  }, []);
+
+  // Phase 3: Register JavaScript audio trigger callbacks with hybrid service
+  useEffect(() => {
+    console.log('[Home] Registering JavaScript callbacks...');
     hybridAudioTrigger.registerJavaScriptCallbacks(
-      async () => {
-        console.log('[Home] Hybrid service starting JavaScript audio trigger');
-        await audioTrigger.start();
-      },
-      async () => {
-        console.log('[Home] Hybrid service stopping JavaScript audio trigger');
-        await audioTrigger.stop();
+      {
+        start: async () => {
+          console.log('[Home] Hybrid service starting JavaScript audio trigger');
+          await audioTrigger.start();
+        },
+        stop: async () => {
+          console.log('[Home] Hybrid service stopping JavaScript audio trigger');
+          await audioTrigger.stop();
+        },
       }
     );
   }, [audioTrigger]);
@@ -171,10 +180,13 @@ export function HomePage({ onLogout }: HomePageProps) {
     }
   }, [audioTriggerConfig]);
 
-  // Auto-start audio monitoring on login (keeps app alive 24/7)
+  // Phase 4: Auto-start audio monitoring on login (keeps app alive 24/7)
   // Only stops on logout
   useEffect(() => {
-    if (!hasAllRequired) return; // Don't start monitoring without permissions
+    if (!hasAllRequired) {
+      console.log('[Home] Permissions not granted, skipping auto-start');
+      return;
+    }
     
     // Only start if not already capturing (prevents restart on navigation)
     if (audioTrigger.isCapturing) {
@@ -182,9 +194,11 @@ export function HomePage({ onLogout }: HomePageProps) {
       return;
     }
     
-    // GUARD: Only auto-start in foreground
-    // HybridAudioTrigger will handle background transitions automatically
-    console.log('[Home] Auto-starting hybrid audio trigger (foreground only)');
+    // HybridAudioTrigger will handle:
+    // - Permission flow gates
+    // - Callback validation
+    // - Foreground/background transitions
+    console.log('[Home] Phase 4: Auto-starting hybrid audio trigger...');
     const timer = setTimeout(() => {
       hybridAudioTrigger.start().catch(err => {
         console.error('[Home] Failed to auto-start hybrid audio trigger:', err);
@@ -447,6 +461,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               isCalibrated={audioTrigger.isCalibrated}
               isNoisy={audioTrigger.metrics?.isNoisy ?? false}
               isLoading={isConfigLoading}
+              triggerMode={hybridAudioTrigger.getMode()}
             />
           </div>
         )}
