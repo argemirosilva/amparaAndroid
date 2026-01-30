@@ -85,19 +85,8 @@ public class AudioTriggerService extends Service {
             return;
         }
         
-        // Start as Foreground Service to prevent Android from killing it
+        // Prepare notification channel (but don't start foreground yet)
         createNotificationChannel();
-        Notification notification = createNotification();
-        
-        // CRITICAL: Must call startForeground within 5 seconds on Android 8+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 10+ requires foregroundServiceType
-            startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
-        } else {
-            startForeground(NOTIFICATION_ID, notification);
-        }
-        
-        Log.d(TAG, "[MicState] Foreground Service started with microphone type");
         
         acquireWakeLock();
         
@@ -147,7 +136,27 @@ public class AudioTriggerService extends Service {
     
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "AudioTriggerService started");
+        Log.d(TAG, "AudioTriggerService onStartCommand");
+        
+        // Start as Foreground Service on first command
+        // This ensures we're in "eligible state" (app recently interacted)
+        try {
+            Notification notification = createNotification();
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Android 10+ requires foregroundServiceType
+                startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+            } else {
+                startForeground(NOTIFICATION_ID, notification);
+            }
+            
+            Log.d(TAG, "[MicState] Foreground Service started with microphone type");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start foreground service", e);
+            // If we can't start foreground, stop the service
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         
         // Handle commands
         if (intent != null && intent.getAction() != null) {
