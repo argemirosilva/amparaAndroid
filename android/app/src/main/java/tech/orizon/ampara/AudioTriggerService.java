@@ -92,8 +92,8 @@ public class AudioTriggerService extends Service {
         acquireWakeLock();
         
         // Use fixed local defaults (NEVER from API)
-        config = tech.orizon.ampara.audio.AudioTriggerDefaults.INSTANCE.getDefaultConfig();
-        tech.orizon.ampara.audio.AudioTriggerDefaults.INSTANCE.logConfigSource(TAG);
+        config = AudioTriggerDefaults.getDefaultConfig();
+        AudioTriggerDefaults.logConfigSource(TAG);
         detector = new DiscussionDetector(config);
         recorder = new NativeRecorder(this);
         uploader = new AudioUploader(this);
