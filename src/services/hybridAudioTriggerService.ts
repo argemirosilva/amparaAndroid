@@ -15,7 +15,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
-import { AudioPermission } from '@/plugins/audioPermission';
+import AudioPermission from '@/plugins/audioPermission';
 import { AudioTriggerNative } from '@/plugins/audioTriggerNative';
 import type { AudioTriggerEvent } from '@/plugins/audioTriggerNative';
 import { PermissionFlowState } from './permissionFlowState';
