@@ -83,6 +83,7 @@ export function AudioTriggerMeter({
   isLoading = false,
   isCalibrated = false,
   isNoisy = false,
+  triggerMode,
 }: AudioTriggerMeterProps) {
   const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
