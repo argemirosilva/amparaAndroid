@@ -41,6 +41,15 @@ public class AudioTriggerService extends Service {
     private static final String CHANNEL_ID = "AudioTriggerChannel";
     private static final int NOTIFICATION_ID = 1001;
     
+    // Microphone state machine for mutual exclusion
+    private enum MicrophoneState {
+        IDLE,           // Service not started
+        MONITORING,     // AudioRecord active (detection)
+        RECORDING       // MediaRecorder active (recording)
+    }
+    
+    private MicrophoneState currentMicState = MicrophoneState.IDLE;
+    
     private AudioRecord audioRecord;
     private Thread processingThread;
     private volatile boolean isRunning = false;
@@ -144,6 +153,10 @@ public class AudioTriggerService extends Service {
                     uploader.setCredentials(sessionToken, emailUsuario);
                 }
                 
+                // Pause monitoring to release microphone
+                pauseMonitoring();
+                currentMicState = MicrophoneState.RECORDING;
+                
                 // Start recording, location tracking, and upload queue
                 String sessionId = recorder.startRecording();
                 if (sessionId != null) {
@@ -168,6 +181,10 @@ public class AudioTriggerService extends Service {
                     Log.i(TAG, "Manual recording stopped: " + sessionId);
                     notifyRecordingStopped(sessionId);
                 }
+                
+                // Resume monitoring after recording stops
+                resumeMonitoring();
+                
                 return START_STICKY;
             }
             
@@ -277,11 +294,12 @@ public class AudioTriggerService extends Service {
             
             audioRecord.startRecording();
             isRunning = true;
+            currentMicState = MicrophoneState.MONITORING;
             
             processingThread = new Thread(this::processAudioLoop);
             processingThread.start();
             
-            Log.d(TAG, "Audio capture started successfully");
+            Log.i(TAG, "[MicState] IDLE -> MONITORING: AudioRecord started");
             
         } catch (SecurityException e) {
             Log.e(TAG, "Microphone permission not granted", e);
@@ -396,6 +414,10 @@ public class AudioTriggerService extends Service {
             Log.i(TAG, String.format("DISCUSSION DETECTED! Reason: %s, Speech: %.2f, Loud: %.2f",
                 result.reason, result.speechDensity, result.loudDensity));
             
+            // Pause monitoring to release microphone
+            pauseMonitoring();
+            currentMicState = MicrophoneState.RECORDING;
+            
             // Start native recording with auto mode
             currentOrigemGravacao = "automatico";
             String sessionId = recorder.startRecording();
@@ -423,6 +445,9 @@ public class AudioTriggerService extends Service {
                     Log.i(TAG, "Recording stopped due to silence: " + sessionId);
                     notifyRecordingStopped(sessionId);
                 }
+                
+                // Resume monitoring after recording stops
+                resumeMonitoring();
             }
         }
         
@@ -436,6 +461,9 @@ public class AudioTriggerService extends Service {
                 Log.i(TAG, "Native recording stopped: " + sessionId);
                 notifyRecordingStopped(sessionId);
             }
+            
+            // Resume monitoring after recording stops
+            resumeMonitoring();
             
             notifyJavaScript("discussionEnded", result.reason);
         }
@@ -608,6 +636,58 @@ public class AudioTriggerService extends Service {
         }
         
         Log.d(TAG, "Audio capture stopped");
+        currentMicState = MicrophoneState.IDLE;
+    }
+    
+    /**
+     * Pause monitoring (stop AudioRecord) to allow MediaRecorder to access microphone
+     * Transition: MONITORING -> (paused)
+     */
+    private void pauseMonitoring() {
+        if (currentMicState != MicrophoneState.MONITORING) {
+            Log.w(TAG, "[MicState] Cannot pause monitoring, current state: " + currentMicState);
+            return;
+        }
+        
+        Log.i(TAG, "[MicState] MONITORING -> (paused): Stopping AudioRecord for recording");
+        
+        isRunning = false;
+        
+        if (audioRecord != null) {
+            try {
+                if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
+                    audioRecord.stop();
+                }
+                audioRecord.release();
+                audioRecord = null;
+                Log.d(TAG, "[MicState] AudioRecord stopped and released");
+            } catch (Exception e) {
+                Log.e(TAG, "[MicState] Error stopping AudioRecord", e);
+            }
+        }
+        
+        if (processingThread != null) {
+            try {
+                processingThread.join(1000);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "[MicState] Error joining processing thread", e);
+            }
+            processingThread = null;
+        }
+    }
+    
+    /**
+     * Resume monitoring (restart AudioRecord) after MediaRecorder finishes
+     * Transition: (paused) -> MONITORING
+     */
+    private void resumeMonitoring() {
+        if (currentMicState == MicrophoneState.MONITORING) {
+            Log.w(TAG, "[MicState] Already in MONITORING state");
+            return;
+        }
+        
+        Log.i(TAG, "[MicState] (paused) -> MONITORING: Restarting AudioRecord after recording");
+        startAudioCapture();
     }
     
     @Override
