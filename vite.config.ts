@@ -18,4 +18,16 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Disable aggressive caching in development to ensure code changes are reflected
+  optimizeDeps: {
+    force: mode === "development",
+  },
+  build: {
+    // Ensure full rebuild when needed
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
 }));

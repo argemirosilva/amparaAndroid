@@ -69,6 +69,7 @@ class AudioTriggerSingleton {
   
   constructor() {
     console.log('[AudioTriggerSingleton] ✅ SINGLETON INITIALIZED - Calibration will persist across navigation');
+    console.log('[AudioTriggerSingleton] 🔄 Build timestamp:', new Date().toISOString());
     
     // Load config from storage
     this.config = getFullConfig();

@@ -234,6 +234,6 @@ class DiscussionDetector {
 // Singleton instance
 export const discussionDetector = new DiscussionDetector();
 
-// Force cache invalidation - v3
-export const DISCUSSION_DETECTOR_VERSION = '3.0.0';
+// Force cache invalidation - v4 (Cache fix applied)
+export const DISCUSSION_DETECTOR_VERSION = '4.0.0';
 export type DiscussionDetectorType = DiscussionDetector;
