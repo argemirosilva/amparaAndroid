@@ -22,6 +22,7 @@ import org.json.JSONObject;
 
 import tech.orizon.ampara.audio.AudioDSP;
 import tech.orizon.ampara.audio.AudioTriggerConfig;
+import tech.orizon.ampara.audio.AudioTriggerDefaults;
 import tech.orizon.ampara.audio.DiscussionDetector;
 import tech.orizon.ampara.audio.NativeRecorder;
 import tech.orizon.ampara.audio.AudioUploader;
