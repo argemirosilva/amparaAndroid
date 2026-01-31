@@ -58,7 +58,7 @@ function clearPanicState(): void {
 }
 
 const PANIC_TIMEOUT_MS = 1800000; // 30 minutes auto-timeout
-const HOLD_DURATION_MS = 2000; // 2 seconds hold to activate
+const HOLD_DURATION_MS = 1000; // 1 second hold to activate
 const CANCEL_DEBOUNCE_MS = 5000; // 5 seconds before cancel is allowed
 
 const PanicContext = createContext<PanicContextValue | null>(null);

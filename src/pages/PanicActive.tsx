@@ -6,7 +6,7 @@ import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordValidationDialog } from '@/components/PasswordValidationDialog';
 
-const HOLD_DURATION_MS = 2000;
+const HOLD_DURATION_MS = 1000;
 
 export function PanicActivePage() {
   const navigate = useNavigate();
