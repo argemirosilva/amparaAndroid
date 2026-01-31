@@ -26,6 +26,7 @@ import { useAudioTriggerSingleton } from '@/hooks/useAudioTriggerSingleton';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBackgroundServices } from '@/hooks/useBackgroundServices';
 import { hybridAudioTrigger } from '@/services/hybridAudioTriggerService';
+import { audioTriggerSingleton } from '@/services/audioTriggerSingleton';
 import { getMonitoringGateStatus } from '@/services/monitoringGateService';
 
 interface HomePageProps {
@@ -158,7 +159,11 @@ export function HomePage({ onLogout }: HomePageProps) {
       
       if (event.event === 'audioMetrics') {
         // Update audioTriggerSingleton with native metrics (for UI updates)
-        audioTrigger.setNativeMetrics(event);
+        try {
+          audioTriggerSingleton.setNativeMetrics(event);
+        } catch (error) {
+          console.error('[Home] Error updating native metrics:', error);
+        }
       }
     };
     
