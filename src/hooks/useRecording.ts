@@ -77,6 +77,19 @@ export function useRecording() {
           }));
           currentSessionIdRef.current = null;
           break;
+
+        case 'recordingState':
+          // Sync recording state from native (e.g., after app restart)
+          console.log('[useRecording] Syncing recording state from native:', event);
+          if (event.isRecording !== undefined) {
+            currentSessionIdRef.current = event.sessionId || null;
+            setState((prev) => ({
+              ...prev,
+              isRecording: event.isRecording,
+              isStopping: false,
+            }));
+          }
+          break;
       }
     });
 

@@ -63,6 +63,9 @@ public class AudioTriggerPlugin extends Plugin {
                 if (intent.hasExtra("isCalibrated")) {
                     ret.put("isCalibrated", intent.getBooleanExtra("isCalibrated", false));
                 }
+                if (intent.hasExtra("isRecording")) {
+                    ret.put("isRecording", intent.getBooleanExtra("isRecording", false));
+                }
                 if (intent.hasExtra("status")) {
                     ret.put("status", intent.getStringExtra("status"));
                 }
