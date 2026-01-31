@@ -149,9 +149,9 @@ export function PanicActivePage() {
         className={`
           relative w-40 h-40 rounded-full bg-gradient-safe 
           flex flex-col items-center justify-center 
-          ${canCancel && !isCancelling ? 'pulse-safe' : 'opacity-50'}
+          transition-transform duration-100
+          ${canCancel && !isCancelling ? 'pulse-safe active:scale-95' : 'opacity-50'}
         `}
-        whileTap={canCancel && !isCancelling ? { scale: 0.95 } : {}}
       >
         {/* Progress ring */}
         {isHolding && (
