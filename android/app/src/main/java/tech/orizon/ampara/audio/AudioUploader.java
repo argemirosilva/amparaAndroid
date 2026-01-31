@@ -204,7 +204,7 @@ public class AudioUploader {
         output.writeBytes("--" + boundary + "\r\n");
         output.writeBytes("Content-Disposition: form-data; name=\"" + fieldName + "\"; filename=\"" + 
             file.getName() + "\"\r\n");
-        output.writeBytes("Content-Type: audio/mp4\r\n");
+        output.writeBytes("Content-Type: audio/wav\r\n");
         output.writeBytes("\r\n");
         
         FileInputStream fileInputStream = new FileInputStream(file);
