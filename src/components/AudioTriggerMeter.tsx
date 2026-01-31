@@ -251,8 +251,8 @@ export function AudioTriggerMeter({
           
 
           
-          {/* Progress arc with gradient color - Show when score > 0 OR recording */}
-          {(score > 0 || isRecording) && (
+          {/* Progress arc with gradient color - Only show when NOT recording */}
+          {score > 0 && !isRecording && (
             <motion.circle
               cx={size / 2}
               cy={size / 2}
@@ -280,8 +280,8 @@ export function AudioTriggerMeter({
         
         {/* Center icon with sound waves */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Sound wave animations - Show when capturing */}
-          {isCapturing && (
+          {/* Sound wave animations - Show when capturing but NOT recording */}
+          {isCapturing && !isRecording && (
             <>
               {[0, 1, 2].map((i) => (
                 <motion.div
@@ -305,41 +305,40 @@ export function AudioTriggerMeter({
             </>
           )}
           
-          <motion.div
-            animate={isCapturing || isRecording ? {
-              scale: [1, 1.1, 1],
-            } : {}}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-            className={`p-1.5 rounded-full relative z-10 ${
-              isRecording 
-                ? isAutoRecording 
-                  ? 'bg-amber-500/20' 
-                  : 'bg-destructive/10' 
-                : isCapturing 
+          {/* Recording indicator - Red pulsing circle */}
+          {isRecording ? (
+            <motion.div
+              className="w-8 h-8 rounded-full bg-red-600 relative z-10"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.9, 1, 0.9],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              style={{
+                boxShadow: '0 0 20px rgba(220, 38, 38, 0.8)',
+              }}
+            />
+          ) : (
+            <motion.div
+              animate={isCapturing ? {
+                scale: [1, 1.1, 1],
+              } : {}}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              className={`p-1.5 rounded-full relative z-10 ${
+                isCapturing 
                   ? 'bg-success/10' 
                   : 'bg-muted/40'
-            }`}
-            style={isRecording ? {
-              boxShadow: isAutoRecording 
-                ? '0 0 12px rgb(245 158 11 / 0.5)' 
-                : `0 0 12px ${strokeColor}`,
-            } : undefined}
-          >
-            {isRecording ? (
-              isAutoRecording ? (
-                <Sparkles 
-                  className="w-3.5 h-3.5 text-amber-500" 
-                />
-              ) : (
-                <Mic 
-                  className="w-3.5 h-3.5 text-destructive" 
-                />
-              )
-            ) : isCapturing ? (
+              }`}
+            >
+            {isCapturing ? (
               <Ear 
                 className={`w-3.5 h-3.5 ${
                   !dentroHorario ? 'text-gray-400' :
@@ -351,6 +350,7 @@ export function AudioTriggerMeter({
               <EarOff className="w-3.5 h-3.5 text-muted-foreground" />
             )}
           </motion.div>
+          )}
         </div>
       </div>
       
