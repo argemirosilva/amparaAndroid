@@ -192,7 +192,7 @@ public class MainActivity extends BridgeActivity {
     public static void notifySessionExpired(String source) {
         if (instance != null) {
             try {
-                SessionExpiredListenerPlugin plugin = instance.getBridge().getPlugin("SessionExpiredListenerPlugin").getInstance();
+                SessionExpiredListenerPlugin plugin = (SessionExpiredListenerPlugin) instance.getBridge().getPlugin("SessionExpiredListenerPlugin").getInstance();
                 if (plugin != null) {
                     plugin.notifySessionExpiredFromService(source);
                     Log.d("MainActivity", "Session expired notification sent to plugin from: " + source);
