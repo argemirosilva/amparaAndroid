@@ -30,7 +30,7 @@ public class AudioTriggerDefaults {
         config.loudDensityMin = 0.30;
         
         // Timing windows
-        config.discussionWindowSeconds = 5;
+        config.discussionWindowSeconds = 10;
         config.preTriggerSeconds = 3;
         config.startHoldSeconds = 3;
         config.endHoldSeconds = 30;
