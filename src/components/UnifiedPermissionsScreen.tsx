@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MapPin, Shield, Battery, Bell, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Mic, MapPin, Shield, Battery, Bell, BellRing, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { requestMicrophonePermission, requestLocationPermission } from '@/services/permissionsService';
 import { Geolocation } from '@capacitor/geolocation';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
 import BatteryOptimization from '@/plugins/batteryOptimization';
 import AlarmPermission from '@/plugins/alarmPermission';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import amparaLogo from '@/assets/ampara-logo.png';
 
 interface PermissionItemProps {
@@ -83,11 +84,13 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
   const [locationStatus, setLocationStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   const [batteryStatus, setBatteryStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   const [alarmStatus, setAlarmStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
+  const [notificationStatus, setNotificationStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   
   const [requestingMic, setRequestingMic] = useState(false);
   const [requestingLocation, setRequestingLocation] = useState(false);
   const [requestingBattery, setRequestingBattery] = useState(false);
   const [requestingAlarm, setRequestingAlarm] = useState(false);
+  const [requestingNotification, setRequestingNotification] = useState(false);
 
   useEffect(() => {
     checkAllPermissions();
@@ -128,6 +131,15 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
     } catch (error) {
       console.error('Error checking alarm permission:', error);
       setAlarmStatus('prompt');
+    }
+    
+    // Check notification permission
+    try {
+      const notifResult = await LocalNotifications.checkPermissions();
+      setNotificationStatus(notifResult.display === 'granted' ? 'granted' : notifResult.display === 'denied' ? 'denied' : 'prompt');
+    } catch (error) {
+      console.error('Error checking notification permission:', error);
+      setNotificationStatus('prompt');
     }
   };
 
@@ -184,12 +196,26 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
       setRequestingAlarm(false);
     }
   };
+  
+  const handleRequestNotification = async () => {
+    setRequestingNotification(true);
+    try {
+      const result = await LocalNotifications.requestPermissions();
+      setNotificationStatus(result.display === 'granted' ? 'granted' : 'denied');
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      setNotificationStatus('denied');
+    } finally {
+      setRequestingNotification(false);
+    }
+  };
 
   const allGranted = 
     microphoneStatus === 'granted' &&
     locationStatus === 'granted' &&
     batteryStatus === 'granted' &&
-    alarmStatus === 'granted';
+    alarmStatus === 'granted' &&
+    notificationStatus === 'granted';
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
@@ -252,6 +278,15 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
             status={alarmStatus}
             onRequest={handleRequestAlarm}
             isRequesting={requestingAlarm}
+          />
+          
+          <PermissionItem
+            icon={<BellRing className="w-5 h-5" />}
+            title="Notificações"
+            description="Receber alertas e atualizações do sistema de proteção"
+            status={notificationStatus}
+            onRequest={handleRequestNotification}
+            isRequesting={requestingNotification}
           />
         </div>
 
