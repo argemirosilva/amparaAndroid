@@ -14,23 +14,15 @@ interface PermissionItemProps {
   title: string;
   description: string;
   status: 'granted' | 'denied' | 'prompt' | 'checking';
-  onRequest: () => Promise<void>;
-  isRequesting: boolean;
 }
 
 const PermissionItem: React.FC<PermissionItemProps> = ({
   icon,
   title,
   description,
-  status,
-  onRequest,
-  isRequesting
+  status
 }) => {
   const getStatusIcon = () => {
-    if (isRequesting) {
-      return <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />;
-    }
-    
     switch (status) {
       case 'granted':
         return <CheckCircle2 className="w-5 h-5 text-green-500" />;
@@ -43,13 +35,6 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
     }
   };
 
-  const getButtonText = () => {
-    if (isRequesting) return 'Solicitando...';
-    if (status === 'granted') return 'Concedida';
-    if (status === 'denied') return 'Tentar Novamente';
-    return 'Permitir';
-  };
-
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
       <div className="p-1.5 rounded-full bg-primary/10 text-primary flex-shrink-0">
@@ -60,16 +45,7 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
           <h3 className="font-medium text-foreground">{title}</h3>
           {getStatusIcon()}
         </div>
-        <p className="text-xs text-muted-foreground mb-2">{description}</p>
-        <Button
-          onClick={onRequest}
-          disabled={isRequesting || status === 'granted'}
-          size="sm"
-          variant={status === 'granted' ? 'secondary' : 'default'}
-          className="w-full"
-        >
-          {getButtonText()}
-        </Button>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
     </div>
   );
@@ -91,6 +67,7 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
   const [requestingBattery, setRequestingBattery] = useState(false);
   const [requestingAlarm, setRequestingAlarm] = useState(false);
   const [requestingNotification, setRequestingNotification] = useState(false);
+  const [isRequestingAll, setIsRequestingAll] = useState(false);
 
   useEffect(() => {
     checkAllPermissions();
@@ -209,6 +186,22 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
       setRequestingNotification(false);
     }
   };
+  
+  const handleRequestAll = async () => {
+    setIsRequestingAll(true);
+    
+    // Request all permissions sequentially
+    await handleRequestMicrophone();
+    await handleRequestLocation();
+    await handleRequestBattery();
+    await handleRequestAlarm();
+    await handleRequestNotification();
+    
+    setIsRequestingAll(false);
+    
+    // Check all permissions again
+    await checkAllPermissions();
+  };
 
   const allGranted = 
     microphoneStatus === 'granted' &&
@@ -249,8 +242,6 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
             title="Microfone"
             description="Detectar situações de risco através do áudio ambiente"
             status={microphoneStatus}
-            onRequest={handleRequestMicrophone}
-            isRequesting={requestingMic}
           />
           
           <PermissionItem
@@ -258,8 +249,6 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
             title="Localização Precisa"
             description="Enviar sua posição exata em caso de emergência"
             status={locationStatus}
-            onRequest={handleRequestLocation}
-            isRequesting={requestingLocation}
           />
 
           <PermissionItem
@@ -267,8 +256,6 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
             title="Sem Restrições de Bateria"
             description="Configurar como 'Sem Restrições' para funcionar em segundo plano"
             status={batteryStatus}
-            onRequest={handleRequestBattery}
-            isRequesting={requestingBattery}
           />
           
           <PermissionItem
@@ -276,8 +263,6 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
             title="Alarmes e Lembretes"
             description="Permitir que o app defina alarmes e programe ações com hora marcada"
             status={alarmStatus}
-            onRequest={handleRequestAlarm}
-            isRequesting={requestingAlarm}
           />
           
           <PermissionItem
@@ -285,14 +270,33 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
             title="Notificações"
             description="Receber alertas e atualizações do sistema de proteção"
             status={notificationStatus}
-            onRequest={handleRequestNotification}
-            isRequesting={requestingNotification}
           />
         </div>
 
-        {/* Continue Button */}
+        {/* Action Buttons */}
         <div className="space-y-2 pt-2">
-          {allGranted ? (
+          {!allGranted && (
+            <Button
+              onClick={handleRequestAll}
+              disabled={isRequestingAll}
+              className="w-full"
+              size="lg"
+            >
+              {isRequestingAll ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Solicitando Permissões...
+                </>
+              ) : (
+                <>
+                  <Shield className="w-4 h-4 mr-2" />
+                  Liberar Todas as Permissões
+                </>
+              )}
+            </Button>
+          )}
+          
+          {allGranted && (
             <Button
               onClick={onComplete}
               className="w-full"
@@ -301,19 +305,6 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Continuar
             </Button>
-          ) : (
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-2">
-                Clique em "Permitir" em cada permissão acima para continuar
-              </p>
-              <Button
-                onClick={onComplete}
-                variant="outline"
-                className="w-full"
-              >
-                Pular por Enquanto
-              </Button>
-            </div>
           )}
         </div>
 
