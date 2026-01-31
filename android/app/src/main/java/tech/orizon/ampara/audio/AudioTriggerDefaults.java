@@ -26,13 +26,13 @@ public class AudioTriggerDefaults {
         // Detection thresholds (FIXED - never from API)
         config.loudDeltaDb = 18.0;
         config.vadDeltaDb = 7.0;
-        config.speechDensityMin = 0.65;
-        config.loudDensityMin = 0.4;
+        config.speechDensityMin = 0.50;
+        config.loudDensityMin = 0.30;
         
         // Timing windows
-        config.discussionWindowSeconds = 10;
+        config.discussionWindowSeconds = 5;
         config.preTriggerSeconds = 3;
-        config.startHoldSeconds = 7;
+        config.startHoldSeconds = 3;
         config.endHoldSeconds = 30;
         config.cooldownSeconds = 45;
         
