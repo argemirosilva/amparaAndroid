@@ -26,6 +26,7 @@ public class DiscussionDetector {
     
     private State state = State.IDLE;
     private long stateStartTime = 0;
+    private long silenceStartTime = 0;  // Track continuous silence
     
     public static class AggregationMetrics {
         public double rmsDb;
@@ -149,15 +150,27 @@ public class DiscussionDetector {
                 // Check if discussion ended
                 if (speechDensity < config.speechDensityEnd && 
                     loudDensity < config.loudDensityEnd) {
-                    // Wait for confirmation period (10s in green)
-                    if (timeInState >= config.silenceDecaySeconds * 1000) {
-                        Log.d(TAG, "Discussion ending confirmed (10s green) - starting 60s countdown");
+                    // Start tracking silence if not already
+                    if (silenceStartTime == 0) {
+                        silenceStartTime = now;
+                        Log.d(TAG, "Silence detected - starting 10s confirmation timer");
+                    }
+                    
+                    // Check if silence lasted 10s
+                    long silenceDuration = now - silenceStartTime;
+                    if (silenceDuration >= config.silenceDecaySeconds * 1000) {
+                        Log.d(TAG, String.format("Discussion ending confirmed (%ds silence) - starting 60s countdown", 
+                            silenceDuration / 1000));
                         state = State.DISCUSSION_ENDING;
                         stateStartTime = now;
+                        silenceStartTime = 0;
                     }
                 } else {
-                    // Discussion still ongoing - reset timer
-                    stateStartTime = now;
+                    // Discussion still ongoing - reset silence timer
+                    if (silenceStartTime != 0) {
+                        Log.d(TAG, "Silence interrupted - resetting 10s timer");
+                        silenceStartTime = 0;
+                    }
                 }
                 break;
                 
@@ -220,6 +233,7 @@ public class DiscussionDetector {
         window.clear();
         state = State.IDLE;
         stateStartTime = System.currentTimeMillis();
+        silenceStartTime = 0;
         noiseFloor = -50.0;
         adaptiveNoiseFloor.reset();
         Log.i(TAG, "DiscussionDetector reset (including adaptive noise floor)");
