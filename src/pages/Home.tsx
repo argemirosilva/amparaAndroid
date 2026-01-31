@@ -481,22 +481,25 @@ export function HomePage({ onLogout }: HomePageProps) {
                 />
               </motion.div>
               
-              {/* Recording button - Hide during panic activation and sending */}
-              {!panic.isActivating && !panic.isSendingToServer && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ delay: 0.3 }}
-                >
+              {/* Recording button - Always reserve space, hide with opacity during panic */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ 
+                  opacity: (!panic.isActivating && !panic.isSendingToServer) ? 1 : 0,
+                  y: 0 
+                }}
+                transition={{ delay: 0.3 }}
+                className="h-[80px] flex items-center justify-center"
+              >
+                {(!panic.isActivating && !panic.isSendingToServer) && (
                   <RecordButton
                     onClick={handleRecordToggle}
                     isRecording={recording.isRecording}
                     disabled={false}
                     isLoading={isRecordLoading}
                   />
-                </motion.div>
-              )}
+                )}
+              </motion.div>
             </>
           ) : (
             <motion.div
