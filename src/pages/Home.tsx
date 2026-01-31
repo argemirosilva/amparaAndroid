@@ -464,7 +464,7 @@ export function HomePage({ onLogout }: HomePageProps) {
         )}
 
         {/* Center section: Panic button + Record button */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-6">
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 min-h-[280px]">
           {!panic.isPanicActive ? (
             <>
               <motion.div
@@ -481,8 +481,8 @@ export function HomePage({ onLogout }: HomePageProps) {
                 />
               </motion.div>
               
-              {/* Recording button - Hide during panic activation */}
-              {!panic.isActivating && (
+              {/* Recording button - Hide during panic activation and sending */}
+              {!panic.isActivating && !panic.isSendingToServer && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}

@@ -520,21 +520,26 @@ public class AudioTriggerService extends Service {
         // Check silence detector during recording
         if (recorder.isRecording()) {
             if (silenceDetector.processFrame(avgRmsDb)) {
-                Log.i(TAG, "Silence timeout reached, stopping recording");
-                
-                String sessionId = recorder.stopRecording();
-                if (sessionId != null) {
-                    int totalSegments = recorder.getSegmentIndex();
-                    locationManager.stopTracking();
-                    Log.i(TAG, "Recording stopped due to silence: " + sessionId);
-                    notifyRecordingStopped(sessionId);
+                // If panic is active, do NOT stop recording - it will resume when sound returns
+                if (panicManager.isPanicActive()) {
+                    Log.i(TAG, "Silence timeout reached during panic - keeping recording active");
+                } else {
+                    Log.i(TAG, "Silence timeout reached, stopping recording");
                     
-                    // Notify server that recording is complete
-                    uploader.notifyRecordingComplete(sessionId, totalSegments);
+                    String sessionId = recorder.stopRecording();
+                    if (sessionId != null) {
+                        int totalSegments = recorder.getSegmentIndex();
+                        locationManager.stopTracking();
+                        Log.i(TAG, "Recording stopped due to silence: " + sessionId);
+                        notifyRecordingStopped(sessionId);
+                        
+                        // Notify server that recording is complete
+                        uploader.notifyRecordingComplete(sessionId, totalSegments);
+                    }
+                    
+                    // Resume monitoring after recording stops
+                    resumeMonitoring();
                 }
-                
-                // Resume monitoring after recording stops
-                resumeMonitoring();
             }
         }
         

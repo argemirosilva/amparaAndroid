@@ -341,8 +341,11 @@ export function AudioTriggerMeter({
               )
             ) : isCapturing ? (
               <Ear 
-                className="w-3.5 h-3.5" 
-                style={{ stroke: strokeColor, color: strokeColor }}
+                className={`w-3.5 h-3.5 ${
+                  !dentroHorario ? 'text-gray-400' :
+                  !isCalibrated ? 'text-orange-500' :
+                  'text-emerald-500'
+                }`}
               />
             ) : (
               <EarOff className="w-3.5 h-3.5 text-muted-foreground" />
