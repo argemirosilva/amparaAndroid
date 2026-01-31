@@ -82,16 +82,16 @@ public class NativeRecorder {
                 recordingsDir.mkdirs();
             }
             
-            // Generate filename: session_segment.wav
-            String filename = String.format(Locale.US, "%s_%03d.wav", sessionId, segmentIndex);
+            // Generate filename: session_segment.m4a (AAC format)
+            String filename = String.format(Locale.US, "%s_%03d.m4a", sessionId, segmentIndex);
             File outputFile = new File(recordingsDir, filename);
             currentFilePath = outputFile.getAbsolutePath();
             
-            // Initialize MediaRecorder for WAV (uncompressed PCM)
+            // Initialize MediaRecorder for M4A (AAC compressed)
             mediaRecorder = new MediaRecorder();
             mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT); // WAV format
-            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT); // PCM encoding
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4); // M4A container
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC); // AAC encoding
             mediaRecorder.setAudioSamplingRate(16000); // 16 kHz
             mediaRecorder.setAudioChannels(1); // Mono
             mediaRecorder.setOutputFile(currentFilePath);

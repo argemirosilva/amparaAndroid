@@ -220,17 +220,20 @@ public class AudioUploader {
     
     /**
      * Get or generate device ID
+     * CRITICAL: Must use same SharedPreferences as KeepAlivePlugin
      */
     private String getDeviceId() {
-        // Try to get from SharedPreferences
+        // Use same SharedPreferences as KeepAlivePlugin
         android.content.SharedPreferences prefs = context.getSharedPreferences(
-            "AmparaPrefs", Context.MODE_PRIVATE
+            "ampara_secure_storage", Context.MODE_PRIVATE
         );
         
-        String deviceId = prefs.getString("device_id", null);
+        String deviceId = prefs.getString("ampara_device_id", null);
         if (deviceId == null) {
+            // Fallback: generate new ID (should not happen if KeepAlive started first)
             deviceId = UUID.randomUUID().toString();
-            prefs.edit().putString("device_id", deviceId).apply();
+            prefs.edit().putString("ampara_device_id", deviceId).apply();
+            Log.w(TAG, "Device ID not found, generated new: " + deviceId);
         }
         
         return deviceId;
