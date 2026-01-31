@@ -207,6 +207,9 @@ public class AudioTriggerService extends Service {
                     uploadQueue.resetStats();
                     silenceDetector.reset();
                     
+                    // Update notification to show recording state
+                    updateNotificationForRecording();
+                    
                     Log.i(TAG, "Manual recording started: " + sessionId);
                     notifyRecordingStarted(sessionId);
                 }
@@ -223,6 +226,9 @@ public class AudioTriggerService extends Service {
                     Log.i(TAG, "Manual recording stopped: " + sessionId);
                     notifyRecordingStopped(sessionId);
                 }
+                
+                // Update notification back to monitoring state
+                updateNotificationForMonitoring();
                 
                 // Resume monitoring after recording stops
                 resumeMonitoring();
@@ -615,6 +621,10 @@ public class AudioTriggerService extends Service {
     }
     
     private Notification createNotification() {
+        return createNotification("Monitorando áudio em segundo plano");
+    }
+    
+    private Notification createNotification(String contentText) {
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
             this, 0, intent, PendingIntent.FLAG_IMMUTABLE
@@ -622,12 +632,30 @@ public class AudioTriggerService extends Service {
         
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Ampara - Proteção Ativa")
-            .setContentText("Monitorando áudio em segundo plano")
+            .setContentText(contentText)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build();
+    }
+    
+    private void updateNotificationForRecording() {
+        Notification notification = createNotification("🔴 Gravando discussão...");
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) {
+            manager.notify(NOTIFICATION_ID, notification);
+            Log.d(TAG, "Notification updated: Recording");
+        }
+    }
+    
+    private void updateNotificationForMonitoring() {
+        Notification notification = createNotification("Monitorando áudio em segundo plano");
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) {
+            manager.notify(NOTIFICATION_ID, notification);
+            Log.d(TAG, "Notification updated: Monitoring");
+        }
     }
     
     private void acquireWakeLock() {
