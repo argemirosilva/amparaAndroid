@@ -51,7 +51,18 @@ const lerpColor = (color1: string, color2: string, ratio: number): string => {
 };
 
 // Get gradient color based on score (0-7 for color scale)
-const getGradientColor = (score: number): string => {
+const getGradientColor = (score: number, isCalibrated: boolean, dentroHorario: boolean): string => {
+  // Fora do período de monitoramento - cinza
+  if (!dentroHorario) {
+    return '#9ca3af'; // gray-400
+  }
+  
+  // Calibrando - laranja fixo
+  if (!isCalibrated) {
+    return '#f97316'; // orange-500
+  }
+  
+  // Monitorando - verde base, escala para amarelo/vermelho conforme score
   const ratio = Math.min(score / 7, 1);
   
   if (ratio <= 0.5) {
@@ -110,7 +121,7 @@ export function AudioTriggerMeter({
   const progress = Math.min(score, 1);
   const offset = arcLength * (1 - progress);
   
-  const strokeColor = getGradientColor(score * 7); // Scale color: 0-1 -> 0-7 for gradient
+  const strokeColor = getGradientColor(score * 7, isCalibrated, dentroHorario); // Scale color: 0-1 -> 0-7 for gradient
 
   // Parse time string "HH:MM" to today's Date
   const parseTime = (timeStr: string): Date => {
@@ -388,11 +399,10 @@ export function AudioTriggerMeter({
                 </span>
               ) : (
                 <span className={`text-[10px] font-medium ${
-                  isCalibrated ? 'text-emerald-500' : 
                   triggerMode === 'WAITING_PERMISSION' ? 'text-red-500' :
                   triggerMode === 'STOPPED' ? 'text-gray-500' :
-                  triggerMode === 'RUNNING' ? 'text-emerald-500' :
-                  'text-amber-500'
+                  triggerMode === 'RUNNING' ? (isCalibrated ? 'text-emerald-500' : 'text-orange-500') :
+                  isCalibrated ? 'text-emerald-500' : 'text-orange-500'
                 }`}>
                   {triggerMode === 'WAITING_PERMISSION' ? 'Permissão pendente' :
                    triggerMode === 'STOPPED' ? 'Aguardando...' :
