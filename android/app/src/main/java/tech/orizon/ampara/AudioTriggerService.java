@@ -596,10 +596,11 @@ public class AudioTriggerService extends Service {
         intent.setPackage(getPackageName());
         intent.putExtra("event", "nativeRecordingStarted");
         intent.putExtra("sessionId", sessionId);
+        intent.putExtra("origemGravacao", currentOrigemGravacao);
         intent.putExtra("timestamp", System.currentTimeMillis());
         sendBroadcast(intent);
         
-        Log.d(TAG, "Recording started broadcast sent: " + sessionId);
+        Log.d(TAG, "Recording started broadcast sent: " + sessionId + ", origem: " + currentOrigemGravacao);
     }
     
     private void notifyRecordingStopped(String sessionId) {

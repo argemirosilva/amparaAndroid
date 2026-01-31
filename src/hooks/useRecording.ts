@@ -38,6 +38,11 @@ export function useRecording() {
       switch (event.event) {
         case 'nativeRecordingStarted':
           currentSessionIdRef.current = event.sessionId || null;
+          // Update origem if provided by native (automatic detection)
+          if (event.origemGravacao) {
+            origemGravacaoRef.current = event.origemGravacao as OrigemGravacao;
+            console.log('[useRecording] Origem from native:', event.origemGravacao);
+          }
           setState((prev) => ({
             ...prev,
             isRecording: true,
@@ -45,6 +50,7 @@ export function useRecording() {
             duration: 0,
             segmentsSent: 0,
             segmentsPending: 0,
+            origemGravacao: event.origemGravacao as OrigemGravacao || prev.origemGravacao,
           }));
           break;
 
