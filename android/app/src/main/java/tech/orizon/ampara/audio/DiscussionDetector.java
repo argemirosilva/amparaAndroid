@@ -217,4 +217,12 @@ public class DiscussionDetector {
     public double getNoiseFloor() {
         return noiseFloor;
     }
+    
+    /**
+     * Get current calibration status
+     * @return true if noise floor is calibrated
+     */
+    public boolean isCalibrated() {
+        return adaptiveNoiseFloor.isCalibrated();
+    }
 }

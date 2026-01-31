@@ -236,6 +236,17 @@ class HybridAudioTriggerService {
         // App returned to foreground
         console.log('[HybridAudioTrigger] 📱 FOREGROUND detected');
         
+        // CRITICAL: Re-sync calibration status from native when returning to foreground
+        // The native service may be calibrated but JS lost the state
+        if (this.mode === 'RUNNING' && Capacitor.isNativePlatform()) {
+          try {
+            await AudioTriggerNative.getStatus();
+            console.log('[HybridAudioTrigger] 🔄 Status sync requested from native');
+          } catch (error) {
+            console.error('[HybridAudioTrigger] Failed to sync status from native:', error);
+          }
+        }
+        
         // If we have a pending start, try now (we're in eligible state)
         if (this.pendingStart) {
           console.log('[HybridAudioTrigger] 🔄 Pending start detected, retrying...');
