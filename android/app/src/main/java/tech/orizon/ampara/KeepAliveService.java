@@ -249,23 +249,21 @@ public class KeepAliveService extends Service {
     }
     
     private void createNotificationChannel() {
-        // DISABLED: Notification channel creation removed to avoid POST_NOTIFICATIONS permission request
-        // App runs in foreground service mode without visible notifications
-        // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        //     NotificationChannel channel = new NotificationChannel(
-        //         CHANNEL_ID,
-        //         "Sistema",
-        //         NotificationManager.IMPORTANCE_LOW
-        //     );
-        //     channel.setDescription("Processamento interno do sistema");
-        //     channel.setShowBadge(false);
-        //     channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-        //     
-        //     NotificationManager manager = getSystemService(NotificationManager.class);
-        //     if (manager != null) {
-        //         manager.createNotificationChannel(channel);
-        //     }
-        // }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID,
+                "Sistema",
+                NotificationManager.IMPORTANCE_LOW
+            );
+            channel.setDescription("Processamento interno do sistema");
+            channel.setShowBadge(false);
+            channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+            
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
     }
     
     private Notification createNotification() {
