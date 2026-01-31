@@ -479,6 +479,33 @@ class AudioTriggerSingleton {
     this.isCalibrated = calibrated;
     this.notifyStateChange();
   }
+  
+  /**
+   * Update metrics from native audioMetrics event
+   * This allows native metrics to update UI state
+   */
+  setNativeMetrics(nativeMetrics: any) {
+    // Update metrics with native data
+    this.metrics = {
+      loudDb: nativeMetrics.rmsDb ?? 0,
+      vadDb: nativeMetrics.rmsDb ?? 0,
+      speechDensity: 0,
+      loudDensity: 0,
+      speechOn: nativeMetrics.isSpeech ?? false,
+      loudOn: nativeMetrics.isLoud ?? false,
+      f0: 0,
+      f0Median: 0,
+      gender: 'UNKNOWN',
+      noiseFloor: 0,
+      discussionOn: nativeMetrics.state === 'DISCUSSION_DETECTED',
+      discussionDuration: 0,
+      score: nativeMetrics.score ?? 0,
+      isNoisy: false,
+      timestamp: nativeMetrics.timestamp ?? Date.now(),
+    };
+    
+    this.notifyStateChange();
+  }
 }
 
 // Export singleton instance

@@ -155,6 +155,11 @@ export function HomePage({ onLogout }: HomePageProps) {
         console.log('[Home] Calibration status changed:', event.isCalibrated);
         // State is already managed in audioTrigger.isCalibrated, no need for local state
       }
+      
+      if (event.event === 'audioMetrics') {
+        // Update audioTriggerSingleton with native metrics (for UI updates)
+        audioTrigger.setNativeMetrics(event);
+      }
     };
     
     hybridAudioTrigger.addListener(handleNativeEvent);
