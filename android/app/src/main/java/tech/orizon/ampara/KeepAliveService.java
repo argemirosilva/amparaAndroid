@@ -448,6 +448,17 @@ public class KeepAliveService extends Service {
                 location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
             }
             
+            // Se não tem localização ou está muito antiga (>5min), solicitar atualização
+            if (location == null || (System.currentTimeMillis() - location.getTime()) > 300000) {
+                Log.d(TAG, "Location cache empty or stale, requesting fresh location update");
+                requestSingleLocationUpdate(locationManager);
+                // Tentar novamente após solicitar atualização
+                location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (location == null) {
+                    location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                }
+            }
+            
             if (location != null) {
                 Log.d(TAG, "Location obtained: " + location.getLatitude() + ", " + location.getLongitude());
             } else {
@@ -458,6 +469,49 @@ public class KeepAliveService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error getting location", e);
             return null;
+        }
+    }
+    
+    /**
+     * Solicita uma única atualização de localização para atualizar o cache
+     */
+    private void requestSingleLocationUpdate(LocationManager locationManager) {
+        try {
+            // Verificar se GPS está habilitado
+            boolean gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            boolean networkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            
+            if (!gpsEnabled && !networkEnabled) {
+                Log.w(TAG, "No location providers enabled");
+                return;
+            }
+            
+            // Solicitar atualização única do provedor disponível
+            String provider = gpsEnabled ? LocationManager.GPS_PROVIDER : LocationManager.NETWORK_PROVIDER;
+            
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                
+                locationManager.requestSingleUpdate(provider, new android.location.LocationListener() {
+                    @Override
+                    public void onLocationChanged(Location location) {
+                        Log.d(TAG, "Fresh location update received: " + location.getLatitude() + ", " + location.getLongitude());
+                    }
+                    
+                    @Override
+                    public void onStatusChanged(String provider, int status, android.os.Bundle extras) {}
+                    
+                    @Override
+                    public void onProviderEnabled(String provider) {}
+                    
+                    @Override
+                    public void onProviderDisabled(String provider) {}
+                }, null);
+                
+                Log.d(TAG, "Single location update requested from " + provider);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error requesting single location update", e);
         }
     }
     
