@@ -481,19 +481,22 @@ export function HomePage({ onLogout }: HomePageProps) {
                 />
               </motion.div>
               
-              {/* Recording button */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <RecordButton
-                  onClick={handleRecordToggle}
-                  isRecording={recording.isRecording}
-                  disabled={panic.isActivating}
-                  isLoading={isRecordLoading}
-                />
-              </motion.div>
+              {/* Recording button - Hide during panic activation */}
+              {!panic.isActivating && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <RecordButton
+                    onClick={handleRecordToggle}
+                    isRecording={recording.isRecording}
+                    disabled={false}
+                    isLoading={isRecordLoading}
+                  />
+                </motion.div>
+              )}
             </>
           ) : (
             <motion.div
