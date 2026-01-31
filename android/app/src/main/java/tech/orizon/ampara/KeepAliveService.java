@@ -466,13 +466,11 @@ public class KeepAliveService extends Service {
      */
     private void notifyJavaScriptSessionExpired() {
         try {
-            Intent intent = new Intent("tech.orizon.ampara.SESSION_EXPIRED");
-            intent.putExtra("source", "native-ping");
-            intent.setPackage(getPackageName()); // Garante que só o próprio app receba
-            sendBroadcast(intent);
-            Log.d(TAG, "Session expired broadcast sent to JavaScript");
+            // Notificar diretamente via MainActivity (mais confiável que broadcast)
+            tech.orizon.ampara.MainActivity.notifySessionExpired("native-ping");
+            Log.d(TAG, "Session expired notification sent directly to MainActivity");
         } catch (Exception e) {
-            Log.e(TAG, "Error sending session expired broadcast", e);
+            Log.e(TAG, "Error sending session expired notification", e);
         }
     }
 }

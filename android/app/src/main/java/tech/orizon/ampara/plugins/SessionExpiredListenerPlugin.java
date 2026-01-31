@@ -71,4 +71,16 @@ public class SessionExpiredListenerPlugin extends Plugin {
         ret.put("value", value);
         call.resolve(ret);
     }
+    
+    /**
+     * Método público para ser chamado diretamente pelo KeepAliveService
+     * Notifica o JavaScript sobre sessão expirada
+     */
+    public void notifySessionExpiredFromService(String source) {
+        Log.d(TAG, "Session expired notification received from service: " + source);
+        JSObject ret = new JSObject();
+        ret.put("source", source);
+        notifyListeners("sessionExpired", ret);
+        Log.d(TAG, "Session expired event sent to JavaScript");
+    }
 }

@@ -20,6 +20,7 @@ import tech.orizon.ampara.plugins.PanicPlugin;
 
 public class MainActivity extends BridgeActivity {
     
+    private static MainActivity instance;
     private static final String TAG = "IconChanger";
     private static final String PREFS_NAME = "IconChangerPrefs";
     private static final String PREF_CURRENT_ALIAS = "currentAlias";
@@ -106,9 +107,10 @@ public class MainActivity extends BridgeActivity {
             Log.e("AmparaPlugins", "❌ Failed to register PanicPlugin", e);
         }
         
-        Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE =========="  );
+        Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE ========="  );
         
         super.onCreate(savedInstanceState);
+        instance = this;;
         
         // No Android 14+, evitamos mexer nos aliases durante o onCreate para evitar crash de Secure Settings
         // Apenas garantimos que a interface JS seja injetada
@@ -180,6 +182,28 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public String getCurrentIcon() {
             return getRealEnabledAlias();
+        }
+    }
+    
+    /**
+     * Método estático para notificar o JavaScript sobre sessão expirada
+     * Chamado diretamente pelo KeepAliveService
+     */
+    public static void notifySessionExpired(String source) {
+        if (instance != null) {
+            try {
+                SessionExpiredListenerPlugin plugin = instance.getBridge().getPlugin("SessionExpiredListenerPlugin").getInstance();
+                if (plugin != null) {
+                    plugin.notifySessionExpiredFromService(source);
+                    Log.d("MainActivity", "Session expired notification sent to plugin from: " + source);
+                } else {
+                    Log.e("MainActivity", "SessionExpiredListenerPlugin not found");
+                }
+            } catch (Exception e) {
+                Log.e("MainActivity", "Error notifying session expired", e);
+            }
+        } else {
+            Log.w("MainActivity", "MainActivity instance is null, cannot notify session expired");
         }
     }
 }
