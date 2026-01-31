@@ -221,10 +221,14 @@ public class AudioTriggerService extends Service {
                 
                 String sessionId = recorder.stopRecording();
                 if (sessionId != null) {
+                    int totalSegments = recorder.getSegmentIndex();
                     locationManager.stopTracking();
                     
                     Log.i(TAG, "Manual recording stopped: " + sessionId);
                     notifyRecordingStopped(sessionId);
+                    
+                    // Notify server that recording is complete
+                    uploader.notifyRecordingComplete(sessionId, totalSegments);
                 }
                 
                 // Update notification back to monitoring state
@@ -484,9 +488,13 @@ public class AudioTriggerService extends Service {
                 
                 String sessionId = recorder.stopRecording();
                 if (sessionId != null) {
+                    int totalSegments = recorder.getSegmentIndex();
                     locationManager.stopTracking();
                     Log.i(TAG, "Recording stopped due to silence: " + sessionId);
                     notifyRecordingStopped(sessionId);
+                    
+                    // Notify server that recording is complete
+                    uploader.notifyRecordingComplete(sessionId, totalSegments);
                 }
                 
                 // Resume monitoring after recording stops
@@ -500,9 +508,13 @@ public class AudioTriggerService extends Service {
             // Stop native recording
             String sessionId = recorder.stopRecording();
             if (sessionId != null) {
+                int totalSegments = recorder.getSegmentIndex();
                 locationManager.stopTracking();
                 Log.i(TAG, "Native recording stopped: " + sessionId);
                 notifyRecordingStopped(sessionId);
+                
+                // Notify server that recording is complete
+                uploader.notifyRecordingComplete(sessionId, totalSegments);
             }
             
             // Resume monitoring after recording stops
