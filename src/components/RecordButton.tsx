@@ -17,29 +17,29 @@ export function RecordButton({ onClick, isRecording, disabled = false, isLoading
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
       className={`
-        relative px-6 py-3 rounded-full
-        flex items-center justify-center gap-2
+        relative w-20 h-20 rounded-full
+        flex flex-col items-center justify-center gap-1
         transition-all duration-200
         ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
         ${isRecording 
-          ? 'bg-destructive text-white hover:bg-destructive/90' 
-          : 'bg-primary text-primary-foreground hover:bg-primary/90'
+          ? 'bg-purple-500 text-white hover:bg-purple-600' 
+          : 'bg-red-600 text-white hover:bg-red-700'
         }
       `}
       whileTap={isDisabled ? undefined : { scale: 0.95 }}
     >
       {/* Icon */}
       {isLoading ? (
-        <Loader2 className="w-5 h-5 animate-spin" />
+        <Loader2 className="w-6 h-6 animate-spin" />
       ) : isRecording ? (
-        <Square className="w-5 h-5" />
+        <Square className="w-6 h-6 fill-current" />
       ) : (
-        <Mic className="w-5 h-5" />
+        <Mic className="w-6 h-6" />
       )}
       
       {/* Text */}
-      <span className="font-medium">
-        {isRecording ? 'Parar Gravação' : 'Gravar'}
+      <span className="text-[10px] font-medium leading-tight text-center">
+        {isRecording ? 'Parar' : 'Gravar'}
       </span>
     </motion.button>
   );
