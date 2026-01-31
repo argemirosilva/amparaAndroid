@@ -240,6 +240,17 @@ public class AudioTriggerService extends Service {
                 }
                 return START_STICKY;
             }
+            
+            if ("GET_STATUS".equals(action)) {
+                Log.d(TAG, "Status request received");
+                
+                // Send current calibration status
+                boolean isCalibrated = detector.isCalibrated();
+                Log.d(TAG, "Sending current calibration status: " + isCalibrated);
+                notifyCalibrationStatus(isCalibrated);
+                
+                return START_STICKY;
+            }
         }
         
         // Apply configuration if provided
