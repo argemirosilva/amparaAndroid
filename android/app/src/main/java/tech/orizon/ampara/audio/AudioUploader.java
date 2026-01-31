@@ -226,6 +226,10 @@ public class AudioUploader {
             try {
                 Log.i(TAG, String.format("Notifying server: recording started - session=%s, origem=%s", 
                     sessionId, origemGravacao));
+                Log.d(TAG, String.format("Credentials: token=%s, email=%s, deviceId=%s",
+                    sessionToken != null ? "present" : "NULL",
+                    emailUsuario != null ? emailUsuario : "NULL",
+                    deviceId != null ? deviceId : "NULL"));
                 
                 JSONObject payload = new JSONObject();
                 payload.put("action", "iniciarGravacao");
@@ -234,6 +238,8 @@ public class AudioUploader {
                 payload.put("email_usuario", emailUsuario);
                 payload.put("session_id", sessionId);
                 payload.put("origem_gravacao", origemGravacao);
+                
+                Log.d(TAG, "Payload: " + payload.toString());
                 
                 HttpURLConnection connection = (HttpURLConnection) new URL(API_URL).openConnection();
                 connection.setRequestMethod("POST");
@@ -264,8 +270,24 @@ public class AudioUploader {
                     Log.i(TAG, String.format("Recording start notified successfully: %s", 
                         response.toString()));
                 } else {
-                    Log.e(TAG, String.format("Failed to notify recording start: HTTP %d", 
-                        responseCode));
+                    // Read error response
+                    try {
+                        BufferedReader errorReader = new BufferedReader(
+                            new InputStreamReader(connection.getErrorStream())
+                        );
+                        StringBuilder errorResponse = new StringBuilder();
+                        String line;
+                        while ((line = errorReader.readLine()) != null) {
+                            errorResponse.append(line);
+                        }
+                        errorReader.close();
+                        
+                        Log.e(TAG, String.format("Failed to notify recording start: HTTP %d - %s", 
+                            responseCode, errorResponse.toString()));
+                    } catch (Exception e) {
+                        Log.e(TAG, String.format("Failed to notify recording start: HTTP %d", 
+                            responseCode));
+                    }
                 }
                 
                 connection.disconnect();
@@ -284,6 +306,10 @@ public class AudioUploader {
             try {
                 Log.i(TAG, String.format("Notifying server: recording complete - session=%s, segments=%d", 
                     sessionId, totalSegments));
+                Log.d(TAG, String.format("Credentials: token=%s, email=%s, deviceId=%s",
+                    sessionToken != null ? "present" : "NULL",
+                    emailUsuario != null ? emailUsuario : "NULL",
+                    deviceId != null ? deviceId : "NULL"));
                 
                 JSONObject payload = new JSONObject();
                 payload.put("action", "finalizarGravacao");
@@ -292,6 +318,8 @@ public class AudioUploader {
                 payload.put("email_usuario", emailUsuario);
                 payload.put("session_id", sessionId);
                 payload.put("total_segments", totalSegments);
+                
+                Log.d(TAG, "Payload: " + payload.toString());
                 
                 HttpURLConnection connection = (HttpURLConnection) new URL(API_URL).openConnection();
                 connection.setRequestMethod("POST");
@@ -322,8 +350,24 @@ public class AudioUploader {
                     Log.i(TAG, String.format("Recording completion notified successfully: %s", 
                         response.toString()));
                 } else {
-                    Log.e(TAG, String.format("Failed to notify recording completion: HTTP %d", 
-                        responseCode));
+                    // Read error response
+                    try {
+                        BufferedReader errorReader = new BufferedReader(
+                            new InputStreamReader(connection.getErrorStream())
+                        );
+                        StringBuilder errorResponse = new StringBuilder();
+                        String line;
+                        while ((line = errorReader.readLine()) != null) {
+                            errorResponse.append(line);
+                        }
+                        errorReader.close();
+                        
+                        Log.e(TAG, String.format("Failed to notify recording completion: HTTP %d - %s", 
+                            responseCode, errorResponse.toString()));
+                    } catch (Exception e) {
+                        Log.e(TAG, String.format("Failed to notify recording completion: HTTP %d", 
+                            responseCode));
+                    }
                 }
                 
                 connection.disconnect();
