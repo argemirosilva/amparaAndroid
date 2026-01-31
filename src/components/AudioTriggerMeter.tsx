@@ -106,11 +106,11 @@ export function AudioTriggerMeter({
   
   // Use 270° arc (75% of circle)
   const arcLength = circumference * 0.75;
-  // Scale: 0-2 (detection threshold is 2.0)
-  const progress = Math.min(score / 2, 1);
+  // Scale: 0-1 (score is normalized, 1.0 = detection threshold met)
+  const progress = Math.min(score, 1);
   const offset = arcLength * (1 - progress);
   
-  const strokeColor = getGradientColor(score * 3.5); // Scale color to match old 0-7 range
+  const strokeColor = getGradientColor(score * 7); // Scale color: 0-1 -> 0-7 for gradient
 
   // Parse time string "HH:MM" to today's Date
   const parseTime = (timeStr: string): Date => {
