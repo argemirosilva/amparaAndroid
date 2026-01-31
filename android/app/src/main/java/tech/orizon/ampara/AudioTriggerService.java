@@ -76,6 +76,10 @@ public class AudioTriggerService extends Service {
     private long lastDiagnosticLog = 0;
     private long manualStopCooldownUntil = 0;
     
+    // Simulated aggregations during recording (when AudioRecord is paused)
+    private android.os.Handler recordingHandler;
+    private Runnable recordingAggregationRunnable;
+    
     @Override
     public void onCreate() {
         super.onCreate();
@@ -104,6 +108,7 @@ public class AudioTriggerService extends Service {
         locationManager = new LocationManager(this);
         silenceDetector = new SilenceDetector();
         uploadQueue = new UploadQueue(this, uploader);
+        recordingHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         
         // Setup calibration callback
         detector.setCalibrationCallback(isCalibrated -> {
@@ -241,11 +246,14 @@ public class AudioTriggerService extends Service {
                 manualStopCooldownUntil = System.currentTimeMillis() + 60000; // 60s cooldown
                 Log.i(TAG, "Manual stop cooldown set for 60s");
                 
+                // Stop simulated aggregations
+                stopRecordingAggregations();
+                
                 // Update notification back to monitoring state
                 updateNotificationForMonitoring();
                 
-                // No need to resume - monitoring never stopped
-                currentMicState = MicrophoneState.MONITORING;
+                // Resume monitoring after recording stops
+                resumeMonitoring();
                 
                 return START_STICKY;
             }
@@ -505,8 +513,10 @@ public class AudioTriggerService extends Service {
             Log.i(TAG, String.format("DISCUSSION DETECTED! Reason: %s, Speech: %.2f, Loud: %.2f",
                 result.reason, result.speechDensity, result.loudDensity));
             
-            // Keep monitoring active during recording to continue sending metrics to UI
-            // AudioRecord and MediaRecorder can coexist (different audio sources)
+            // Pause monitoring to release microphone for MediaRecorder
+            if (currentMicState == MicrophoneState.MONITORING) {
+                pauseMonitoring();
+            }
             currentMicState = MicrophoneState.RECORDING;
             
             // Start native recording with auto mode
@@ -523,6 +533,9 @@ public class AudioTriggerService extends Service {
                 
                 // Notify server that recording started
                 uploader.notifyRecordingStarted(sessionId, currentOrigemGravacao);
+                
+                // Start simulated aggregations (1 per second) to continue detection logic
+                startRecordingAggregations();
             }
             
             notifyJavaScript("discussionDetected", result.reason);
@@ -548,8 +561,8 @@ public class AudioTriggerService extends Service {
                     uploader.notifyRecordingComplete(sessionId, totalSegments);
                 }
                 
-                // No need to resume - monitoring never stopped
-                currentMicState = MicrophoneState.MONITORING;
+                // Resume monitoring after recording stops
+                resumeMonitoring();
                 }
             }
         }
@@ -569,8 +582,8 @@ public class AudioTriggerService extends Service {
             uploader.notifyRecordingComplete(sessionId, totalSegments);
         }
         
-        // No need to resume - monitoring never stopped
-        currentMicState = MicrophoneState.MONITORING;
+        // Resume monitoring after recording stops
+        resumeMonitoring();
         
         notifyJavaScript("discussionEnded", result.reason);
         }
@@ -874,6 +887,74 @@ public class AudioTriggerService extends Service {
         
         Log.i(TAG, "[MicState] (paused) -> MONITORING: Restarting AudioRecord after recording");
         startAudioCapture();
+    }
+    
+    /**
+     * Start simulated aggregations during recording (when AudioRecord is paused)
+     * Sends silence metrics every 1s to allow DiscussionDetector to detect end of discussion
+     */
+    private void startRecordingAggregations() {
+        stopRecordingAggregations(); // Stop any existing timer
+        
+        recordingAggregationRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (recorder.isRecording()) {
+                    // Create silence metrics (no speech, no loud)
+                    DiscussionDetector.AggregationMetrics silenceMetrics = 
+                        new DiscussionDetector.AggregationMetrics(-80.0, 0.1, false, false);
+                    
+                    // Process with detector
+                    DiscussionDetector.DetectionResult result = detector.process(silenceMetrics);
+                    
+                    // Send metrics to JS for UI (score=0 for silence)
+                    notifyMetrics(-80.0, 0.1, false, false, detector.getStateString(), 0.0);
+                    
+                    // Check if should stop recording
+                    if (result.shouldStopRecording) {
+                        Log.i(TAG, String.format("DISCUSSION ENDED! Reason: %s", result.reason));
+                        
+                        // Stop native recording
+                        String sessionId = recorder.stopRecording();
+                        if (sessionId != null) {
+                            int totalSegments = recorder.getSegmentIndex();
+                            locationManager.stopTracking();
+                            Log.i(TAG, "Native recording stopped: " + sessionId);
+                            notifyRecordingStopped(sessionId);
+                            
+                            // Notify server that recording is complete
+                            uploader.notifyRecordingComplete(sessionId, totalSegments);
+                        }
+                        
+                        // Stop simulated aggregations
+                        stopRecordingAggregations();
+                        
+                        // Resume monitoring
+                        resumeMonitoring();
+                        
+                        notifyJavaScript("discussionEnded", result.reason);
+                    } else {
+                        // Schedule next aggregation
+                        recordingHandler.postDelayed(this, 1000);
+                    }
+                }
+            }
+        };
+        
+        // Start first aggregation after 1s
+        recordingHandler.postDelayed(recordingAggregationRunnable, 1000);
+        Log.d(TAG, "Started simulated aggregations during recording");
+    }
+    
+    /**
+     * Stop simulated aggregations
+     */
+    private void stopRecordingAggregations() {
+        if (recordingAggregationRunnable != null) {
+            recordingHandler.removeCallbacks(recordingAggregationRunnable);
+            recordingAggregationRunnable = null;
+            Log.d(TAG, "Stopped simulated aggregations");
+        }
     }
     
     @Override
