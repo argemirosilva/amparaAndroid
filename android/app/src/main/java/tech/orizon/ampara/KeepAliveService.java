@@ -20,6 +20,10 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
+import android.location.Location;
+import android.location.LocationManager;
+import androidx.core.app.ActivityCompat;
+import android.content.pm.PackageManager;
 
 import org.json.JSONObject;
 
@@ -174,6 +178,18 @@ public class KeepAliveService extends Service {
                 payload.put("connection_type", deviceInfo.getString("connection_type"));
                 if (!deviceInfo.isNull("wifi_signal_strength")) {
                     payload.put("wifi_signal_strength", deviceInfo.getInt("wifi_signal_strength"));
+                }
+                
+                // Adicionar localização GPS
+                Location location = getLastLocation();
+                if (location != null) {
+                    payload.put("latitude", location.getLatitude());
+                    payload.put("longitude", location.getLongitude());
+                    payload.put("location_accuracy", location.getAccuracy());
+                    payload.put("location_timestamp", location.getTime());
+                    Log.d(TAG, "Sending location with ping: " + location.getLatitude() + ", " + location.getLongitude());
+                } else {
+                    Log.w(TAG, "No location available to send with ping");
                 }
 
                 String jsonInputString = payload.toString();
@@ -400,6 +416,44 @@ public class KeepAliveService extends Service {
             Log.e(TAG, "Error collecting device info", e);
         }
         return info;
+    }
+    
+    /**
+     * Obtém a última localização conhecida do dispositivo
+     * Retorna null se não houver permissão ou localização disponível
+     */
+    private Location getLastLocation() {
+        try {
+            // Verificar permissões
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "Location permission not granted");
+                return null;
+            }
+            
+            LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            if (locationManager == null) {
+                Log.w(TAG, "LocationManager not available");
+                return null;
+            }
+            
+            // Tentar GPS primeiro, depois Network
+            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (location == null) {
+                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+            
+            if (location != null) {
+                Log.d(TAG, "Location obtained: " + location.getLatitude() + ", " + location.getLongitude());
+            } else {
+                Log.w(TAG, "No location available");
+            }
+            
+            return location;
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting location", e);
+            return null;
+        }
     }
     
     /**
