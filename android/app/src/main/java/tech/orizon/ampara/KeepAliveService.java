@@ -55,6 +55,7 @@ public class KeepAliveService extends Service {
     private ExecutorService executorService;
     private AlarmManager alarmManager;
     private PendingIntent alarmIntent;
+    private PanicManager panicManager;
     
     @Override
     public void onCreate() {
@@ -62,6 +63,7 @@ public class KeepAliveService extends Service {
         Log.d(TAG, "Service created");
         executorService = Executors.newSingleThreadExecutor();
         alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        panicManager = new PanicManager(this);
         
         createNotificationChannel();
         acquireWakeLock();
@@ -102,16 +104,19 @@ public class KeepAliveService extends Service {
         
         alarmIntent = PendingIntent.getBroadcast(this, 0, intent, flags);
         
-        long triggerAtMillis = System.currentTimeMillis() + 30000; // 30 segundos
+        // Ajustar intervalo baseado no modo pânico
+        boolean isPanicActive = panicManager.isPanicActive();
+        long intervalMillis = isPanicActive ? 10000 : 30000; // 10s durante pânico, 30s normal
+        long triggerAtMillis = System.currentTimeMillis() + intervalMillis;
         
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 // setExactAndAllowWhileIdle é crucial para Doze Mode
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
-                Log.d(TAG, "Next ping scheduled in 30s (ExactAndAllowWhileIdle via BroadcastReceiver)");
+                Log.d(TAG, "Next ping scheduled in " + (intervalMillis/1000) + "s (ExactAndAllowWhileIdle, panic=" + isPanicActive + ")");
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, alarmIntent);
-                Log.d(TAG, "Next ping scheduled in 30s (Exact via BroadcastReceiver)");
+                Log.d(TAG, "Next ping scheduled in " + (intervalMillis/1000) + "s (Exact, panic=" + isPanicActive + ")");
             }
         } catch (SecurityException e) {
             // Fallback se a permissão de alarme exato não foi concedida (Android 12+)
