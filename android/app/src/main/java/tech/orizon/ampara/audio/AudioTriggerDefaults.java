@@ -45,7 +45,7 @@ public class AudioTriggerDefaults {
         // End detection
         config.speechDensityEnd = 0.2;
         config.loudDensityEnd = 0.09;
-        config.silenceDecaySeconds = 6;
+        config.silenceDecaySeconds = 10;
         config.silenceDecayRate = 0.5;
         
         // ZCR thresholds for voice detection

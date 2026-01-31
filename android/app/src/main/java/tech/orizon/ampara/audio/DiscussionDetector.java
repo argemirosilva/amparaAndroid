@@ -20,6 +20,7 @@ public class DiscussionDetector {
         IDLE,
         DISCUSSION_DETECTED,
         RECORDING_STARTED,
+        DISCUSSION_ENDING,
         COOLDOWN
     }
     
@@ -148,16 +149,34 @@ public class DiscussionDetector {
                 // Check if discussion ended
                 if (speechDensity < config.speechDensityEnd && 
                     loudDensity < config.loudDensityEnd) {
-                    // Wait for end hold period
+                    // Wait for confirmation period (10s in green)
+                    if (timeInState >= config.silenceDecaySeconds * 1000) {
+                        Log.d(TAG, "Discussion ending confirmed (10s green) - starting 60s countdown");
+                        state = State.DISCUSSION_ENDING;
+                        stateStartTime = now;
+                    }
+                } else {
+                    // Discussion still ongoing - reset timer
+                    stateStartTime = now;
+                }
+                break;
+                
+            case DISCUSSION_ENDING:
+                // In 60s countdown period
+                if (speechDensity < config.speechDensityEnd && 
+                    loudDensity < config.loudDensityEnd) {
+                    // Still quiet - check if 60s elapsed
                     if (timeInState >= config.endHoldSeconds * 1000) {
-                        Log.d(TAG, "Discussion ended - stopping recording");
+                        Log.d(TAG, "Discussion ended after 60s countdown - stopping recording");
                         result.shouldStopRecording = true;
                         result.reason = "discussion_ended";
                         state = State.COOLDOWN;
                         stateStartTime = now;
                     }
                 } else {
-                    // Discussion still ongoing - reset timer
+                    // Discussion resumed - cancel countdown, back to recording
+                    Log.d(TAG, "Discussion resumed - cancelling 60s countdown");
+                    state = State.RECORDING_STARTED;
                     stateStartTime = now;
                 }
                 break;
