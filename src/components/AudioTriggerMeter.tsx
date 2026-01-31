@@ -50,7 +50,7 @@ const lerpColor = (color1: string, color2: string, ratio: number): string => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
-// Get gradient color based on score (0-7)
+// Get gradient color based on score (0-7 for color scale)
 const getGradientColor = (score: number): string => {
   const ratio = Math.min(score / 7, 1);
   
@@ -106,10 +106,11 @@ export function AudioTriggerMeter({
   
   // Use 270° arc (75% of circle)
   const arcLength = circumference * 0.75;
-  const progress = Math.min(score / 7, 1);
+  // Scale: 0-2 (detection threshold is 2.0)
+  const progress = Math.min(score / 2, 1);
   const offset = arcLength * (1 - progress);
   
-  const strokeColor = getGradientColor(score);
+  const strokeColor = getGradientColor(score * 3.5); // Scale color to match old 0-7 range
 
   // Parse time string "HH:MM" to today's Date
   const parseTime = (timeStr: string): Date => {
