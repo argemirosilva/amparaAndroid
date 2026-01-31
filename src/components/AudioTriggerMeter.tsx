@@ -88,6 +88,11 @@ export function AudioTriggerMeter({
   const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
 
+  // Debug: Log score changes
+  useEffect(() => {
+    console.log('[AudioTriggerMeter] 🎯 Score prop changed:', score);
+  }, [score]);
+
   // Update time every second for countdown
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
