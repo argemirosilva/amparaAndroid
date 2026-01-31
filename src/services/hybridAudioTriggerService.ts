@@ -92,6 +92,10 @@ class HybridAudioTriggerService {
 
     this.initialized = true;
     console.log('[HybridAudioTrigger] ✅ Initialized (Native-First mode)');
+    
+    // CRITICAL: Sync status from native service on init
+    // This handles the case where Android killed the JS process but native service is still running
+    this.syncStatusFromNative();
   }
 
   /**
@@ -393,6 +397,20 @@ class HybridAudioTriggerService {
    */
   isPendingStart(): boolean {
     return this.pendingStart;
+  }
+
+  /**
+   * Sync status from native service
+   * Called on init to handle process restart scenarios
+   */
+  private async syncStatusFromNative() {
+    try {
+      console.log('[HybridAudioTrigger] 🔄 Syncing status from native service...');
+      await AudioTriggerNative.getStatus();
+      console.log('[HybridAudioTrigger] ✅ Status sync requested');
+    } catch (error) {
+      console.log('[HybridAudioTrigger] ℹ️ Native service not running or error:', error);
+    }
   }
 
   /**
