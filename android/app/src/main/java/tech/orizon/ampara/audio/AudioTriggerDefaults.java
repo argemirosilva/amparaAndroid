@@ -34,7 +34,7 @@ public class AudioTriggerDefaults {
         config.preTriggerSeconds = 3;
         config.startHoldSeconds = 3;
         config.endHoldSeconds = 30;
-        config.cooldownSeconds = 45;
+        config.cooldownSeconds = 20;
         
         // Noise floor learning
         config.noiseFloorLearningRate = 0.029;
