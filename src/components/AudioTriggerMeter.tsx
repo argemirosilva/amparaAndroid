@@ -234,8 +234,8 @@ export function AudioTriggerMeter({
           
 
           
-          {/* Progress arc with gradient color - ONLY show when within monitoring period */}
-          {dentroHorario && (
+          {/* Progress arc with gradient color - Always show when score > 0 */}
+          {score > 0 && (
             <motion.circle
               cx={size / 2}
               cy={size / 2}
@@ -263,8 +263,8 @@ export function AudioTriggerMeter({
         
         {/* Center icon with sound waves */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Sound wave animations - ONLY show when within monitoring period */}
-          {isCapturing && dentroHorario && (
+          {/* Sound wave animations - Show when capturing */}
+          {isCapturing && (
             <>
               {[0, 1, 2].map((i) => (
                 <motion.div
