@@ -11,6 +11,7 @@ import com.getcapacitor.BridgeActivity;
 import tech.orizon.ampara.plugins.SecureStoragePlugin;
 import tech.orizon.ampara.plugins.KeepAlivePlugin;
 import tech.orizon.ampara.plugins.BatteryOptimizationPlugin;
+import tech.orizon.ampara.AlarmPermissionPlugin;
 import tech.orizon.ampara.plugins.SessionExpiredListenerPlugin;
 import tech.orizon.ampara.plugins.DeviceInfoExtendedPlugin;
 import tech.orizon.ampara.plugins.AudioTriggerPlugin;
@@ -61,6 +62,13 @@ public class MainActivity extends BridgeActivity {
             Log.d("AmparaPlugins", "✅ BatteryOptimizationPlugin registered");
         } catch (Exception e) {
             Log.e("AmparaPlugins", "❌ Failed to register BatteryOptimizationPlugin", e);
+        }
+        
+        try {
+            registerPlugin(AlarmPermissionPlugin.class);
+            Log.d("AmparaPlugins", "✅ AlarmPermissionPlugin registered");
+        } catch (Exception e) {
+            Log.e("AmparaPlugins", "❌ Failed to register AlarmPermissionPlugin", e);
         }
         
         try {

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MapPin, Shield, Battery, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Mic, MapPin, Shield, Battery, Bell, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { requestMicrophonePermission, requestLocationPermission } from '@/services/permissionsService';
 import { Geolocation } from '@capacitor/geolocation';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
 import BatteryOptimization from '@/plugins/batteryOptimization';
+import AlarmPermission from '@/plugins/alarmPermission';
 import amparaLogo from '@/assets/ampara-logo.png';
 
 interface PermissionItemProps {
@@ -81,10 +82,12 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
   const [microphoneStatus, setMicrophoneStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   const [locationStatus, setLocationStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   const [batteryStatus, setBatteryStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
+  const [alarmStatus, setAlarmStatus] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   
   const [requestingMic, setRequestingMic] = useState(false);
   const [requestingLocation, setRequestingLocation] = useState(false);
   const [requestingBattery, setRequestingBattery] = useState(false);
+  const [requestingAlarm, setRequestingAlarm] = useState(false);
 
   useEffect(() => {
     checkAllPermissions();
@@ -116,6 +119,15 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
     } catch (error) {
       console.error('Error checking battery optimization:', error);
       setBatteryStatus('prompt');
+    }
+    
+    // Check alarm permission
+    try {
+      const alarmResult = await AlarmPermission.canScheduleExactAlarms();
+      setAlarmStatus(alarmResult.canSchedule ? 'granted' : 'prompt');
+    } catch (error) {
+      console.error('Error checking alarm permission:', error);
+      setAlarmStatus('prompt');
     }
   };
 
@@ -155,11 +167,29 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
       setRequestingBattery(false);
     }
   };
+  
+  const handleRequestAlarm = async () => {
+    setRequestingAlarm(true);
+    try {
+      await AlarmPermission.requestScheduleExactAlarms();
+      // Check again after request (user may return from settings)
+      setTimeout(async () => {
+        const alarmResult = await AlarmPermission.canScheduleExactAlarms();
+        setAlarmStatus(alarmResult.canSchedule ? 'granted' : 'denied');
+      }, 500);
+    } catch (error) {
+      console.error('Error requesting alarm permission:', error);
+      setAlarmStatus('denied');
+    } finally {
+      setRequestingAlarm(false);
+    }
+  };
 
   const allGranted = 
     microphoneStatus === 'granted' &&
     locationStatus === 'granted' &&
-    batteryStatus === 'granted';
+    batteryStatus === 'granted' &&
+    alarmStatus === 'granted';
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
@@ -213,6 +243,15 @@ export const UnifiedPermissionsScreen: React.FC<UnifiedPermissionsScreenProps> =
             status={batteryStatus}
             onRequest={handleRequestBattery}
             isRequesting={requestingBattery}
+          />
+          
+          <PermissionItem
+            icon={<Bell className="w-5 h-5" />}
+            title="Alarmes e Lembretes"
+            description="Permitir que o app defina alarmes e programe ações com hora marcada"
+            status={alarmStatus}
+            onRequest={handleRequestAlarm}
+            isRequesting={requestingAlarm}
           />
         </div>
 
