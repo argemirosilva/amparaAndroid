@@ -33,7 +33,7 @@ public class AudioTriggerDefaults {
         config.discussionWindowSeconds = 10;
         config.preTriggerSeconds = 3;
         config.startHoldSeconds = 3;
-        config.endHoldSeconds = 30;
+        config.endHoldSeconds = 300;
         config.cooldownSeconds = 20;
         
         // Noise floor learning
