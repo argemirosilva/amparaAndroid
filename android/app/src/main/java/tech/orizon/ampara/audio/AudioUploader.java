@@ -219,6 +219,64 @@ public class AudioUploader {
     }
     
     /**
+     * Notify server that recording session has started
+     */
+    public void notifyRecordingStarted(String sessionId, String origemGravacao) {
+        new Thread(() -> {
+            try {
+                Log.i(TAG, String.format("Notifying server: recording started - session=%s, origem=%s", 
+                    sessionId, origemGravacao));
+                
+                JSONObject payload = new JSONObject();
+                payload.put("action", "iniciarGravacao");
+                payload.put("session_token", sessionToken);
+                payload.put("device_id", deviceId);
+                payload.put("email_usuario", emailUsuario);
+                payload.put("session_id", sessionId);
+                payload.put("origem_gravacao", origemGravacao);
+                
+                HttpURLConnection connection = (HttpURLConnection) new URL(API_URL).openConnection();
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+                connection.setDoInput(true);
+                connection.setConnectTimeout(TIMEOUT_MS);
+                connection.setReadTimeout(TIMEOUT_MS);
+                connection.setRequestProperty("Content-Type", "application/json");
+                
+                DataOutputStream output = new DataOutputStream(connection.getOutputStream());
+                output.writeBytes(payload.toString());
+                output.flush();
+                output.close();
+                
+                int responseCode = connection.getResponseCode();
+                
+                if (responseCode == 200) {
+                    BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream())
+                    );
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    reader.close();
+                    
+                    Log.i(TAG, String.format("Recording start notified successfully: %s", 
+                        response.toString()));
+                } else {
+                    Log.e(TAG, String.format("Failed to notify recording start: HTTP %d", 
+                        responseCode));
+                }
+                
+                connection.disconnect();
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error notifying recording start", e);
+            }
+        }).start();
+    }
+    
+    /**
      * Notify server that recording session is complete
      */
     public void notifyRecordingComplete(String sessionId, int totalSegments) {

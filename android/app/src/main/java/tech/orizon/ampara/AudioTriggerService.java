@@ -212,6 +212,9 @@ public class AudioTriggerService extends Service {
                     
                     Log.i(TAG, "Manual recording started: " + sessionId);
                     notifyRecordingStarted(sessionId);
+                    
+                    // Notify server that recording started
+                    uploader.notifyRecordingStarted(sessionId, currentOrigemGravacao);
                 }
                 return START_STICKY;
             }
@@ -476,6 +479,9 @@ public class AudioTriggerService extends Service {
                 
                 Log.i(TAG, "Native recording started: " + sessionId);
                 notifyRecordingStarted(sessionId);
+                
+                // Notify server that recording started
+                uploader.notifyRecordingStarted(sessionId, currentOrigemGravacao);
             }
             
             notifyJavaScript("discussionDetected", result.reason);
