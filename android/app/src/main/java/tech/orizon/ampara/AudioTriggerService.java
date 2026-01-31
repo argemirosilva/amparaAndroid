@@ -244,8 +244,8 @@ public class AudioTriggerService extends Service {
                 // Update notification back to monitoring state
                 updateNotificationForMonitoring();
                 
-                // Resume monitoring after recording stops
-                resumeMonitoring();
+                // No need to resume - monitoring never stopped
+                currentMicState = MicrophoneState.MONITORING;
                 
                 return START_STICKY;
             }
@@ -505,10 +505,8 @@ public class AudioTriggerService extends Service {
             Log.i(TAG, String.format("DISCUSSION DETECTED! Reason: %s, Speech: %.2f, Loud: %.2f",
                 result.reason, result.speechDensity, result.loudDensity));
             
-            // Pause monitoring to release microphone (only if already monitoring)
-            if (currentMicState == MicrophoneState.MONITORING) {
-                pauseMonitoring();
-            }
+            // Keep monitoring active during recording to continue sending metrics to UI
+            // AudioRecord and MediaRecorder can coexist (different audio sources)
             currentMicState = MicrophoneState.RECORDING;
             
             // Start native recording with auto mode
@@ -546,12 +544,12 @@ public class AudioTriggerService extends Service {
                         Log.i(TAG, "Recording stopped due to silence: " + sessionId);
                         notifyRecordingStopped(sessionId);
                         
-                        // Notify server that recording is complete
-                        uploader.notifyRecordingComplete(sessionId, totalSegments);
-                    }
-                    
-                    // Resume monitoring after recording stops
-                    resumeMonitoring();
+                    // Notify server that recording is complete
+                    uploader.notifyRecordingComplete(sessionId, totalSegments);
+                }
+                
+                // No need to resume - monitoring never stopped
+                currentMicState = MicrophoneState.MONITORING;
                 }
             }
         }
@@ -567,14 +565,14 @@ public class AudioTriggerService extends Service {
                 Log.i(TAG, "Native recording stopped: " + sessionId);
                 notifyRecordingStopped(sessionId);
                 
-                // Notify server that recording is complete
-                uploader.notifyRecordingComplete(sessionId, totalSegments);
-            }
-            
-            // Resume monitoring after recording stops
-            resumeMonitoring();
-            
-            notifyJavaScript("discussionEnded", result.reason);
+            // Notify server that recording is complete
+            uploader.notifyRecordingComplete(sessionId, totalSegments);
+        }
+        
+        // No need to resume - monitoring never stopped
+        currentMicState = MicrophoneState.MONITORING;
+        
+        notifyJavaScript("discussionEnded", result.reason);
         }
     }
     
