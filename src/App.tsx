@@ -129,7 +129,18 @@ const App = () => {
       try {
         nativeListener = await SessionExpiredListener.addListener('sessionExpired', async (data) => {
           console.error('[App] Session expired event from Native:', data);
-          await handleLogout();
+          
+          // Try to refresh token first
+          console.log('[App] Attempting to refresh token...');
+          const { refreshAccessToken } = await import('@/services/tokenRefreshService');
+          const refreshed = await refreshAccessToken();
+          
+          if (refreshed) {
+            console.log('[App] Token refreshed successfully, session restored');
+          } else {
+            console.error('[App] Token refresh failed, logging out');
+            await handleLogout();
+          }
         });
         console.log('[App] Native session expired listener registered');
       } catch (error) {

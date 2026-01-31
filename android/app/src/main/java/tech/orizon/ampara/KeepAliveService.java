@@ -200,9 +200,10 @@ public class KeepAliveService extends Service {
                         try {
                             JSONObject errorJson = new JSONObject(errorBody);
                             if (errorJson.optBoolean("session_expired", false)) {
-                                Log.e(TAG, "Session expired confirmed! Notifying JavaScript and stopping service...");
+                                Log.e(TAG, "Session expired confirmed! Notifying JavaScript to refresh token...");
                                 notifyJavaScriptSessionExpired();
-                                stopSelf(); // Para o serviço
+                                // NÃO para o serviço - aguarda JavaScript fazer refresh
+                                // O próximo ping usará o novo token do storage
                                 return;
                             }
                         } catch (Exception e) {
