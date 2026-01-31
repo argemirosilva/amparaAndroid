@@ -74,6 +74,7 @@ public class AudioTriggerService extends Service {
     private int frameCounter = 0;
     private int aggregationCounter = 0;
     private long lastDiagnosticLog = 0;
+    private long manualStopCooldownUntil = 0;
     
     @Override
     public void onCreate() {
@@ -235,6 +236,10 @@ public class AudioTriggerService extends Service {
                     // Notify server that recording is complete
                     uploader.notifyRecordingComplete(sessionId, totalSegments);
                 }
+                
+                // Set cooldown to prevent immediate re-trigger
+                manualStopCooldownUntil = System.currentTimeMillis() + 60000; // 60s cooldown
+                Log.i(TAG, "Manual stop cooldown set for 60s");
                 
                 // Update notification back to monitoring state
                 updateNotificationForMonitoring();
@@ -489,6 +494,14 @@ public class AudioTriggerService extends Service {
         
         // Log detection
         if (result.shouldStartRecording) {
+            // Check cooldown period after manual stop
+            long now = System.currentTimeMillis();
+            if (now < manualStopCooldownUntil) {
+                long remainingSeconds = (manualStopCooldownUntil - now) / 1000;
+                Log.i(TAG, String.format("DISCUSSION DETECTED but in cooldown period (%ds remaining) - ignoring", remainingSeconds));
+                return;
+            }
+            
             Log.i(TAG, String.format("DISCUSSION DETECTED! Reason: %s, Speech: %.2f, Loud: %.2f",
                 result.reason, result.speechDensity, result.loudDensity));
             
@@ -594,10 +607,12 @@ public class AudioTriggerService extends Service {
     private void notifyRecordingStarted(String sessionId) {
         Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
         intent.setPackage(getPackageName());
+        long now = System.currentTimeMillis();
         intent.putExtra("event", "nativeRecordingStarted");
         intent.putExtra("sessionId", sessionId);
         intent.putExtra("origemGravacao", currentOrigemGravacao);
-        intent.putExtra("timestamp", System.currentTimeMillis());
+        intent.putExtra("startedAt", now);
+        intent.putExtra("timestamp", now);
         sendBroadcast(intent);
         
         Log.d(TAG, "Recording started broadcast sent: " + sessionId + ", origem: " + currentOrigemGravacao);

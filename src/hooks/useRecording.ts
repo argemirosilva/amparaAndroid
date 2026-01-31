@@ -29,6 +29,7 @@ export function useRecording() {
   const isRecordingRef = useRef(false);
   const origemGravacaoRef = useRef<OrigemGravacao>('botao_manual');
   const currentSessionIdRef = useRef<string | null>(null);
+  const startedAtRef = useRef<number | null>(null);
 
   // Listen to native recording events
   useEffect(() => {
@@ -38,6 +39,9 @@ export function useRecording() {
       switch (event.event) {
         case 'nativeRecordingStarted':
           currentSessionIdRef.current = event.sessionId || null;
+          // Capture startedAt timestamp from native
+          startedAtRef.current = event.startedAt || Date.now();
+          console.log('[useRecording] Recording started at:', new Date(startedAtRef.current).toISOString());
           // Update origem if provided by native (automatic detection)
           if (event.origemGravacao) {
             origemGravacaoRef.current = event.origemGravacao as OrigemGravacao;
@@ -82,6 +86,7 @@ export function useRecording() {
             isStopping: false,
           }));
           currentSessionIdRef.current = null;
+          startedAtRef.current = null;
           break;
 
         case 'recordingState':
@@ -108,7 +113,13 @@ export function useRecording() {
   useEffect(() => {
     if (state.isRecording && !state.isPaused) {
       timerRef.current = setInterval(() => {
-        setState((prev) => ({ ...prev, duration: prev.duration + 1 }));
+        // Calculate duration from startedAt timestamp (persistent across remounts)
+        if (startedAtRef.current) {
+          const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
+          setState((prev) => ({ ...prev, duration: elapsed }));
+        } else {
+          setState((prev) => ({ ...prev, duration: prev.duration + 1 }));
+        }
       }, 1000);
     } else {
       if (timerRef.current) {

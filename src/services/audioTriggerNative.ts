@@ -54,6 +54,8 @@ export interface AudioTriggerEvent {
   event: 'discussionDetected' | 'discussionEnded' | 'nativeRecordingStarted' | 'nativeRecordingStopped' | 'nativeRecordingProgress' | 'nativeUploadProgress';
   reason?: string;
   sessionId?: string;
+  origemGravacao?: string;
+  startedAt?: number;
   segmentIndex?: number;
   pending?: number;
   success?: number;
