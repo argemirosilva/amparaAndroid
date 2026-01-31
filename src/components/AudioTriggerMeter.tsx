@@ -251,8 +251,8 @@ export function AudioTriggerMeter({
           
 
           
-          {/* Progress arc with gradient color - Always show when score > 0 */}
-          {score > 0 && (
+          {/* Progress arc with gradient color - Show when score > 0 OR recording */}
+          {(score > 0 || isRecording) && (
             <motion.circle
               cx={size / 2}
               cy={size / 2}

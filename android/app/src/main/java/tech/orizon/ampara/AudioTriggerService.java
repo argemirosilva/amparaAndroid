@@ -224,6 +224,9 @@ public class AudioTriggerService extends Service {
                     // Notify server that recording started
                     uploader.notifyRecordingStarted(sessionId, currentOrigemGravacao);
                     
+                    // Force detector to RECORDING_STARTED state to prevent false alarm
+                    detector.forceRecordingStarted();
+                    
                     // Start simulated aggregations (1 per second) to continue detection logic
                     startRecordingAggregations();
                 }
@@ -536,6 +539,9 @@ public class AudioTriggerService extends Service {
                 
                 // Notify server that recording started
                 uploader.notifyRecordingStarted(sessionId, currentOrigemGravacao);
+                
+                // Force detector to RECORDING_STARTED state to prevent false alarm
+                detector.forceRecordingStarted();
                 
                 // Start simulated aggregations (1 per second) to continue detection logic
                 startRecordingAggregations();

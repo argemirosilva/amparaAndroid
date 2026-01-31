@@ -258,4 +258,15 @@ public class DiscussionDetector {
     public boolean isCalibrated() {
         return adaptiveNoiseFloor.isCalibrated();
     }
+    
+    /**
+     * Force state to RECORDING_STARTED (called when recording starts externally)
+     * This prevents false alarm when simulated silence aggregations begin
+     */
+    public void forceRecordingStarted() {
+        state = State.RECORDING_STARTED;
+        stateStartTime = System.currentTimeMillis();
+        silenceStartTime = 0;
+        Log.i(TAG, "State forced to RECORDING_STARTED");
+    }
 }
