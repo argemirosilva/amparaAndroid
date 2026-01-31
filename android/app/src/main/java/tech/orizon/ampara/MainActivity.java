@@ -15,6 +15,7 @@ import tech.orizon.ampara.plugins.SessionExpiredListenerPlugin;
 import tech.orizon.ampara.plugins.DeviceInfoExtendedPlugin;
 import tech.orizon.ampara.plugins.AudioTriggerPlugin;
 import tech.orizon.ampara.plugins.AudioPermissionPlugin;
+import tech.orizon.ampara.plugins.PanicPlugin;
 
 public class MainActivity extends BridgeActivity {
     
@@ -90,7 +91,14 @@ public class MainActivity extends BridgeActivity {
             Log.e("AmparaPlugins", "❌ Failed to register AudioTriggerPlugin", e);
         }
         
-        Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE ==========");
+        try {
+            registerPlugin(PanicPlugin.class);
+            Log.d("AmparaPlugins", "✅ PanicPlugin registered");
+        } catch (Exception e) {
+            Log.e("AmparaPlugins", "❌ Failed to register PanicPlugin", e);
+        }
+        
+        Log.d("AmparaPlugins", "========== CUSTOM PLUGINS REGISTRATION COMPLETE =========="  );
         
         super.onCreate(savedInstanceState);
         

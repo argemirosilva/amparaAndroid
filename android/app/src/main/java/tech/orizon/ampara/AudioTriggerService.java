@@ -63,6 +63,7 @@ public class AudioTriggerService extends Service {
     private LocationManager locationManager;
     private SilenceDetector silenceDetector;
     private UploadQueue uploadQueue;
+    private PanicManager panicManager;
     
     private String sessionToken;
     private String emailUsuario;
@@ -98,6 +99,7 @@ public class AudioTriggerService extends Service {
         detector = new DiscussionDetector(config);
         recorder = new NativeRecorder(this);
         uploader = new AudioUploader(this);
+        panicManager = new PanicManager(this);
         locationManager = new LocationManager(this);
         silenceDetector = new SilenceDetector();
         uploadQueue = new UploadQueue(this, uploader);
@@ -243,6 +245,28 @@ public class AudioTriggerService extends Service {
                 return START_STICKY;
             }
             
+            if ("PANIC_ACTIVATED".equals(action)) {
+                Log.i(TAG, "Panic activated");
+                
+                String protocolNumber = intent.getStringExtra("protocolNumber");
+                String activationType = intent.getStringExtra("activationType");
+                
+                // Panic manager already persisted state via plugin
+                // Credentials will be set when JavaScript sends them
+                Log.i(TAG, String.format("Panic state persisted: protocol=%s", protocolNumber));
+                
+                return START_STICKY;
+            }
+            
+            if ("PANIC_DEACTIVATED".equals(action)) {
+                Log.i(TAG, "Panic deactivated");
+                
+                // Panic manager already handled server notification via plugin
+                Log.i(TAG, "Panic state cleared");
+                
+                return START_STICKY;
+            }
+            
             if ("UPDATE_CONFIG".equals(action)) {
                 Log.i(TAG, "Config update requested");
                 
@@ -261,6 +285,9 @@ public class AudioTriggerService extends Service {
                 boolean isCalibrated = detector.isCalibrated();
                 Log.d(TAG, "Sending current calibration status: " + isCalibrated);
                 notifyCalibrationStatus(isCalibrated);
+                
+                // Send panic state
+                notifyPanicState();
                 
                 return START_STICKY;
             }
@@ -608,6 +635,19 @@ public class AudioTriggerService extends Service {
         intent.putExtra("isCalibrated", isCalibrated);
         intent.putExtra("timestamp", System.currentTimeMillis());
         sendBroadcast(intent);
+    }
+    
+    private void notifyPanicState() {
+        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
+        intent.setPackage(getPackageName());
+        intent.putExtra("event", "panicState");
+        intent.putExtra("isPanicActive", panicManager.isPanicActive());
+        intent.putExtra("panicStartTime", panicManager.getPanicStartTime());
+        intent.putExtra("protocolNumber", panicManager.getProtocolNumber());
+        intent.putExtra("timestamp", System.currentTimeMillis());
+        sendBroadcast(intent);
+        
+        Log.d(TAG, String.format("Panic state broadcast sent: active=%s", panicManager.isPanicActive()));
     }
     
     private void notifyFgsNotEligible() {
