@@ -485,6 +485,14 @@ class AudioTriggerSingleton {
    * This allows native metrics to update UI state
    */
   setNativeMetrics(nativeMetrics: any) {
+    console.log('[AudioTriggerSingleton] 🔄 setNativeMetrics called:', {
+      score: nativeMetrics.score,
+      rmsDb: nativeMetrics.rmsDb,
+      isSpeech: nativeMetrics.isSpeech,
+      isLoud: nativeMetrics.isLoud,
+      listenersCount: this.stateListeners.length
+    });
+    
     // Update metrics with native data
     this.metrics = {
       loudDb: nativeMetrics.rmsDb ?? 0,
@@ -504,7 +512,9 @@ class AudioTriggerSingleton {
       timestamp: nativeMetrics.timestamp ?? Date.now(),
     };
     
+    console.log('[AudioTriggerSingleton] 📊 Metrics updated, notifying', this.stateListeners.length, 'listeners');
     this.notifyStateChange();
+    console.log('[AudioTriggerSingleton] ✅ Listeners notified');
   }
 }
 
