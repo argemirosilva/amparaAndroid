@@ -289,6 +289,9 @@ public class AudioTriggerService extends Service {
                 // Send panic state
                 notifyPanicState();
                 
+                // Send recording state
+                notifyRecordingState();
+                
                 return START_STICKY;
             }
         }
@@ -648,6 +651,22 @@ public class AudioTriggerService extends Service {
         sendBroadcast(intent);
         
         Log.d(TAG, String.format("Panic state broadcast sent: active=%s", panicManager.isPanicActive()));
+    }
+    
+    private void notifyRecordingState() {
+        boolean isRecording = recorder.isRecording();
+        String currentSessionId = recorder.getSessionId();
+        
+        Intent intent = new Intent("tech.orizon.ampara.AUDIO_TRIGGER_EVENT");
+        intent.setPackage(getPackageName());
+        intent.putExtra("event", "recordingState");
+        intent.putExtra("isRecording", isRecording);
+        intent.putExtra("sessionId", currentSessionId);
+        intent.putExtra("timestamp", System.currentTimeMillis());
+        sendBroadcast(intent);
+        
+        Log.d(TAG, String.format("Recording state broadcast sent: isRecording=%s, sessionId=%s", 
+            isRecording, currentSessionId));
     }
     
     private void notifyFgsNotEligible() {
