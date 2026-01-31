@@ -223,6 +223,9 @@ public class AudioTriggerService extends Service {
                     
                     // Notify server that recording started
                     uploader.notifyRecordingStarted(sessionId, currentOrigemGravacao);
+                    
+                    // Start simulated aggregations (1 per second) to continue detection logic
+                    startRecordingAggregations();
                 }
                 return START_STICKY;
             }
