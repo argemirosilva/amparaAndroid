@@ -52,18 +52,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
       setHasPermissions(false);
     }
 
-    // 3. Start KeepAlive Service ONLY if all permissions are granted
-    if (allGranted && Capacitor.getPlatform() === 'android') {
-      try {
-        console.log('[PermissionGuard] 🚀 Starting KeepAlive service...');
-        const deviceId = getDeviceId();
-        console.log('[PermissionGuard] 📱 Syncing device_id:', deviceId);
-        await KeepAlive.start({ deviceId });
-        console.log('[PermissionGuard] ✅ KeepAlive service started successfully');
-      } catch (error) {
-        console.error('[PermissionGuard] ❌ Error starting KeepAlive service:', error);
-      }
-    }
+    // Note: KeepAlive service is now started in App.tsx after successful login
   };
 
   useEffect(() => {

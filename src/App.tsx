@@ -24,6 +24,9 @@ import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { PanicProvider } from "./contexts/PanicContext";
 import { PermissionGuard } from "./components/PermissionGuard";
+import { Capacitor } from '@capacitor/core';
+import KeepAlive from '@/plugins/keepAlive';
+import { getDeviceId } from '@/lib/deviceId';
 
 const queryClient = new QueryClient();
 
@@ -157,9 +160,21 @@ const App = () => {
     };
   }, []);
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = async () => {
     console.log('[App] Login success, updating auth state');
     setAuthState(true);
+    
+    // Start KeepAlive service after successful login (Android only)
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        console.log('[App] 🚀 Starting KeepAlive service after login...');
+        const deviceId = getDeviceId();
+        await KeepAlive.start({ deviceId });
+        console.log('[App] ✅ KeepAlive service started successfully');
+      } catch (error) {
+        console.error('[App] ❌ Error starting KeepAlive service:', error);
+      }
+    }
   };
 
   const handleLogout = async () => {
