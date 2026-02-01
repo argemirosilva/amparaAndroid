@@ -109,6 +109,61 @@ public class AudioUploader {
     }
     
     /**
+     * Calculate WAV file duration in seconds
+     * WAV format: 44 bytes header + PCM data
+     * Duration = (file_size - 44) / (sample_rate * channels * bytes_per_sample)
+     * Assuming: 16kHz, mono, 16-bit = 16000 * 1 * 2 = 32000 bytes/second
+     */
+    private double calculateWavDuration(File audioFile) {
+        try {
+            long fileSize = audioFile.length();
+            if (fileSize <= 44) {
+                Log.w(TAG, "WAV file too small: " + fileSize + " bytes");
+                return 0.0;
+            }
+            
+            // Read WAV header to get sample rate and channels
+            FileInputStream fis = new FileInputStream(audioFile);
+            byte[] header = new byte[44];
+            int bytesRead = fis.read(header);
+            fis.close();
+            
+            if (bytesRead < 44) {
+                Log.w(TAG, "Could not read WAV header");
+                return 0.0;
+            }
+            
+            // Extract sample rate (bytes 24-27, little-endian)
+            int sampleRate = (header[24] & 0xFF) | 
+                           ((header[25] & 0xFF) << 8) | 
+                           ((header[26] & 0xFF) << 16) | 
+                           ((header[27] & 0xFF) << 24);
+            
+            // Extract channels (bytes 22-23, little-endian)
+            int channels = (header[22] & 0xFF) | ((header[23] & 0xFF) << 8);
+            
+            // Extract bits per sample (bytes 34-35, little-endian)
+            int bitsPerSample = (header[34] & 0xFF) | ((header[35] & 0xFF) << 8);
+            
+            // Calculate duration
+            long dataSize = fileSize - 44;
+            int bytesPerSample = bitsPerSample / 8;
+            double duration = (double) dataSize / (sampleRate * channels * bytesPerSample);
+            
+            Log.d(TAG, String.format("WAV duration calculated: %.2fs (size=%d, rate=%d, channels=%d, bits=%d)",
+                duration, fileSize, sampleRate, channels, bitsPerSample));
+            
+            return duration;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error calculating WAV duration: " + e.getMessage());
+            // Fallback: estimate based on file size (assuming 16kHz mono 16-bit)
+            long dataSize = audioFile.length() - 44;
+            return (double) dataSize / 32000.0;
+        }
+    }
+    
+    /**
      * Internal upload implementation
      */
     private boolean uploadSegmentInternal(
@@ -124,6 +179,9 @@ public class AudioUploader {
         if (!audioFile.exists()) {
             throw new Exception("Audio file not found: " + filePath);
         }
+        
+        // Calculate actual duration from WAV file
+        double durationSeconds = calculateWavDuration(audioFile);
         
         String boundary = "----Boundary" + System.currentTimeMillis();
         
@@ -145,7 +203,7 @@ public class AudioUploader {
         addFormField(output, boundary, "email_usuario", emailUsuario);
         addFormField(output, boundary, "segment_index", String.valueOf(segmentIndex));
         addFormField(output, boundary, "session_id", sessionId);
-        addFormField(output, boundary, "duration_seconds", "30");
+        addFormField(output, boundary, "duration_seconds", String.format("%.2f", durationSeconds));
         addFormField(output, boundary, "origem_gravacao", origemGravacao);
         addFormField(output, boundary, "timestamp", String.valueOf(System.currentTimeMillis()));
         
