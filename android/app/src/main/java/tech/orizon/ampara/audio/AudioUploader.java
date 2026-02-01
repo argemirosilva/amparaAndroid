@@ -109,68 +109,52 @@ public class AudioUploader {
     }
     
     /**
-     * Calculate WAV file duration in seconds
-     * WAV format: 44 bytes header + PCM data
-     * Duration = (file_size - 44) / (sample_rate * channels * bytes_per_sample)
-     * Assuming: 16kHz, mono, 16-bit = 16000 * 1 * 2 = 32000 bytes/second
+     * Calculate audio file duration in seconds
+     * Uses MediaMetadataRetriever to support multiple formats (OGG/Opus, WAV, MP3, etc)
+     * 
+     * IMPORTANT: NativeRecorder generates OGG/Opus files (.ogg), NOT WAV files
      */
-    private double calculateWavDuration(File audioFile) {
+    private double calculateAudioDuration(File audioFile) {
+        android.media.MediaMetadataRetriever retriever = null;
         try {
             // Wait a bit to ensure file is fully written to disk
             Thread.sleep(200);
             
-            long fileSize = audioFile.length();
-            if (fileSize <= 44) {
-                Log.w(TAG, "WAV file too small: " + fileSize + " bytes");
+            retriever = new android.media.MediaMetadataRetriever();
+            retriever.setDataSource(audioFile.getAbsolutePath());
+            
+            // Get duration in milliseconds
+            String durationStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+            if (durationStr == null) {
+                Log.w(TAG, "Could not extract duration from audio file");
                 return 0.0;
             }
             
-            // Read WAV header to get sample rate and channels
-            FileInputStream fis = new FileInputStream(audioFile);
-            byte[] header = new byte[44];
-            int bytesRead = fis.read(header);
-            fis.close();
+            long durationMs = Long.parseLong(durationStr);
+            double durationSeconds = durationMs / 1000.0;
             
-            if (bytesRead < 44) {
-                Log.w(TAG, "Could not read WAV header");
-                return 0.0;
-            }
+            Log.d(TAG, String.format("Audio duration calculated: %.2fs (size=%d bytes, format=OGG/Opus)",
+                durationSeconds, audioFile.length()));
             
-            // Extract sample rate (bytes 24-27, little-endian)
-            int sampleRate = (header[24] & 0xFF) | 
-                           ((header[25] & 0xFF) << 8) | 
-                           ((header[26] & 0xFF) << 16) | 
-                           ((header[27] & 0xFF) << 24);
-            
-            // Extract channels (bytes 22-23, little-endian)
-            int channels = (header[22] & 0xFF) | ((header[23] & 0xFF) << 8);
-            
-            // Extract bits per sample (bytes 34-35, little-endian)
-            int bitsPerSample = (header[34] & 0xFF) | ((header[35] & 0xFF) << 8);
-            
-            // Validate header values (sanity check)
-            if (sampleRate <= 0 || sampleRate > 48000 || channels <= 0 || channels > 2 || bitsPerSample <= 0 || bitsPerSample > 32) {
-                Log.w(TAG, String.format("Invalid WAV header: rate=%d, channels=%d, bits=%d", sampleRate, channels, bitsPerSample));
-                // Fallback: assume 16kHz mono 16-bit
-                long dataSize = fileSize - 44;
-                return (double) dataSize / 32000.0;
-            }
-            
-            // Calculate duration
-            long dataSize = fileSize - 44;
-            int bytesPerSample = bitsPerSample / 8;
-            double duration = (double) dataSize / (sampleRate * channels * bytesPerSample);
-            
-            Log.d(TAG, String.format("WAV duration calculated: %.2fs (size=%d, rate=%d, channels=%d, bits=%d)",
-                duration, fileSize, sampleRate, channels, bitsPerSample));
-            
-            return duration;
+            return durationSeconds;
             
         } catch (Exception e) {
-            Log.e(TAG, "Error calculating WAV duration: " + e.getMessage());
-            // Fallback: estimate based on file size (assuming 16kHz mono 16-bit)
-            long dataSize = audioFile.length() - 44;
-            return (double) dataSize / 32000.0;
+            Log.e(TAG, "Error calculating audio duration: " + e.getMessage());
+            // Fallback: estimate based on file size
+            // OGG/Opus has variable bitrate, but roughly 16-32 kbps for speech
+            // Assume 24 kbps average = 3000 bytes/second
+            long fileSize = audioFile.length();
+            double estimatedDuration = (double) fileSize / 3000.0;
+            Log.w(TAG, String.format("Using estimated duration: %.2fs", estimatedDuration));
+            return estimatedDuration;
+        } finally {
+            if (retriever != null) {
+                try {
+                    retriever.release();
+                } catch (Exception e) {
+                    // Ignore
+                }
+            }
         }
     }
     
@@ -191,8 +175,8 @@ public class AudioUploader {
             throw new Exception("Audio file not found: " + filePath);
         }
         
-        // Calculate actual duration from WAV file
-        double durationSeconds = calculateWavDuration(audioFile);
+        // Calculate actual duration from audio file (OGG/Opus)
+        double durationSeconds = calculateAudioDuration(audioFile);
         
         String boundary = "----Boundary" + System.currentTimeMillis();
         
