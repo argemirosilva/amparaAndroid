@@ -113,7 +113,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
         });
         
         // Reiniciar recording e location tracking
-        startRecording();
+        startRecording('botao_panico');
         location.startTracking(true);
         
         // Reiniciar timer de duração
@@ -213,8 +213,8 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
     const lat = position?.latitude ?? 0;
     const lng = position?.longitude ?? 0;
     
-    // Start recording
-    await startRecording();
+    // Start recording with panic origin
+    await startRecording('botao_panico');
 
     // Enable panic mode location tracking (30s intervals)
     location.startTracking(true);
