@@ -203,7 +203,7 @@ public class AudioUploader {
         addFormField(output, boundary, "email_usuario", emailUsuario);
         addFormField(output, boundary, "segment_index", String.valueOf(segmentIndex));
         addFormField(output, boundary, "session_id", sessionId);
-        addFormField(output, boundary, "duration_seconds", String.format("%.2f", durationSeconds));
+        addFormField(output, boundary, "duration_seconds", String.valueOf(Math.round(durationSeconds)));
         addFormField(output, boundary, "origem_gravacao", origemGravacao);
         addFormField(output, boundary, "timestamp", String.valueOf(System.currentTimeMillis()));
         
