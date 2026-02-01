@@ -77,8 +77,20 @@ public class KeepAliveService extends Service {
         Notification notification = createNotification();
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFICATION_ID, notification, 
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            // Verificar se tem permissão de localização antes de usar tipo location
+            boolean hasLocationPermission = 
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            
+            if (hasLocationPermission) {
+                startForeground(NOTIFICATION_ID, notification, 
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+                Log.d(TAG, "Started foreground service with type LOCATION");
+            } else {
+                // Fallback: iniciar sem tipo específico se não tiver permissão
+                startForeground(NOTIFICATION_ID, notification);
+                Log.w(TAG, "Started foreground service without type (no location permission)");
+            }
         } else {
             startForeground(NOTIFICATION_ID, notification);
         }
