@@ -52,42 +52,8 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
       setHasPermissions(false);
     }
 
-    // 3. Check Battery Optimization & Exact Alarms (apenas no Android)
-    if (Capacitor.getPlatform() === 'android') {
-      try {
-        console.log('[PermissionGuard] 🔋 Checking battery & alarm status...');
-        const status = await BatteryOptimization.isIgnoringBatteryOptimizations();
-        console.log('[PermissionGuard] Status:', status);
-        
-        // Update PermissionFlowState
-        PermissionFlowState.setMissing({
-          batteryOpt: !status.isIgnoring,
-          exactAlarm: !status.canScheduleExactAlarms,
-        });
-
-        // Battery Optimization
-        if (!status.isIgnoring) {
-          console.log('[PermissionGuard] ⚠️ App is being optimized, requesting exemption...');
-          PermissionFlowState.setInFlow(true, 'requesting battery optimization');
-          await BatteryOptimization.requestIgnoreBatteryOptimizations();
-          // Note: User will be taken to system settings, app will pause
-        }
-        
-        // Exact Alarms (Android 12+)
-        if (!status.canScheduleExactAlarms) {
-          console.log('[PermissionGuard] ⚠️ App cannot schedule exact alarms, requesting permission...');
-          PermissionFlowState.setInFlow(true, 'requesting exact alarm permission');
-          await BatteryOptimization.requestExactAlarmPermission();
-          // Note: User will be taken to system settings, app will pause
-        }
-
-      } catch (error) {
-        console.error('[PermissionGuard] ❌ Error with battery/alarm optimization:', error);
-      }
-    }
-
-    // 4. Start KeepAlive Service (apenas no Android)
-    if (Capacitor.getPlatform() === 'android') {
+    // 3. Start KeepAlive Service ONLY if all permissions are granted
+    if (allGranted && Capacitor.getPlatform() === 'android') {
       try {
         console.log('[PermissionGuard] 🚀 Starting KeepAlive service...');
         const deviceId = getDeviceId();
