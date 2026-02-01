@@ -587,8 +587,8 @@ public class AudioTriggerService extends Service {
                 Log.i(TAG, "Native recording stopped: " + sessionId);
                 notifyRecordingStopped(sessionId);
                 
-            // Notify server that recording is complete
-            uploader.notifyRecordingComplete(sessionId, totalSegments);
+            // Notify server that recording is complete (automatic detection ended)
+            uploader.notifyRecordingComplete(sessionId, totalSegments, "silencio");
         }
         
         // Resume monitoring after recording stops
