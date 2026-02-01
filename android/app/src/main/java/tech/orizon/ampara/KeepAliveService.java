@@ -65,6 +65,10 @@ public class KeepAliveService extends Service {
     private volatile Location freshLocation = null;
     private java.util.concurrent.CountDownLatch locationLatch;
     
+    // Cache persistente de GPS (válido por 5 minutos)
+    private volatile Location cachedLocation = null;
+    private volatile long cachedLocationTime = 0;
+    
     @Override
     public void onCreate() {
         super.onCreate();
@@ -467,6 +471,13 @@ public class KeepAliveService extends Service {
                 return null;
             }
             
+            // Verificar cache persistente primeiro (válido por 5 minutos)
+            long now = System.currentTimeMillis();
+            if (cachedLocation != null && (now - cachedLocationTime) < 300000) {
+                Log.d(TAG, "Using cached location from " + ((now - cachedLocationTime) / 1000) + "s ago");
+                return cachedLocation;
+            }
+            
             // Tentar GPS primeiro, depois Network
             Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (location == null) {
@@ -492,10 +503,16 @@ public class KeepAliveService extends Service {
                         location = freshLocation;
                     } else {
                         Log.w(TAG, "GPS timeout, using last known location");
-                        // Tentar cache novamente
+                        // Tentar cache do sistema novamente
                         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                         if (location == null) {
                             location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                        }
+                        
+                        // Se ainda não tem, usar nosso cache persistente
+                        if (location == null && cachedLocation != null) {
+                            Log.d(TAG, "Using persistent cached location from " + ((now - cachedLocationTime) / 1000) + "s ago");
+                            location = cachedLocation;
                         }
                     }
                 } catch (InterruptedException e) {
@@ -505,6 +522,9 @@ public class KeepAliveService extends Service {
             
             if (location != null) {
                 Log.d(TAG, "Location obtained: " + location.getLatitude() + ", " + location.getLongitude());
+                // Atualizar cache persistente
+                cachedLocation = location;
+                cachedLocationTime = System.currentTimeMillis();
             } else {
                 Log.w(TAG, "No location available");
             }
