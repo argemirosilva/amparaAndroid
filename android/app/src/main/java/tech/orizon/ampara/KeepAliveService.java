@@ -206,6 +206,8 @@ public class KeepAliveService extends Service {
                 }
 
                 String jsonInputString = payload.toString();
+                Log.d(TAG, "Ping payload: " + jsonInputString);
+                
                 try (OutputStream os = conn.getOutputStream()) {
                     byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
                     os.write(input, 0, input.length);
@@ -239,7 +241,18 @@ public class KeepAliveService extends Service {
                             Log.e(TAG, "Error parsing 401 response: " + e.getMessage());
                         }
                     }
-                } else if (code != 200) {
+                } else if (code == 200) {
+                    // Log successful response
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                        StringBuilder response = new StringBuilder();
+                        String responseLine;
+                        while ((responseLine = br.readLine()) != null) {
+                            response.append(responseLine.trim());
+                        }
+                        Log.d(TAG, "Ping response (200): " + response.toString());
+                    }
+                } else {
+                    // Log error response
                     try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
                         StringBuilder response = new StringBuilder();
                         String responseLine;
