@@ -513,21 +513,28 @@ public class KeepAliveService extends Service {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 
-                locationManager.requestSingleUpdate(provider, new android.location.LocationListener() {
-                    @Override
-                    public void onLocationChanged(Location location) {
-                        Log.d(TAG, "Fresh location update received: " + location.getLatitude() + ", " + location.getLongitude());
+                // requestSingleUpdate needs to run on main looper
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                    try {
+                        locationManager.requestSingleUpdate(provider, new android.location.LocationListener() {
+                            @Override
+                            public void onLocationChanged(Location location) {
+                                Log.d(TAG, "Fresh location update received: " + location.getLatitude() + ", " + location.getLongitude());
+                            }
+                            
+                            @Override
+                            public void onStatusChanged(String provider, int status, android.os.Bundle extras) {}
+                            
+                            @Override
+                            public void onProviderEnabled(String provider) {}
+                            
+                            @Override
+                            public void onProviderDisabled(String provider) {}
+                        }, null);
+                    } catch (SecurityException e) {
+                        Log.e(TAG, "Location permission denied during requestSingleUpdate", e);
                     }
-                    
-                    @Override
-                    public void onStatusChanged(String provider, int status, android.os.Bundle extras) {}
-                    
-                    @Override
-                    public void onProviderEnabled(String provider) {}
-                    
-                    @Override
-                    public void onProviderDisabled(String provider) {}
-                }, null);
+                });
                 
                 Log.d(TAG, "Single location update requested from " + provider);
             }
