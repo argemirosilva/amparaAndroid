@@ -22,12 +22,22 @@ import {
 import { backgroundService, BACKGROUND_SERVICE_VERSION } from '@/services/backgroundService';
 
 export interface BackgroundServicesState {
+  connectivity: {
+    isOnline: boolean;
+    lastLatencyMs: number;
+    lastSuccessfulPing: number | null;
+  };
   config: ConfigState;
   isInitialized: boolean;
 }
 
 export function useBackgroundServices() {
   const [state, setState] = useState<BackgroundServicesState>({
+    connectivity: {
+      isOnline: true,
+      lastLatencyMs: 0,
+      lastSuccessfulPing: Date.now()
+    },
     config: getConfigState(),
     isInitialized: false
   });
