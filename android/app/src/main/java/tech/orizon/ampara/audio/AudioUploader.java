@@ -359,7 +359,7 @@ public class AudioUploader {
     /**
      * Notify server that recording session is complete
      */
-    public void notifyRecordingComplete(String sessionId, int totalSegments) {
+    public void notifyRecordingComplete(String sessionId, int totalSegments, String motivoParada) {
         new Thread(() -> {
             try {
                 Log.i(TAG, String.format("Notifying server: recording complete - session=%s, segments=%d", 
@@ -376,6 +376,7 @@ public class AudioUploader {
                 payload.put("email_usuario", emailUsuario);
                 payload.put("session_id", sessionId);
                 payload.put("total_segments", totalSegments);
+                payload.put("motivo_parada", motivoParada);
                 
                 Log.d(TAG, "Payload: " + payload.toString());
                 

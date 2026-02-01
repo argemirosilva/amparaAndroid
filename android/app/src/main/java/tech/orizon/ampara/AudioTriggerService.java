@@ -244,8 +244,8 @@ public class AudioTriggerService extends Service {
                     Log.i(TAG, "Manual recording stopped: " + sessionId);
                     notifyRecordingStopped(sessionId);
                     
-                    // Notify server that recording is complete
-                    uploader.notifyRecordingComplete(sessionId, totalSegments);
+                    // Notify server that recording is complete (manual stop)
+                    uploader.notifyRecordingComplete(sessionId, totalSegments, "manual");
                 }
                 
                 // Set cooldown to prevent immediate re-trigger
@@ -566,8 +566,8 @@ public class AudioTriggerService extends Service {
                         Log.i(TAG, "Recording stopped due to silence: " + sessionId);
                         notifyRecordingStopped(sessionId);
                         
-                    // Notify server that recording is complete
-                    uploader.notifyRecordingComplete(sessionId, totalSegments);
+                    // Notify server that recording is complete (silence timeout)
+                    uploader.notifyRecordingComplete(sessionId, totalSegments, "timeout");
                 }
                 
                 // Resume monitoring after recording stops
@@ -931,8 +931,8 @@ public class AudioTriggerService extends Service {
                             Log.i(TAG, "Native recording stopped: " + sessionId);
                             notifyRecordingStopped(sessionId);
                             
-                            // Notify server that recording is complete
-                            uploader.notifyRecordingComplete(sessionId, totalSegments);
+                            // Notify server that recording is complete (silence detected)
+                            uploader.notifyRecordingComplete(sessionId, totalSegments, "silencio");
                         }
                         
                         // Stop simulated aggregations
