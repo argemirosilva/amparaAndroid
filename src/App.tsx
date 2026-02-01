@@ -98,18 +98,23 @@ const App = () => {
       // User logged out, stop services
       console.log('[App] User logged out, stopping background services...');
       
-      // Stop KeepAlive service (Android only)
-      if (Capacitor.getPlatform() === 'android') {
+      const stopServices = async () => {
         try {
-          console.log('[App] Stopping KeepAlive service...');
-          await KeepAlive.stop();
-          console.log('[App] KeepAlive service stopped');
+          // Stop KeepAlive service (Android only)
+          if (Capacitor.getPlatform() === 'android') {
+            console.log('[App] Stopping KeepAlive service...');
+            await KeepAlive.stop();
+            console.log('[App] KeepAlive service stopped');
+          }
+          
+          setServicesInitialized(false);
         } catch (error) {
           console.error('[App] Error stopping KeepAlive service:', error);
+          setServicesInitialized(false);
         }
-      }
+      };
       
-      setServicesInitialized(false);
+      stopServices();
     }
   }, [authState, servicesInitialized]);
 
