@@ -194,7 +194,6 @@
             android:name="tech.orizon.ampara.KeepAliveService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location"
             android:stopWithTask="false" />
 
         <!-- AudioTrigger Service for background audio monitoring -->
