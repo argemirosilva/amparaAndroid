@@ -61,6 +61,10 @@ public class KeepAliveService extends Service {
     private PendingIntent alarmIntent;
     private PanicManager panicManager;
     
+    // Para aguardar atualização de GPS
+    private volatile Location freshLocation = null;
+    private java.util.concurrent.CountDownLatch locationLatch;
+    
     @Override
     public void onCreate() {
         super.onCreate();
@@ -472,11 +476,30 @@ public class KeepAliveService extends Service {
             // Se não tem localização ou está muito antiga (>5min), solicitar atualização
             if (location == null || (System.currentTimeMillis() - location.getTime()) > 300000) {
                 Log.d(TAG, "Location cache empty or stale, requesting fresh location update");
+                
+                // Reset latch e fresh location
+                freshLocation = null;
+                locationLatch = new java.util.concurrent.CountDownLatch(1);
+                
                 requestSingleLocationUpdate(locationManager);
-                // Tentar novamente após solicitar atualização
-                location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                if (location == null) {
-                    location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                
+                // Aguardar até 3 segundos pela atualização de GPS
+                try {
+                    Log.d(TAG, "Waiting up to 3s for GPS update...");
+                    boolean received = locationLatch.await(3, java.util.concurrent.TimeUnit.SECONDS);
+                    if (received && freshLocation != null) {
+                        Log.d(TAG, "Fresh GPS received within timeout");
+                        location = freshLocation;
+                    } else {
+                        Log.w(TAG, "GPS timeout, using last known location");
+                        // Tentar cache novamente
+                        location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                        if (location == null) {
+                            location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Log.w(TAG, "GPS wait interrupted", e);
                 }
             }
             
@@ -520,6 +543,10 @@ public class KeepAliveService extends Service {
                             @Override
                             public void onLocationChanged(Location location) {
                                 Log.d(TAG, "Fresh location update received: " + location.getLatitude() + ", " + location.getLongitude());
+                                freshLocation = location;
+                                if (locationLatch != null) {
+                                    locationLatch.countDown();
+                                }
                             }
                             
                             @Override
