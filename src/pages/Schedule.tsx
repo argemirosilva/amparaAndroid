@@ -1,10 +1,11 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConfig } from '@/hooks/useConfig';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 import type { MonitoringPeriod, PeriodosSemana } from '@/lib/types';
 
 interface DayScheduleProps {
@@ -96,12 +97,36 @@ function DaySchedule({ dayKey, dayLabel, periods, isToday, isActive, activePerio
 
 export function SchedulePage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { periodosSemana, monitoring, isLoading, syncConfig } = useConfig();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Sync config on mount to ensure we have the latest data
   useEffect(() => {
     syncConfig();
   }, [syncConfig]);
+  
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const success = await syncConfig();
+      if (success) {
+        toast({
+          title: "Atualizado",
+          description: "Períodos atualizados com sucesso",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: "Falha ao atualizar períodos",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   
   const dayLabels: Record<string, string> = {
     dom: 'Domingo',
@@ -141,12 +166,20 @@ export function SchedulePage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-semibold">Agenda de Monitoramento</h1>
           <p className="text-xs text-muted-foreground">
             Períodos configurados para a semana
           </p>
         </div>
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={handleRefresh}
+          disabled={isRefreshing || isLoading}
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
       </header>
 
       {/* Content */}
