@@ -74,6 +74,18 @@ const App = () => {
           // Initialize config service (loads from cache immediately)
           await initializeConfigService();
           
+          // Start KeepAlive service if not already running (Android only)
+          if (Capacitor.getPlatform() === 'android') {
+            try {
+              console.log('[App] 🚀 Starting KeepAlive service...');
+              const deviceId = getDeviceId();
+              await KeepAlive.start({ deviceId });
+              console.log('[App] ✅ KeepAlive service started successfully');
+            } catch (error) {
+              console.error('[App] ❌ Error starting KeepAlive service:', error);
+            }
+          }
+          
           setServicesInitialized(true);
           console.log('[App] Background services initialized');
         } catch (error) {
@@ -85,6 +97,18 @@ const App = () => {
     } else if (authState === false && servicesInitialized) {
       // User logged out, stop services
       console.log('[App] User logged out, stopping background services...');
+      
+      // Stop KeepAlive service (Android only)
+      if (Capacitor.getPlatform() === 'android') {
+        try {
+          console.log('[App] Stopping KeepAlive service...');
+          await KeepAlive.stop();
+          console.log('[App] KeepAlive service stopped');
+        } catch (error) {
+          console.error('[App] Error stopping KeepAlive service:', error);
+        }
+      }
+      
       setServicesInitialized(false);
     }
   }, [authState, servicesInitialized]);
@@ -149,18 +173,7 @@ const App = () => {
   const handleLoginSuccess = async () => {
     console.log('[App] Login success, updating auth state');
     setAuthState(true);
-    
-    // Start KeepAlive service after successful login (Android only)
-    if (Capacitor.getPlatform() === 'android') {
-      try {
-        console.log('[App] 🚀 Starting KeepAlive service after login...');
-        const deviceId = getDeviceId();
-        await KeepAlive.start({ deviceId });
-        console.log('[App] ✅ KeepAlive service started successfully');
-      } catch (error) {
-        console.error('[App] ❌ Error starting KeepAlive service:', error);
-      }
-    }
+    // KeepAlive will be started by useEffect when authState changes
   };
 
   const handleLogout = async () => {
