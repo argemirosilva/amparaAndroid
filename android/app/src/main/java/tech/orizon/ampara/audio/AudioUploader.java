@@ -116,6 +116,9 @@ public class AudioUploader {
      */
     private double calculateWavDuration(File audioFile) {
         try {
+            // Wait a bit to ensure file is fully written to disk
+            Thread.sleep(200);
+            
             long fileSize = audioFile.length();
             if (fileSize <= 44) {
                 Log.w(TAG, "WAV file too small: " + fileSize + " bytes");
@@ -144,6 +147,14 @@ public class AudioUploader {
             
             // Extract bits per sample (bytes 34-35, little-endian)
             int bitsPerSample = (header[34] & 0xFF) | ((header[35] & 0xFF) << 8);
+            
+            // Validate header values (sanity check)
+            if (sampleRate <= 0 || sampleRate > 48000 || channels <= 0 || channels > 2 || bitsPerSample <= 0 || bitsPerSample > 32) {
+                Log.w(TAG, String.format("Invalid WAV header: rate=%d, channels=%d, bits=%d", sampleRate, channels, bitsPerSample));
+                // Fallback: assume 16kHz mono 16-bit
+                long dataSize = fileSize - 44;
+                return (double) dataSize / 32000.0;
+            }
             
             // Calculate duration
             long dataSize = fileSize - 44;
