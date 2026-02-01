@@ -64,8 +64,8 @@ export function useBackgroundServices() {
         // Start connectivity monitoring
         startPingService();
 
-        // Start periodic config sync (every 1 hour)
-        startConfigSync(3600000);
+        // Start periodic config sync (every 5 minutes)
+        startConfigSync(300000);
 
         // Start passive location tracking (justifies foreground service)
         startLocationTracking();
