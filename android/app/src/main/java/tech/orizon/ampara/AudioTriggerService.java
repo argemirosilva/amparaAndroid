@@ -6,7 +6,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Build;
@@ -56,6 +59,11 @@ public class AudioTriggerService extends Service {
     private volatile boolean isRunning = false;
     private PowerManager.WakeLock wakeLock;
     
+    // AudioFocus management
+    private AudioManager audioManager;
+    private AudioFocusRequest audioFocusRequest; // API 26+
+    private boolean audioFocusGranted = false;
+    
     private AudioTriggerConfig config;
     private DiscussionDetector detector;
     private NativeRecorder recorder;
@@ -97,6 +105,9 @@ public class AudioTriggerService extends Service {
         createNotificationChannel();
         
         acquireWakeLock();
+        
+        // Initialize AudioManager for AudioFocus
+        audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         
         // Use fixed local defaults (NEVER from API)
         config = AudioTriggerDefaults.getDefaultConfig();
@@ -339,6 +350,12 @@ public class AudioTriggerService extends Service {
     }
     
     private void startAudioCapture() {
+        // Request audio focus before starting capture
+        if (!requestAudioFocus()) {
+            Log.e(TAG, "Failed to get audio focus, cannot start audio capture");
+            return;
+        }
+        
         try {
             int bufferSize = AudioRecord.getMinBufferSize(
                 config.sampleRate,
@@ -815,6 +832,7 @@ public class AudioTriggerService extends Service {
         }
         
         stopAudioCapture();
+        abandonAudioFocus();
         releaseWakeLock();
         super.onDestroy();
     }
@@ -963,6 +981,148 @@ public class AudioTriggerService extends Service {
             recordingHandler.removeCallbacks(recordingAggregationRunnable);
             recordingAggregationRunnable = null;
             Log.d(TAG, "Stopped simulated aggregations");
+        }
+    }
+    
+    /**
+     * Request audio focus to access microphone
+     * Returns true if focus granted, false otherwise
+     */
+    private boolean requestAudioFocus() {
+        if (audioManager == null) {
+            Log.e(TAG, "AudioManager not initialized");
+            return false;
+        }
+        
+        if (audioFocusGranted) {
+            Log.d(TAG, "Audio focus already granted");
+            return true;
+        }
+        
+        AudioManager.OnAudioFocusChangeListener focusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
+            @Override
+            public void onAudioFocusChange(int focusChange) {
+                switch (focusChange) {
+                    case AudioManager.AUDIOFOCUS_LOSS:
+                        // Permanent loss - another app took focus
+                        Log.w(TAG, "[AudioFocus] LOSS - Microphone requested by another app");
+                        handleAudioFocusLoss("mic_solicitado_permanente");
+                        break;
+                        
+                    case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                        // Temporary loss - phone call, WhatsApp audio, etc.
+                        Log.w(TAG, "[AudioFocus] LOSS_TRANSIENT - Microphone requested temporarily");
+                        handleAudioFocusLoss("mic_solicitado");
+                        break;
+                        
+                    case AudioManager.AUDIOFOCUS_GAIN:
+                        // Focus regained
+                        Log.i(TAG, "[AudioFocus] GAIN - Microphone available again");
+                        handleAudioFocusGain();
+                        break;
+                }
+            }
+        };
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Android 8.0+ (API 26+)
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build();
+            
+            audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(audioAttributes)
+                .setOnAudioFocusChangeListener(focusChangeListener)
+                .build();
+            
+            int result = audioManager.requestAudioFocus(audioFocusRequest);
+            audioFocusGranted = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+            
+            if (audioFocusGranted) {
+                Log.i(TAG, "[AudioFocus] Granted (API 26+)");
+            } else {
+                Log.e(TAG, "[AudioFocus] Denied (API 26+)");
+            }
+        } else {
+            // Android 7.1 and below
+            int result = audioManager.requestAudioFocus(
+                focusChangeListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            );
+            audioFocusGranted = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+            
+            if (audioFocusGranted) {
+                Log.i(TAG, "[AudioFocus] Granted (legacy API)");
+            } else {
+                Log.e(TAG, "[AudioFocus] Denied (legacy API)");
+            }
+        }
+        
+        return audioFocusGranted;
+    }
+    
+    /**
+     * Abandon audio focus when stopping service
+     */
+    private void abandonAudioFocus() {
+        if (audioManager == null || !audioFocusGranted) {
+            return;
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
+            audioManager.abandonAudioFocusRequest(audioFocusRequest);
+            Log.i(TAG, "[AudioFocus] Abandoned (API 26+)");
+        } else {
+            // Legacy API doesn't need explicit abandon with listener
+            Log.i(TAG, "[AudioFocus] Abandoned (legacy API)");
+        }
+        
+        audioFocusGranted = false;
+        audioFocusRequest = null;
+    }
+    
+    /**
+     * Handle audio focus loss - pause monitoring and/or stop recording
+     */
+    private void handleAudioFocusLoss(String motivo) {
+        Log.w(TAG, "[AudioFocus] Handling focus loss, current state: " + currentMicState);
+        
+        // If recording, stop recording with motivo
+        if (currentMicState == MicrophoneState.RECORDING && recorder != null && recorder.isRecording()) {
+            Log.w(TAG, "[AudioFocus] Stopping recording due to: " + motivo);
+            String sessionId = recorder.stopRecording();
+            
+            if (sessionId != null && uploader != null) {
+                int totalSegments = recorder.getSegmentIndex();
+                uploader.notifyRecordingComplete(sessionId, totalSegments, motivo);
+                Log.i(TAG, "[AudioFocus] Recording stopped and queued with motivo: " + motivo);
+            }
+            
+            currentMicState = MicrophoneState.MONITORING;
+        }
+        
+        // Pause monitoring (stop AudioRecord)
+        if (currentMicState == MicrophoneState.MONITORING) {
+            pauseMonitoring();
+            currentMicState = MicrophoneState.IDLE;
+        }
+        
+        audioFocusGranted = false;
+    }
+    
+    /**
+     * Handle audio focus gain - resume monitoring
+     */
+    private void handleAudioFocusGain() {
+        Log.i(TAG, "[AudioFocus] Handling focus gain, current state: " + currentMicState);
+        
+        audioFocusGranted = true;
+        
+        // Resume monitoring if idle
+        if (currentMicState == MicrophoneState.IDLE) {
+            resumeMonitoring();
         }
     }
     
