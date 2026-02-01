@@ -47,6 +47,10 @@ public class KeepAliveService extends Service {
     private static final int NOTIFICATION_ID = 9999;
     private static final String WAKELOCK_TAG = "Ampara::KeepAliveLock";
     
+    // Tempo máximo de vida do service antes de restart (5 minutos para evitar timeout do dataSync)
+    private static final long MAX_SERVICE_LIFETIME_MS = 5 * 60 * 1000; // 5 minutos
+    private long serviceStartTime;
+    
     // Nome das SharedPreferences usado pelo SecureStoragePlugin
     private static final String PREFS_NAME = "ampara_secure_storage";
     private static final String API_URL = "https://ilikiajeduezvvanjejz.supabase.co/functions/v1/mobile-api";
@@ -64,6 +68,7 @@ public class KeepAliveService extends Service {
         executorService = Executors.newSingleThreadExecutor();
         alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         panicManager = new PanicManager(this);
+        serviceStartTime = System.currentTimeMillis();
         
         createNotificationChannel();
         acquireWakeLock();
@@ -75,8 +80,16 @@ public class KeepAliveService extends Service {
         Log.d(TAG, "Service started with action: " + action);
         
         Notification notification = createNotification();
-        startForeground(NOTIFICATION_ID, notification);
-        Log.d(TAG, "Foreground service started");
+        
+        // Android 14+ (API 34+) requer tipo de foreground service
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, 
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+            Log.d(TAG, "Foreground service started with type DATA_SYNC");
+        } else {
+            startForeground(NOTIFICATION_ID, notification);
+            Log.d(TAG, "Foreground service started");
+        }
         
         // Se é a primeira vez (sem action) ou se é um alarme, executa ping e agenda próximo
         if (action == null || "ACTION_EXECUTE_PING".equals(action)) {
