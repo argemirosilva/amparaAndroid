@@ -8,7 +8,7 @@ import { LoginPage } from "./pages/Login";
 import { HomePage } from "./pages/Home";
 import { initializeSession, isAuthenticated, reloadSession, clearSession } from '@/services/sessionService';
 import { initializeConfigService } from '@/services/configService';
-import { startPingService, stopPingService } from '@/services/connectivityService';
+
 import { initializeBackgroundStateManager } from '@/services/backgroundStateManager';
 import SessionExpiredListener from '@/plugins/sessionExpiredListener';
 import { PluginListenerHandle } from '@capacitor/core';
@@ -74,9 +74,6 @@ const App = () => {
           // Initialize config service (loads from cache immediately)
           await initializeConfigService();
           
-          // Start connectivity monitoring
-          startPingService();
-          
           setServicesInitialized(true);
           console.log('[App] Background services initialized');
         } catch (error) {
@@ -88,7 +85,6 @@ const App = () => {
     } else if (authState === false && servicesInitialized) {
       // User logged out, stop services
       console.log('[App] User logged out, stopping background services...');
-      stopPingService();
       setServicesInitialized(false);
     }
   }, [authState, servicesInitialized]);
@@ -112,17 +108,7 @@ const App = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // Listen for session expiration from JavaScript (ConnectivityService)
-  useEffect(() => {
-    const handleSessionExpiredJS = async (event: Event) => {
-      const customEvent = event as CustomEvent;
-      console.error('[App] Session expired event from JavaScript:', customEvent.detail);
-      await handleLogout();
-    };
-    
-    window.addEventListener('session-expired', handleSessionExpiredJS);
-    return () => window.removeEventListener('session-expired', handleSessionExpiredJS);
-  }, []);
+
 
   // Listen for session expiration from Native (KeepAliveService)
   useEffect(() => {

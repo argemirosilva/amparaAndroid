@@ -5,13 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { 
-  startPingService, 
-  stopPingService, 
-  getConnectivityState, 
-  subscribeToConnectivity,
-  type ConnectivityState 
-} from '@/services/connectivityService';
+
 import { 
   initializeConfigService, 
   startConfigSync, 
@@ -28,14 +22,12 @@ import {
 import { backgroundService, BACKGROUND_SERVICE_VERSION } from '@/services/backgroundService';
 
 export interface BackgroundServicesState {
-  connectivity: ConnectivityState;
   config: ConfigState;
   isInitialized: boolean;
 }
 
 export function useBackgroundServices() {
   const [state, setState] = useState<BackgroundServicesState>({
-    connectivity: getConnectivityState(),
     config: getConfigState(),
     isInitialized: false
   });
@@ -61,9 +53,6 @@ export function useBackgroundServices() {
 
         if (!mounted) return;
 
-        // Start connectivity monitoring
-        startPingService();
-
         // Start periodic config sync (every 1 hour)
         startConfigSync(3600000);
 
@@ -80,13 +69,6 @@ export function useBackgroundServices() {
 
     init();
 
-    // Subscribe to connectivity changes
-    const unsubConnectivity = subscribeToConnectivity((connState) => {
-      if (mounted) {
-        setState(prev => ({ ...prev, connectivity: connState }));
-      }
-    });
-
     // Subscribe to config changes
     const unsubConfig = subscribeToConfig((configState) => {
       if (mounted) {
@@ -98,11 +80,9 @@ export function useBackgroundServices() {
     return () => {
       mounted = false;
       console.log('[useBackgroundServices] Cleaning up services...');
-      stopPingService();
       stopConfigSync();
       stopLocationTracking();
       backgroundService.stop();
-      unsubConnectivity();
       unsubConfig();
     };
   }, []);

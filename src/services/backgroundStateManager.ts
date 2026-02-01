@@ -88,17 +88,7 @@ async function handleStateChange(newInBackground: boolean): Promise<void> {
       // Force immediate data reload
       await ensureCriticalDataAvailable(true);
       
-      // Force immediate ping to catch up
-      try {
-        const { forcePing, startPingService, stopPingService } = await import('./connectivityService');
-        forcePing();
-        
-        // Restart service to reset interval
-        stopPingService();
-        startPingService();
-      } catch (error) {
-        console.error('[BackgroundStateManager] Failed to force ping on foreground return:', error);
-      }
+
     }
   }
 }
