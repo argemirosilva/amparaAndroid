@@ -208,6 +208,21 @@ public class AudioUploader {
             addFormField(output, boundary, "longitude", String.valueOf(longitude));
         }
         
+        // Add timezone
+        try {
+            java.util.TimeZone tz = java.util.TimeZone.getDefault();
+            String timezone = tz.getID();
+            int offsetMillis = tz.getRawOffset();
+            int timezone_offset_minutes = offsetMillis / (1000 * 60);
+            
+            addFormField(output, boundary, "timezone", timezone);
+            addFormField(output, boundary, "timezone_offset_minutes", String.valueOf(timezone_offset_minutes));
+            
+            Log.d(TAG, "[TZ] Attached to segment upload: " + timezone + ", offset: " + timezone_offset_minutes);
+        } catch (Exception e) {
+            Log.w(TAG, "Error adding timezone to segment upload", e);
+        }
+        
         // Add audio file
         addFileField(output, boundary, "audio", audioFile);
         
@@ -293,6 +308,21 @@ public class AudioUploader {
                 payload.put("session_id", sessionId);
                 payload.put("origem_gravacao", origemGravacao);
                 
+                // Add timezone
+                try {
+                    java.util.TimeZone tz = java.util.TimeZone.getDefault();
+                    String timezone = tz.getID();
+                    int offsetMillis = tz.getRawOffset();
+                    int timezone_offset_minutes = offsetMillis / (1000 * 60);
+                    
+                    payload.put("timezone", timezone);
+                    payload.put("timezone_offset_minutes", timezone_offset_minutes);
+                    
+                    Log.d(TAG, "[TZ] Attached to iniciarGravacao: " + timezone + ", offset: " + timezone_offset_minutes);
+                } catch (Exception e) {
+                    Log.w(TAG, "Error adding timezone to iniciarGravacao", e);
+                }
+                
                 Log.d(TAG, "Payload: " + payload.toString());
                 
                 HttpURLConnection connection = (HttpURLConnection) new URL(API_URL).openConnection();
@@ -374,6 +404,21 @@ public class AudioUploader {
                 payload.put("session_id", sessionId);
                 payload.put("total_segments", totalSegments);
                 payload.put("motivo_parada", motivoParada);
+                
+                // Add timezone
+                try {
+                    java.util.TimeZone tz = java.util.TimeZone.getDefault();
+                    String timezone = tz.getID();
+                    int offsetMillis = tz.getRawOffset();
+                    int timezone_offset_minutes = offsetMillis / (1000 * 60);
+                    
+                    payload.put("timezone", timezone);
+                    payload.put("timezone_offset_minutes", timezone_offset_minutes);
+                    
+                    Log.d(TAG, "[TZ] Attached to finalizarGravacao: " + timezone + ", offset: " + timezone_offset_minutes);
+                } catch (Exception e) {
+                    Log.w(TAG, "Error adding timezone to finalizarGravacao", e);
+                }
                 
                 Log.d(TAG, "Payload: " + payload.toString());
                 
