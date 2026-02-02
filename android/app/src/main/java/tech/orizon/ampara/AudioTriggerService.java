@@ -266,6 +266,10 @@ public class AudioTriggerService extends Service {
                 // Stop simulated aggregations
                 stopRecordingAggregations();
                 
+                // Reset DiscussionDetector to IDLE state
+                detector.reset();
+                Log.i(TAG, "DiscussionDetector reset to IDLE after manual stop");
+                
                 // Update notification back to monitoring state
                 updateNotificationForMonitoring();
                 
