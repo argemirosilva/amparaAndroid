@@ -289,6 +289,7 @@ public class AudioUploader {
                 payload.put("session_token", sessionToken);
                 payload.put("device_id", deviceId);
                 payload.put("email_usuario", emailUsuario);
+                payload.put("status_gravacao", "iniciada");
                 payload.put("session_id", sessionId);
                 payload.put("origem_gravacao", origemGravacao);
                 
@@ -369,6 +370,7 @@ public class AudioUploader {
                 payload.put("session_token", sessionToken);
                 payload.put("device_id", deviceId);
                 payload.put("email_usuario", emailUsuario);
+                payload.put("status_gravacao", "finalizada");
                 payload.put("session_id", sessionId);
                 payload.put("total_segments", totalSegments);
                 payload.put("motivo_parada", motivoParada);
