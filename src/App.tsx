@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "./pages/Login";
 import { HomePage } from "./pages/Home";
+import Consent from "./pages/Consent";
+import { Preferences } from '@capacitor/preferences';
 import { initializeSession, isAuthenticated, reloadSession, clearSession } from '@/services/sessionService';
 import { initializeConfigService } from '@/services/configService';
 
@@ -34,12 +36,19 @@ const App = () => {
   // Start with null to indicate "loading" state
   const [authState, setAuthState] = useState<boolean | null>(null);
   const [servicesInitialized, setServicesInitialized] = useState(false);
+  const [consentGiven, setConsentGiven] = useState<boolean | null>(null);
 
   // Initialize session service and check auth
   useEffect(() => {
     const initAuth = async () => {
       try {
         console.log('[App] Initializing session service...');
+        
+        // Check if user has given consent
+        const { value: consentValue } = await Preferences.get({ key: 'user_consent_given' });
+        const hasConsent = consentValue === 'true';
+        console.log('[App] User consent status:', hasConsent);
+        setConsentGiven(hasConsent);
         
         // Initialize the session service (loads from native storage)
         await initializeSession();
@@ -196,6 +205,12 @@ const App = () => {
     );
   }
 
+  // Handler for consent acceptance
+  const handleConsentAccept = () => {
+    console.log('[App] User accepted consent');
+    setConsentGiven(true);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -203,7 +218,12 @@ const App = () => {
         <Sonner />
         <PermissionGuard>
           <BrowserRouter>
-            {!authState ? (
+            {!consentGiven ? (
+              <Routes>
+                <Route path="/" element={<Consent onAccept={handleConsentAccept} />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            ) : !authState ? (
             <Routes>
               <Route path="/" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
