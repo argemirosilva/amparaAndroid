@@ -38,22 +38,13 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({ children }) =>
 
       if (allGranted) {
         console.log('[PermissionGuard] ✅ All basic permissions granted');
-        
-        // Start KeepAlive service if not already running (Android only)
-        if (Capacitor.getPlatform() === 'android') {
-          try {
-            console.log('[PermissionGuard] 🚀 Starting KeepAlive service after permissions granted...');
-            const deviceId = getDeviceId();
-            await KeepAlive.start({ deviceId });
-            console.log('[PermissionGuard] ✅ KeepAlive service started successfully');
-          } catch (error) {
-            console.error('[PermissionGuard] ❌ Error starting KeepAlive service:', error);
-          }
-        }
+        console.log('[PermissionGuard] Releasing app to show login/home screen');
         
         setHasPermissions(true);
         // Permission flow ended (basic permissions OK)
         PermissionFlowState.setInFlow(false, 'basic permissions granted');
+        
+        // Note: KeepAlive service will be started by App.tsx after authentication
       } else {
         console.log('[PermissionGuard] ⚠️ Missing permissions, showing unified screen');
         setHasPermissions(false);
