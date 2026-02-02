@@ -92,8 +92,8 @@ public class KeepAliveService extends Service {
         // Android 14+ (API 34+) requer tipo de foreground service
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIFICATION_ID, notification, 
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-            Log.d(TAG, "Foreground service started with type DATA_SYNC");
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            Log.d(TAG, "Foreground service started with type LOCATION");
         } else {
             startForeground(NOTIFICATION_ID, notification);
             Log.d(TAG, "Foreground service started");
