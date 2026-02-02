@@ -3,6 +3,7 @@
 // ============================================
 
 import { getDeviceId } from './deviceId';
+import { getTimezoneInfo } from '@/utils/timezoneHelper';
 import { setSessionToken as saveSessionToken, setRefreshToken as saveRefreshToken, setUserData, clearSession, getSessionToken as getToken, getUserData } from '@/services/sessionService';
 import { refreshAccessToken } from '@/services/tokenRefreshService';
 import {
@@ -69,9 +70,14 @@ async function mobileApi<T>(
 ): Promise<ApiResponse<T>> {
   const { requiresAuth = true } = options;
   
+  // Capturar timezone
+  const timezoneInfo = getTimezoneInfo();
+  
   const body: MobileApiPayload = {
     action,
     device_id: getDeviceId(),
+    timezone: timezoneInfo.timezone,
+    timezone_offset_minutes: timezoneInfo.timezone_offset_minutes,
     ...payload,
   };
 

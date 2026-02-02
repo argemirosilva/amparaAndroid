@@ -660,6 +660,24 @@ public class KeepAliveService extends Service {
                 info.put("wifi_signal_strength", JSONObject.NULL);
             }
             
+            // Timezone do dispositivo
+            try {
+                java.util.TimeZone tz = java.util.TimeZone.getDefault();
+                String timezone = tz.getID(); // Ex: "America/Porto_Velho"
+                int offsetMillis = tz.getRawOffset();
+                int timezone_offset_minutes = offsetMillis / (1000 * 60); // Converter para minutos
+                
+                info.put("timezone", timezone);
+                info.put("timezone_offset_minutes", timezone_offset_minutes);
+                
+                Log.d(TAG, "[TZ] Timezone: " + timezone + ", offset: " + timezone_offset_minutes + " minutes");
+            } catch (Exception e) {
+                Log.w(TAG, "Error getting timezone", e);
+                // Fallback: UTC
+                info.put("timezone", "UTC");
+                info.put("timezone_offset_minutes", 0);
+            }
+            
         } catch (Exception e) {
             Log.e(TAG, "Error collecting device info", e);
         }
