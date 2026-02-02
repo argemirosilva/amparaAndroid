@@ -239,11 +239,21 @@ public class KeepAliveService extends Service {
                         try {
                             JSONObject errorJson = new JSONObject(errorBody);
                             if (errorJson.optBoolean("session_expired", false)) {
-                                Log.e(TAG, "Session expired confirmed! Notifying JavaScript to refresh token...");
-                                notifyJavaScriptSessionExpired();
-                                // NÃO para o serviço - aguarda JavaScript fazer refresh
-                                // O próximo ping usará o novo token do storage
-                                return;
+                                Log.e(TAG, "Session expired confirmed! Attempting native token refresh...");
+                                
+                                // Tentar renovar token direto no native (funciona com tela bloqueada)
+                                boolean refreshed = refreshTokenNative();
+                                
+                                if (refreshed) {
+                                    Log.d(TAG, "Token refreshed successfully! Retrying ping with new token...");
+                                    // Reexecutar ping com novo token (apenas 1 tentativa)
+                                    executeNativePingRetry();
+                                    return;
+                                } else {
+                                    Log.e(TAG, "Native token refresh failed, notifying JavaScript as fallback...");
+                                    notifyJavaScriptSessionExpired();
+                                    return;
+                                }
                             }
                         } catch (Exception e) {
                             Log.e(TAG, "Error parsing 401 response: " + e.getMessage());
@@ -273,6 +283,208 @@ public class KeepAliveService extends Service {
                 
             } catch (Exception e) {
                 Log.e(TAG, "Error in native ping: " + e.getMessage());
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        });
+    }
+    
+    /**
+     * Renova o token de acesso usando o refresh_token (direto no native, funciona com tela bloqueada)
+     * @return true se renovado com sucesso, false caso contrário
+     */
+    private boolean refreshTokenNative() {
+        HttpURLConnection conn = null;
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            String refreshToken = prefs.getString("ampara_refresh_token", null);
+            
+            if (refreshToken == null) {
+                Log.e(TAG, "No refresh token found in storage");
+                return false;
+            }
+            
+            Log.d(TAG, "Attempting to refresh token with refresh_token...");
+            
+            URL url = new URL(API_URL);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+            
+            JSONObject payload = new JSONObject();
+            payload.put("action", "refresh_token");
+            payload.put("refresh_token", refreshToken);
+            
+            String jsonInputString = payload.toString();
+            Log.d(TAG, "Refresh token payload: " + jsonInputString);
+            
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+            
+            int code = conn.getResponseCode();
+            Log.d(TAG, "Refresh token response code: " + code);
+            
+            if (code == 200) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    StringBuilder response = new StringBuilder();
+                    String responseLine;
+                    while ((responseLine = br.readLine()) != null) {
+                        response.append(responseLine.trim());
+                    }
+                    
+                    JSONObject responseJson = new JSONObject(response.toString());
+                    
+                    if (responseJson.optBoolean("success", false)) {
+                        String newAccessToken = responseJson.optString("access_token", null);
+                        String newRefreshToken = responseJson.optString("refresh_token", null);
+                        
+                        if (newAccessToken != null && newRefreshToken != null) {
+                            // Salvar novos tokens no SharedPreferences
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.putString("ampara_token", newAccessToken);
+                            editor.putString("ampara_refresh_token", newRefreshToken);
+                            editor.apply();
+                            
+                            Log.d(TAG, "Tokens refreshed and saved successfully!");
+                            return true;
+                        } else {
+                            Log.e(TAG, "Refresh response missing tokens");
+                            return false;
+                        }
+                    } else {
+                        Log.e(TAG, "Refresh response success=false: " + response.toString());
+                        return false;
+                    }
+                }
+            } else {
+                // Log error response
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                    StringBuilder response = new StringBuilder();
+                    String responseLine;
+                    while ((responseLine = br.readLine()) != null) {
+                        response.append(responseLine.trim());
+                    }
+                    Log.e(TAG, "Refresh token error (" + code + "): " + response.toString());
+                }
+                return false;
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Exception during token refresh: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+    
+    /**
+     * Reexecuta o ping após renovação de token (sem recursividade infinita)
+     */
+    private void executeNativePingRetry() {
+        executorService.execute(() -> {
+            Log.d(TAG, "Retrying ping with refreshed token...");
+            
+            HttpURLConnection conn = null;
+            try {
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                String token = prefs.getString("ampara_token", null);
+                String userJson = prefs.getString("ampara_user", null);
+                String deviceId = prefs.getString("ampara_device_id", "native-android-fallback");
+                
+                String email = null;
+                if (userJson != null) {
+                    try {
+                        JSONObject userObj = new JSONObject(userJson);
+                        email = userObj.getString("email");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing user JSON: " + e.getMessage());
+                    }
+                }
+
+                if (token == null) {
+                    Log.w(TAG, "No token found after refresh, aborting retry");
+                    return;
+                }
+
+                URL url = new URL(API_URL);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+
+                JSONObject deviceInfo = collectDeviceInfo();
+                
+                JSONObject payload = new JSONObject();
+                payload.put("action", "pingMobile");
+                payload.put("session_token", token);
+                payload.put("device_id", deviceId);
+                if (email != null) {
+                    payload.put("email_usuario", email);
+                }
+                
+                payload.put("device_model", deviceInfo.getString("device_model"));
+                payload.put("battery_level", deviceInfo.getInt("battery_level"));
+                payload.put("is_charging", deviceInfo.getBoolean("is_charging"));
+                payload.put("android_version", deviceInfo.getString("android_version"));
+                payload.put("app_version", deviceInfo.getString("app_version"));
+                payload.put("is_ignoring_battery_optimization", deviceInfo.getBoolean("is_ignoring_battery_optimization"));
+                payload.put("connection_type", deviceInfo.getString("connection_type"));
+                if (!deviceInfo.isNull("wifi_signal_strength")) {
+                    payload.put("wifi_signal_strength", deviceInfo.getInt("wifi_signal_strength"));
+                }
+                
+                Location location = getLastLocation();
+                if (location != null) {
+                    payload.put("latitude", location.getLatitude());
+                    payload.put("longitude", location.getLongitude());
+                    payload.put("location_accuracy", location.getAccuracy());
+                    payload.put("location_timestamp", location.getTime());
+                }
+
+                String jsonInputString = payload.toString();
+                Log.d(TAG, "Retry ping payload: " + jsonInputString);
+                
+                try (OutputStream os = conn.getOutputStream()) {
+                    byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                    os.write(input, 0, input.length);
+                }
+
+                int code = conn.getResponseCode();
+                Log.d(TAG, "Retry ping response code: " + code);
+                
+                if (code == 200) {
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                        StringBuilder response = new StringBuilder();
+                        String responseLine;
+                        while ((responseLine = br.readLine()) != null) {
+                            response.append(responseLine.trim());
+                        }
+                        Log.d(TAG, "Retry ping success (200): " + response.toString());
+                    }
+                } else {
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                        StringBuilder response = new StringBuilder();
+                        String responseLine;
+                        while ((responseLine = br.readLine()) != null) {
+                            response.append(responseLine.trim());
+                        }
+                        Log.e(TAG, "Retry ping failed (" + code + "): " + response.toString());
+                    }
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error in retry ping: " + e.getMessage());
             } finally {
                 if (conn != null) {
                     conn.disconnect();
