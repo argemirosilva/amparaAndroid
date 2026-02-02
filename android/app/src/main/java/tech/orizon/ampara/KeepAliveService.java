@@ -314,8 +314,8 @@ public class KeepAliveService extends Service {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(15000);
+            conn.setConnectTimeout(60000); // 60 segundos para conectar
+            conn.setReadTimeout(60000); // 60 segundos para ler resposta
             
             JSONObject payload = new JSONObject();
             payload.put("action", "refresh_token");
