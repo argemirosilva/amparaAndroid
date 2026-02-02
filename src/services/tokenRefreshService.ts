@@ -34,8 +34,12 @@ export async function refreshAccessToken(): Promise<boolean> {
         return false;
       }
 
+      // Get device_id from storage
+      const { getDeviceId } = await import('./sessionService');
+      const deviceId = getDeviceId();
+      
       // Call the backend refresh endpoint
-      const response = await fetch(`${API_BASE_URL}/auth-api`, {
+      const response = await fetch(`${API_BASE_URL}/mobile-api`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,6 +47,7 @@ export async function refreshAccessToken(): Promise<boolean> {
         body: JSON.stringify({
           action: 'refresh_token',
           refresh_token: refreshToken,
+          device_id: deviceId || 'web-fallback',
         }),
       });
 

@@ -300,6 +300,7 @@ public class KeepAliveService extends Service {
         try {
             SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             String refreshToken = prefs.getString("ampara_refresh_token", null);
+            String deviceId = prefs.getString("ampara_device_id", "native-android-fallback");
             
             if (refreshToken == null) {
                 Log.e(TAG, "No refresh token found in storage");
@@ -319,6 +320,7 @@ public class KeepAliveService extends Service {
             JSONObject payload = new JSONObject();
             payload.put("action", "refresh_token");
             payload.put("refresh_token", refreshToken);
+            payload.put("device_id", deviceId);
             
             String jsonInputString = payload.toString();
             Log.d(TAG, "Refresh token payload: " + jsonInputString);
