@@ -29,6 +29,7 @@ import { PermissionGuard } from "./components/PermissionGuard";
 import { Capacitor } from '@capacitor/core';
 import KeepAlive from '@/plugins/keepAlive';
 import { getDeviceId } from '@/lib/deviceId';
+import { checkPermissions } from '@/services/permissionsService';
 
 const queryClient = new QueryClient();
 
@@ -81,10 +82,22 @@ const App = () => {
           // Start KeepAlive service if not already running (Android only)
           if (Capacitor.getPlatform() === 'android') {
             try {
-              console.log('[App] 🚀 Starting KeepAlive service...');
-              const deviceId = getDeviceId();
-              await KeepAlive.start({ deviceId });
-              console.log('[App] ✅ KeepAlive service started successfully');
+              // Check all required permissions before starting service
+              console.log('[App] 🔍 Checking permissions before starting KeepAlive...');
+              const permissions = await checkPermissions();
+              console.log('[App] Permission status:', permissions);
+              
+              // Only start KeepAlive if location permission is granted
+              // (KeepAliveService uses FOREGROUND_SERVICE_TYPE_LOCATION)
+              if (permissions.location === 'granted') {
+                console.log('[App] 🚀 Starting KeepAlive service...');
+                const deviceId = getDeviceId();
+                await KeepAlive.start({ deviceId });
+                console.log('[App] ✅ KeepAlive service started successfully');
+              } else {
+                console.warn('[App] ⚠️ Location permission not granted, skipping KeepAlive start');
+                console.warn('[App] KeepAlive will be started after user grants permissions');
+              }
             } catch (error) {
               console.error('[App] ❌ Error starting KeepAlive service:', error);
             }
