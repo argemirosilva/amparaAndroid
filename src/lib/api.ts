@@ -23,8 +23,10 @@ import {
 } from './types';
 
 // API Base URL - single endpoint with action field
-const API_URL = import.meta.env.VITE_API_BASE_URL || 
-  'https://ilikiajeduezvvanjejz.supabase.co/functions/v1/mobile-api';
+const API_URL = import.meta.env.VITE_API_BASE_URL ||
+  'https://uogenwcycqykfsuongrl.supabase.co/functions/v1/mobile-api';
+
+const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZ2Vud2N5Y3F5a2ZzdW9uZ3JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4Mjg2NjIsImV4cCI6MjA4NjQwNDY2Mn0.hncTs6DDS-sbb8sT_QBOBf1mTcTu0e_Pc5yXo4tHZwE';
 
 // ============================================
 // Session Token Management
@@ -69,10 +71,10 @@ async function mobileApi<T>(
   options: { requiresAuth?: boolean } = {}
 ): Promise<ApiResponse<T>> {
   const { requiresAuth = true } = options;
-  
+
   // Capturar timezone
   const timezoneInfo = getTimezoneInfo();
-  
+
   const body: MobileApiPayload = {
     action,
     device_id: getDeviceId(),
@@ -85,13 +87,13 @@ async function mobileApi<T>(
   if (requiresAuth) {
     const token = getSessionToken();
     const email = getUserEmail();
-    
+
     const tokenPreview = token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'null';
     console.log('[API] Token check for', action, '- Has token:', !!token, '| Token preview:', tokenPreview, '| In background:', document.visibilityState === 'hidden');
-    
+
     if (!token) {
-      console.error('[API] No token available for', action);
-      return { data: null, error: 'Sessão expirada. Faça login novamente.' };
+      console.error(`[API] 🛑 SHUTDOWN: No token available for ${action}. Fetch will NOT be attempted.`);
+      return { data: null, error: 'Senha ou Usuário inválido' };
     }
     body.session_token = token;
     if (email) {
@@ -100,63 +102,70 @@ async function mobileApi<T>(
   }
 
   try {
+    console.log(`[API] 🚀 SENDING REQUEST TO: ${API_URL}`);
+    console.log(`[API] 📦 BODY:`, JSON.stringify(body, null, 2));
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'apikey': API_KEY,
       },
       body: JSON.stringify(body),
     });
 
-    // Handle 401 Unauthorized - try to refresh token
-    if (response.status === 401 && requiresAuth) {
-      console.log('[API] Received 401, attempting token refresh...');
-      
+    console.log(`[API] 📡 RESPONSE STATUS: ${response.status} ${response.statusText}`);
+
+    // Handle 401 or 403 Unauthorized - try to refresh token
+    if ((response.status === 401 || response.status === 403) && requiresAuth) {
+      console.log(`[API] Received ${response.status}, attempting token refresh...`);
+
       const refreshed = await refreshAccessToken();
-      
+
       if (refreshed) {
         console.log('[API] Token refreshed, retrying request...');
-        
+
         // Retry the request with the new token
         const newToken = getSessionToken();
         if (newToken) {
           body.session_token = newToken;
-          
+
           const retryResponse = await fetch(API_URL, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'apikey': API_KEY,
             },
             body: JSON.stringify(body),
           });
-          
+
           if (!retryResponse.ok) {
             const errorData = await retryResponse.json().catch(() => ({}));
-            return { 
-              data: null, 
-              error: errorData.error || errorData.message || `Erro ${retryResponse.status}` 
+            return {
+              data: null,
+              error: errorData.error || errorData.message || `Erro ${retryResponse.status}`
             };
           }
-          
+
           const retryData = await retryResponse.json();
           return { data: retryData, error: null };
         }
       }
-      
+
       // If refresh failed, return session expired error
       console.error('[API] Token refresh failed, session expired');
-      return { 
-        data: null, 
+      return {
+        data: null,
         error: 'Sessão expirada. Faça login novamente.',
-        session_expired: true 
+        session_expired: true
       } as any;
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return { 
-        data: null, 
-        error: errorData.error || errorData.message || `Erro ${response.status}` 
+      return {
+        data: null,
+        error: errorData.error || errorData.message || `Erro ${response.status}`
       };
     }
 
@@ -174,62 +183,55 @@ async function mobileApi<T>(
 
 /**
  * Login with email and password
- * Supports coercion password (silent alert)
  */
 export async function loginCustomizado(
   email: string,
   senha: string
 ): Promise<ApiResponse<LoginResponse> & { isCoercion?: boolean }> {
+  const deviceId = await getDeviceId();
+  const timezone = getTimezoneInfo();
+
   const result = await mobileApi<LoginResponse>(
     'loginCustomizado',
-    { email, senha },
+    { email, senha, device_id: deviceId, ...timezone },
     { requiresAuth: false }
   );
 
   if (result.data) {
-    // Debug: Log the entire response structure
-    console.log('[API] Login response keys:', Object.keys(result.data));
-    console.log('[API] Has access_token:', !!result.data.access_token);
-    console.log('[API] Has refresh_token:', !!result.data.refresh_token);
-    console.log('[API] Has session:', !!result.data.session);
-    
-    // Support both old and new response formats
     const accessToken = result.data.access_token || result.data.session?.token;
     const refreshToken = result.data.refresh_token || result.data.session?.refresh_token;
     const userData = result.data.user || result.data.usuario;
-    
-    console.log('[API] Extracted accessToken:', !!accessToken);
-    console.log('[API] Extracted refreshToken:', !!refreshToken);
-    console.log('[API] Extracted userData:', !!userData);
-    
-    // Store session token using session service
-    if (accessToken) {
-      await setSessionToken(accessToken);
-      console.log('[API] Access token stored successfully');
-    } else {
-      console.error('[API] No access token found in response!');
-    }
-    
-    // Store refresh token if provided by backend
-    if (refreshToken) {
-      await saveRefreshToken(refreshToken);
-      console.log('[API] Refresh token stored successfully');
-    } else {
-      console.error('[API] No refresh token found in response!');
-    }
-    
-    // Store user data
-    if (userData) {
-      await setUserData(JSON.stringify(userData));
-    }
-    
-    // Store user config in localStorage (not critical for auth)
-    localStorage.setItem(
-      STORAGE_KEYS.USER_CONFIG,
-      JSON.stringify(result.data.configuracoes)
-    );
 
-    // Check for coercion (silent - no visual feedback)
+    if (accessToken) await setSessionToken(accessToken);
+    if (refreshToken) await saveRefreshToken(refreshToken);
+    if (userData) await setUserData(JSON.stringify(userData));
+
+    const data = result.data as any;
+    const monitoramento = data.monitoramento;
+
+    // Seguindo rigorosamente o payload do servidor
+    const configResponse: ConfigSyncResponse = {
+      configuracoes: {
+        gatilhos: {
+          voz: data.gravacao_ativa_config ?? true,
+          manual: true
+        }
+      },
+      dentro_horario: data.dentro_horario ?? false,
+      gravacao_ativa: data.gravacao_ativa ?? false,
+      periodo_atual_index: data.periodo_atual_index ?? null,
+      gravacao_inicio: data.gravacao_inicio ?? null,
+      gravacao_fim: data.gravacao_fim ?? null,
+      periodos_hoje: data.periodos_hoje ?? [],
+      gravacao_dias: data.dias_gravacao ?? [],
+      audio_trigger_config: data.audio_trigger_config ?? null,
+      periodos_semana: monitoramento?.periodos_semana ?? null,
+      ultima_atualizacao: new Date().toISOString()
+    };
+
+    localStorage.setItem(STORAGE_KEYS.USER_CONFIG, JSON.stringify(configResponse));
+    console.log('[API] Login: Full config mapped and cached');
+
     if (result.data.coacao_detectada) {
       return { ...result, isCoercion: true };
     }
@@ -243,11 +245,21 @@ export async function loginCustomizado(
  */
 export async function logoutMobile(): Promise<ApiResponse<{ success: boolean }>> {
   const result = await mobileApi<{ success: boolean }>('logoutMobile');
-  
-  // Clear local session even if API fails
-  await clearSessionToken();
-  localStorage.removeItem(STORAGE_KEYS.USER_CONFIG);
-  
+
+  // Verificar erro de pânico ativo (403 PANIC_ACTIVE_CANNOT_LOGOUT)
+  if (result.error && (result.error.includes('PANIC_ACTIVE') || result.error.includes('pânico ativo'))) {
+    return {
+      data: null,
+      error: 'Não é possível sair durante um pânico ativo. Desative o pânico primeiro.'
+    };
+  }
+
+  // Limpar sessão local apenas se não houve erro de pânico
+  if (!result.error || !result.error.includes('PANIC')) {
+    await clearSessionToken();
+    localStorage.removeItem(STORAGE_KEYS.USER_CONFIG);
+  }
+
   return result;
 }
 
@@ -291,12 +303,22 @@ export async function cancelarPanicoMobile(
  */
 export async function enviarLocalizacaoGPS(
   latitude: number,
-  longitude: number
+  longitude: number,
+  extras?: {
+    speed?: number | null;
+    heading?: number | null;
+    precisao_metros?: number | null;
+    bateria_percentual?: number | null;
+  }
 ): Promise<ApiResponse<LocationUpdateResponse>> {
   const result = await mobileApi<LocationUpdateResponse>('enviarLocalizacaoGPS', {
     latitude,
     longitude,
-    timestamp: new Date().toISOString(),
+    speed: extras?.speed ?? null,
+    heading: extras?.heading ?? null,
+    precisao_metros: extras?.precisao_metros ?? null,
+    bateria_percentual: extras?.bateria_percentual ?? null,
+    timestamp_gps: new Date().toISOString(),
   });
 
   // Cache last known location
@@ -343,19 +365,28 @@ export async function receberAudioMobile(
   formData.append('duration_seconds', durationSeconds.toString());
   formData.append('origem_gravacao', origemGravacao);
   formData.append('timestamp', new Date().toISOString());
+
+  // Adicionar timezone (Item 10 da API update)
+  const timezoneInfo = getTimezoneInfo();
+  formData.append('timezone', timezoneInfo.timezone);
+  formData.append('timezone_offset_minutes', timezoneInfo.timezone_offset_minutes.toString());
+
   formData.append('audio', audioBlob, `segment_${segmentIndex}.wav`);
 
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
+      headers: {
+        'apikey': API_KEY,
+      },
       body: formData,
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return { 
-        data: null, 
-        error: errorData.error || 'Falha no envio do áudio' 
+      return {
+        data: null,
+        error: errorData.error || 'Falha no envio do áudio'
       };
     }
 
@@ -375,7 +406,8 @@ export async function reportarStatusGravacao(
   origem?: OrigemGravacao,
   alertaId?: string,
   protocolo?: string,
-  segmentoIdx?: number
+  segmentoIdx?: number,
+  motivoParada?: string
 ): Promise<ApiResponse<{ success: boolean }>> {
   const payload: any = {
     status_gravacao: status,
@@ -386,18 +418,23 @@ export async function reportarStatusGravacao(
   if (origem) {
     payload.origem_gravacao = origem;
   }
-  
+
   if (alertaId) {
     payload.device_id = await getDeviceId();
     payload.alerta_id = alertaId;
   }
-  
+
   if (protocolo) {
     payload.protocolo = protocolo;
   }
-  
+
   if (segmentoIdx !== undefined) {
     payload.segmento_idx = segmentoIdx;
+  }
+
+  // Item 7 da API update: novo campo motivo_parada
+  if (motivoParada) {
+    payload.motivo_parada = motivoParada;
   }
 
   return mobileApi<{ success: boolean }>('reportarStatusGravacao', payload);
@@ -411,50 +448,61 @@ export async function reportarStatusGravacao(
  * Sync user configuration
  */
 export async function syncConfigMobile(): Promise<ApiResponse<ConfigSyncResponse>> {
-  console.log('[API] Calling syncConfigMobile...');
-  
-  const result = await mobileApi<any>('syncConfigMobile');
-  
-  console.log('[API] syncConfigMobile raw response:', JSON.stringify(result, null, 2));
-  
-  if (result.error || !result.data) {
-    console.error('[API] syncConfigMobile error:', result.error);
-    return { data: null, error: result.error || 'Failed to sync config' };
+  console.log('[API] 🔄 Starting syncConfigMobile flow...');
+
+  // Tentar ação padrão
+  let result = await mobileApi<any>('syncConfigMobile');
+
+  // Tentar ação alternativa se a primeira falhar ou para garantir redundância (Snake Case)
+  if (result.error) {
+    console.warn('[API] syncConfigMobile (CamelCase) failed, trying sync_config_mobile (snake_case)...');
+    const fallbackResult = await mobileApi<any>('sync_config_mobile');
+    if (!fallbackResult.error) {
+      result = fallbackResult;
+    }
   }
-  
-  // Backend now returns data directly, not wrapped in 'configuracoes'
-  // Transform the flat response into the expected ConfigSyncResponse format
+
+  if (result.error) {
+    console.error('[API] ❌ All sync attempts failed:', result.error);
+    return { data: null, error: result.error || 'Failed to sync config' };
+  } else {
+    console.log('[API] ✅ syncConfigMobile success: Data received');
+  }
+
+  const data = result.data;
+  const monitoramento = data.monitoramento;
+
+  // Seguindo rigorosamente o payload do servidor
   const configResponse: ConfigSyncResponse = {
     configuracoes: {
-      contatos_suporte: result.data.contatos_rede_apoio || [],
       gatilhos: {
-        voz: result.data.gravacao_ativa_config ?? true,
+        voz: data.gravacao_ativa_config ?? true,
         manual: true
       }
     },
-    dentro_horario: result.data.dentro_horario ?? false,
-    gravacao_ativa: result.data.gravacao_ativa ?? false,
-    periodo_atual_index: result.data.periodo_atual_index ?? null,
-    gravacao_inicio: result.data.gravacao_inicio ?? null,
-    gravacao_fim: result.data.gravacao_fim ?? null,
-    periodos_hoje: result.data.periodos_hoje ?? [],
-    gravacao_dias: result.data.gravacao_dias ?? [],
-    audio_trigger_config: result.data.audio_trigger_config ?? null,
-    periodos_semana: result.data.periodos_semana ?? null,
+    dentro_horario: data.dentro_horario ?? false,
+    gravacao_ativa: data.gravacao_ativa ?? false,
+    periodo_atual_index: data.periodo_atual_index ?? null,
+    gravacao_inicio: data.gravacao_inicio ?? null,
+    gravacao_fim: data.gravacao_fim ?? null,
+    periodos_hoje: data.periodos_hoje ?? [],
+    gravacao_dias: data.dias_gravacao ?? [], // O servidor envia 'dias_gravacao'
+    audio_trigger_config: data.audio_trigger_config ?? null,
+    periodos_semana: monitoramento?.periodos_semana ?? null,
     ultima_atualizacao: new Date().toISOString()
   };
-  
-  // Cache the transformed config
+
+  // Salvar no localStorage para persistência entre recarregamentos
   localStorage.setItem(
     STORAGE_KEYS.USER_CONFIG,
-    JSON.stringify(configResponse.configuracoes)
+    JSON.stringify(configResponse)
   );
-  
-  console.log('[API] syncConfigMobile processed successfully', {
-    dentro_horario: configResponse.dentro_horario,
-    periodos_hoje_count: configResponse.periodos_hoje.length
+
+  console.log('[API] syncConfigMobile processed correctly:', {
+    has_weekly: !!configResponse.periodos_semana,
+    periodos_hoje: configResponse.periodos_hoje?.length
   });
-  
+
   return { data: configResponse, error: null };
 }
 
@@ -466,16 +514,53 @@ export async function pingMobile(): Promise<ApiResponse<PingResponse>> {
     // Import device info plugin dynamically to avoid circular dependencies
     const DeviceInfoExtended = (await import('@/plugins/deviceInfo')).default;
     const deviceInfo = await DeviceInfoExtended.getExtendedInfo();
-    
+
+    // Obter localização GPS para incluir no ping
+    let locationData: Record<string, unknown> = {};
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { Geolocation } = await import('@capacitor/geolocation');
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,   // Usar GPS real, não WiFi/rede
+          timeout: 10000,             // 10s para obter fix GPS
+          maximumAge: 30000,          // Aceitar cache de até 30 segundos
+        });
+        locationData = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          location_accuracy: position.coords.accuracy,
+          location_timestamp: position.timestamp,
+        };
+        console.log('[API] Ping location obtained:', locationData.latitude, locationData.longitude);
+      }
+    } catch (locError) {
+      console.warn('[API] Failed to get GPS for ping, trying cached location:', locError);
+      // Fallback: usar última localização conhecida do cache
+      const cached = getLastKnownLocation();
+      if (cached) {
+        locationData = {
+          latitude: cached.latitude,
+          longitude: cached.longitude,
+          location_accuracy: null,
+          location_timestamp: new Date(cached.timestamp).getTime(),
+        };
+        console.log('[API] Ping using cached location:', cached.latitude, cached.longitude);
+      }
+    }
+
     return mobileApi<PingResponse>('pingMobile', {
       device_model: deviceInfo.deviceModel,
-      battery_level: deviceInfo.batteryLevel,
-      is_charging: deviceInfo.isCharging,
+      battery_level: deviceInfo.batteryLevel, // Mantendo por compatibilidade
+      bateria_percentual: deviceInfo.batteryLevel, // Novo padrão
+      is_charging: deviceInfo.isCharging, // Mantendo por compatibilidade
+      bateria_carregando: deviceInfo.isCharging, // Novo padrão
       android_version: deviceInfo.androidVersion,
       app_version: deviceInfo.appVersion,
       is_ignoring_battery_optimization: deviceInfo.isIgnoringBatteryOptimization,
       connection_type: deviceInfo.connectionType,
       wifi_signal_strength: deviceInfo.wifiSignalStrength,
+      ...locationData,
     });
   } catch (error) {
     console.warn('[API] Failed to get device info for ping, sending without it:', error);

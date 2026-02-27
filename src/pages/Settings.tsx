@@ -38,21 +38,36 @@ export default function SettingsPage() {
   const [modifiedSchedule, setModifiedSchedule] = useState<WeekSchedule>({});
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
-  // Load initial schedule from ConfigService
+  // Load initial schedule from ConfigService (force sync from server)
   useEffect(() => {
     if (isAuthenticated) {
-      try {
-        const config = getCurrentConfig();
-        if (config?.periodos_semana) {
-          console.log('[Settings] Loading existing schedule from ConfigService:', JSON.stringify(config.periodos_semana, null, 2));
-          setInitialSchedule(config.periodos_semana as WeekSchedule);
-        } else {
-          console.log('[Settings] No periodos_semana found in ConfigService');
-          console.log('[Settings] Full config:', JSON.stringify(config, null, 2));
+      const loadSchedule = async () => {
+        try {
+          // Forçar sincronização com o servidor ao entrar nas configurações
+          console.log('[Settings] Force syncing config from server...');
+          const synced = await forceSyncConfig();
+
+          if (synced) {
+            console.log('[Settings] Config synced successfully from server');
+          } else {
+            console.warn('[Settings] Force sync failed, using cached config');
+          }
+
+          // Carregar config atualizada (do servidor ou cache)
+          const config = getCurrentConfig();
+          if (config?.periodos_semana) {
+            console.log('[Settings] Loading schedule:', JSON.stringify(config.periodos_semana, null, 2));
+            setInitialSchedule(config.periodos_semana as WeekSchedule);
+          } else {
+            console.log('[Settings] No periodos_semana found in config');
+            console.log('[Settings] Full config:', JSON.stringify(config, null, 2));
+          }
+        } catch (error) {
+          console.error('[Settings] Failed to load schedule:', error);
         }
-      } catch (error) {
-        console.error('[Settings] Failed to load schedule:', error);
-      }
+      };
+
+      loadSchedule();
     }
   }, [isAuthenticated]);
 
@@ -284,7 +299,7 @@ export default function SettingsPage() {
         // Partial success or full error
         const errorMessage = result.data?.message || 'Erro ao atualizar agenda';
         const errors = result.data?.errors || [];
-        
+
         // Show main message
         toast({
           title: errors.length > 0 ? 'Atenção' : 'Erro',
@@ -370,7 +385,7 @@ export default function SettingsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto px-4 py-6 space-y-6">
-        
+
         {/* Change Password Section */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}

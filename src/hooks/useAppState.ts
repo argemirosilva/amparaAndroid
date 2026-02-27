@@ -12,10 +12,34 @@ export function useAppState() {
 
   // Sync pending uploads count
   useEffect(() => {
-    const pending = getPendingUploads();
-    if (pending.length !== state.pendingUploads) {
-      setState((prev) => ({ ...prev, pendingUploads: pending.length }));
-    }
+    const updateCount = async () => {
+      const localCount = getPendingUploads().length;
+      let nativeCount = 0;
+
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { AudioTriggerNative } = await import('@/plugins/audioTriggerNative');
+        try {
+          const result = await AudioTriggerNative.getPendingRecordings();
+          if (result.success) {
+            nativeCount = result.recordings.length;
+          }
+        } catch (e) {
+          console.error('Failed to fetch native count:', e);
+        }
+      }
+
+      const total = localCount + nativeCount;
+      if (total !== state.pendingUploads) {
+        setState((prev) => ({ ...prev, pendingUploads: total }));
+      }
+    };
+
+    updateCount();
+
+    // Also set up an interval to refresh count every 30s as background tasks might finish
+    const interval = setInterval(updateCount, 30000);
+    return () => clearInterval(interval);
   }, [state.pendingUploads]);
 
   const setStatus = useCallback((status: AppStatus) => {
@@ -47,9 +71,22 @@ export function useAppState() {
     });
   }, []);
 
-  const refreshPendingCount = useCallback(() => {
-    const pending = getPendingUploads();
-    setState((prev) => ({ ...prev, pendingUploads: pending.length }));
+  const refreshPendingCount = useCallback(async () => {
+    const localCount = getPendingUploads().length;
+    let nativeCount = 0;
+
+    const { Capacitor } = await import('@capacitor/core');
+    if (Capacitor.isNativePlatform()) {
+      const { AudioTriggerNative } = await import('@/plugins/audioTriggerNative');
+      try {
+        const result = await AudioTriggerNative.getPendingRecordings();
+        if (result.success) {
+          nativeCount = result.recordings.length;
+        }
+      } catch (e) { }
+    }
+
+    setState((prev) => ({ ...prev, pendingUploads: localCount + nativeCount }));
   }, []);
 
   return {

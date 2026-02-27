@@ -19,55 +19,114 @@ import {
 } from '@/lib/appState';
 import { useAppState } from '@/hooks/useAppState';
 import { useToast } from '@/hooks/use-toast';
+import { AudioTriggerNative, PendingNativeRecording } from '@/plugins/audioTriggerNative';
+import { Capacitor } from '@capacitor/core';
+
+type UnifiedUpload =
+  | (PendingUpload & { source: 'local' })
+  | (PendingNativeRecording & { id: string; source: 'native'; status: 'pending' | 'uploading' | 'failed'; retryCount: number });
 
 export function PendingPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const appState = useAppState();
-  const [uploads, setUploads] = React.useState<PendingUpload[]>([]);
+  const [uploads, setUploads] = React.useState<UnifiedUpload[]>([]);
   const [retrying, setRetrying] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    setUploads(getPendingUploads());
-  }, []);
+  const loadAllPendencies = async () => {
+    const localItems = getPendingUploads().map(u => ({ ...u, source: 'local' as const }));
+    let nativeItems: UnifiedUpload[] = [];
 
-  const handleRetry = async (upload: PendingUpload) => {
-    setRetrying(upload.id);
-    updatePendingUpload(upload.id, { status: 'uploading' });
-    setUploads(getPendingUploads());
-
-    // Simulate upload attempt
-    await new Promise((r) => setTimeout(r, 2000));
-
-    // Random success/failure for demo
-    const success = Math.random() > 0.3;
-
-    if (success) {
-      removePendingUpload(upload.id);
-      toast({
-        title: 'Arquivo enviado',
-        description: upload.fileName,
-      });
-    } else {
-      updatePendingUpload(upload.id, {
-        status: 'failed',
-        retryCount: upload.retryCount + 1,
-      });
-      toast({
-        title: 'Falha no envio',
-        description: 'Tente novamente mais tarde.',
-        variant: 'destructive',
-      });
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const result = await AudioTriggerNative.getPendingRecordings();
+        if (result.success) {
+          nativeItems = result.recordings.map(r => ({
+            ...r,
+            id: r.filePath, // Use filePath as unique ID for native items
+            source: 'native' as const,
+            status: 'pending' as const,
+            retryCount: 0
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch native pendencies:', error);
+      }
     }
 
-    setUploads(getPendingUploads());
+    setUploads([...localItems, ...nativeItems]);
+  };
+
+  React.useEffect(() => {
+    loadAllPendencies();
+  }, []);
+
+  const handleRetry = async (upload: UnifiedUpload) => {
+    setRetrying(upload.id);
+
+    if (upload.source === 'local') {
+      updatePendingUpload(upload.id, { status: 'uploading' });
+      // Use setUploads with a functional update to avoid stale data
+      setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'uploading' } : u));
+
+      // Simulate upload attempt for local items (which are usually user-uploaded files)
+      await new Promise((r) => setTimeout(r, 2000));
+      const success = Math.random() > 0.3; // Placeholder for real upload logic if needed
+
+      if (success) {
+        removePendingUpload(upload.id);
+        toast({ title: 'Arquivo enviado', description: upload.fileName });
+      } else {
+        updatePendingUpload(upload.id, {
+          status: 'failed',
+          retryCount: upload.retryCount + 1,
+        });
+        toast({ title: 'Falha no envio', description: 'Tente novamente mais tarde.', variant: 'destructive' });
+      }
+    } else {
+      // Native retry
+      setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'uploading' } : u));
+
+      try {
+        const result = await AudioTriggerNative.uploadRecording({
+          filePath: upload.filePath,
+          segmentIndex: upload.segmentIndex,
+          sessionId: upload.sessionId,
+          origemGravacao: 'rec_background_offline'
+        });
+
+        if (result.success) {
+          toast({ title: 'Envio iniciado', description: 'O envio nativo foi iniciado em segundo plano.' });
+          // Native recordings will be auto-deleted on success, so we just wait for a refresh or optimistic remove
+          // For now, let's just refresh after a bit
+          setTimeout(loadAllPendencies, 5000);
+        } else {
+          toast({ title: 'Falha no comando', variant: 'destructive' });
+          setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'failed' } : u));
+        }
+      } catch (error) {
+        toast({ title: 'Erro nativo', variant: 'destructive' });
+        setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'failed' } : u));
+      }
+    }
+
+    await loadAllPendencies();
     appState.refreshPendingCount();
     setRetrying(null);
   };
 
-  const handleDelete = (upload: PendingUpload) => {
-    removePendingUpload(upload.id);
-    setUploads(getPendingUploads());
+  const handleDelete = async (upload: UnifiedUpload) => {
+    if (upload.source === 'local') {
+      removePendingUpload(upload.id);
+    } else {
+      try {
+        await AudioTriggerNative.deleteRecording({ filePath: upload.filePath });
+      } catch (error) {
+        console.error('Failed to delete native file:', error);
+      }
+    }
+
+    await loadAllPendencies();
     appState.refreshPendingCount();
     toast({
       title: 'Arquivo removido',
@@ -96,22 +155,22 @@ export function PendingPage() {
     const MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
     const elapsed = Date.now() - createdAt;
     const remaining = MAX_AGE_MS - elapsed;
-    
+
     if (remaining <= 0) return 'Expirando...';
-    
+
     const hours = Math.floor(remaining / (60 * 60 * 1000));
     const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-    
+
     if (hours >= 24) {
       const days = Math.floor(hours / 24);
       const remainingHours = hours % 24;
       return `Expira em ${days}d ${remainingHours}h`;
     }
-    
+
     if (hours > 0) {
       return `Expira em ${hours}h ${minutes}min`;
     }
-    
+
     return `Expira em ${minutes}min`;
   };
 
@@ -142,7 +201,7 @@ export function PendingPage() {
           </Button>
           <h1 className="text-lg font-semibold">Pendências</h1>
         </div>
-        
+
         {uploads.length > 0 && (
           <Button variant="outline" size="sm" onClick={handleRetryAll}>
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -156,7 +215,7 @@ export function PendingPage() {
         {/* Explanation card */}
         <div className="bg-muted/50 rounded-xl p-4 mb-4 border border-border">
           <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Pendências</strong> são arquivos que não puderam ser enviados por falta de conexão. 
+            <strong className="text-foreground">Pendências</strong> são arquivos que não puderam ser enviados por falta de conexão.
             Eles serão reenviados automaticamente quando houver internet disponível.
           </p>
           <p className="text-xs text-muted-foreground mt-2">
@@ -186,6 +245,12 @@ export function PendingPage() {
                     <div className="flex items-center gap-2 mb-1">
                       {getStatusIcon(upload.status)}
                       <p className="font-medium truncate">{upload.fileName}</p>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase ${upload.source === 'native'
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-muted text-muted-foreground'
+                        }`}>
+                        {upload.source === 'native' ? 'Automático' : 'Manual'}
+                      </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       <span>{formatSize(upload.fileSize)}</span>
@@ -201,7 +266,7 @@ export function PendingPage() {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground/70 mt-1">
-                      ⏱️ {formatTimeRemaining(upload.createdAt)}
+                      ⏱️ {formatTimeRemaining(upload.createdAt)} {upload.source === 'native' && '• 🔒 Salvo no dispositivo'}
                     </div>
                   </div>
 

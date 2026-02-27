@@ -1,9 +1,5 @@
-// ============================================
-// Device ID Management
-// ============================================
-// Generates and persists a unique device identifier
-
 import { STORAGE_KEYS, DeviceInfo } from './types';
+import { getDeviceId as getSessionDeviceId, setDeviceId as saveSessionDeviceId } from '@/services/sessionService';
 
 /**
  * Generate a UUID v4
@@ -18,29 +14,30 @@ function generateUUID(): string {
 
 /**
  * Get or create the device ID
- * The device ID is persisted in localStorage and sent with all API requests
+ * The device ID is persisted in multiple storages via sessionService
  */
 export function getDeviceId(): string {
+  // Try unified service first (cached or loaded from SecureStorage)
+  const unified = getSessionDeviceId();
+  if (unified) return unified;
+
+  // Fallback to legacy localStorage (handled by sessionService init, but here for safety)
   const stored = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
-  
+
   if (stored) {
     try {
       const deviceInfo: DeviceInfo = JSON.parse(stored);
       return deviceInfo.device_id;
     } catch {
-      // Corrupted data, regenerate
+      // Corrupted data
     }
   }
-  
-  // Generate new device ID
-  const deviceInfo: DeviceInfo = {
-    device_id: generateUUID(),
-    created_at: new Date().toISOString(),
-  };
-  
-  localStorage.setItem(STORAGE_KEYS.DEVICE_ID, JSON.stringify(deviceInfo));
-  
-  return deviceInfo.device_id;
+
+  // Generate new device ID if absolutely none found
+  const newId = generateUUID();
+  saveSessionDeviceId(newId);
+
+  return newId;
 }
 
 /**
@@ -48,28 +45,27 @@ export function getDeviceId(): string {
  */
 export function getDeviceInfo(): DeviceInfo {
   const stored = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
-  
+
   if (stored) {
     try {
       return JSON.parse(stored);
     } catch {
-      // Fall through to create new
+      // Fall through
     }
   }
-  
-  // Create and store new device info
-  const deviceInfo: DeviceInfo = {
-    device_id: generateUUID(),
+
+  const id = getDeviceId();
+  const info = {
+    device_id: id,
     created_at: new Date().toISOString(),
   };
-  
-  localStorage.setItem(STORAGE_KEYS.DEVICE_ID, JSON.stringify(deviceInfo));
-  
-  return deviceInfo;
+
+  localStorage.setItem(STORAGE_KEYS.DEVICE_ID, JSON.stringify(info));
+  return info;
 }
 
 /**
- * Clear device ID (useful for testing or factory reset)
+ * Clear device ID
  */
 export function clearDeviceId(): void {
   localStorage.removeItem(STORAGE_KEYS.DEVICE_ID);

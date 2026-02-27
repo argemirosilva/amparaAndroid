@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
-import { 
-  acionarPanicoMobile, 
+import {
+  acionarPanicoMobile,
   cancelarPanicoMobile,
 } from '@/lib/api';
 import { useRecording } from '@/hooks/useRecording';
 import { useLocation } from '@/hooks/useLocation';
+import { AudioTriggerNative } from '@/plugins/audioTriggerNative';
 import { PanicActivationType, PanicCancelType } from '@/lib/types';
 
 interface PanicState {
@@ -76,7 +77,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
 
   const { startRecording, stopRecording, isRecording } = useRecording();
   const location = useLocation();
-  
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -93,14 +94,14 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
     if (saved?.isPanicActive) {
       const elapsedMs = Date.now() - saved.panicStartTime;
       const elapsedSeconds = Math.floor(elapsedMs / 1000);
-      
+
       // Verificar se não passou do timeout de 30 minutos
       if (elapsedMs < PANIC_TIMEOUT_MS) {
         console.log('Restaurando estado do pânico:', elapsedSeconds, 'segundos decorridos');
-        
+
         startTimeRef.current = saved.panicStartTime;
         canCancelRef.current = true; // Já passou tempo suficiente
-        
+
         // Restaurar estado
         setState({
           isPanicActive: true,
@@ -111,16 +112,16 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
           protocolNumber: saved.protocolNumber,
           guardiansNotified: saved.guardiansNotified,
         });
-        
+
         // Reiniciar recording e location tracking
         startRecording('botao_panico');
         location.startTracking(true);
-        
+
         // Reiniciar timer de duração
         timerRef.current = setInterval(() => {
           setState(prev => ({ ...prev, panicDuration: prev.panicDuration + 1 }));
         }, 1000);
-        
+
         // Reiniciar timeout (tempo restante)
         const remainingTime = PANIC_TIMEOUT_MS - elapsedMs;
         timeoutRef.current = setTimeout(() => {
@@ -133,6 +134,37 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, []);
+
+  // Escutar eventos imperativos do Nativo (ex: auto-desarme por timeout de 10 minutos de silêncio)
+  useEffect(() => {
+    const listener = AudioTriggerNative.addListener('audioTriggerEvent', (event) => {
+      if (event.event === 'panicEnded') {
+        console.log('[PanicContext] Recebeu desarme nativo automático pelo motivo:', event.reason);
+        // O Nativo já parou a gravação e notificou a API. O React só precisa limpar o visual e caches.
+
+        if (timerRef.current) clearInterval(timerRef.current);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        location.disablePanicMode();
+        clearPanicState();
+        startTimeRef.current = null;
+        canCancelRef.current = false;
+
+        setState({
+          isPanicActive: false,
+          panicDuration: 0,
+          isActivating: false,
+          isSendingToServer: false,
+          location: null,
+          protocolNumber: null,
+          guardiansNotified: 0,
+        });
+      }
+    });
+
+    return () => {
+      listener.then(l => l.remove());
+    };
+  }, [location]);
 
   // Função interna para deactivate (evita dependência circular)
   const deactivatePanicInternal = useCallback(async (
@@ -148,13 +180,20 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
       timeoutRef.current = null;
     }
 
-    // Stop recording
+    // 1. Stop recording and wait for confirmation
     await stopRecording();
 
-    // Stop panic mode location tracking
+    // 2. Stop panic mode location tracking
     location.disablePanicMode();
 
-    // Notify server
+    // 3. Notificar o Nativo sobre o fim do pânico para soltar WakeLock e IA
+    try {
+      await AudioTriggerNative.deactivatePanic({ cancelType: tipo });
+    } catch (e) {
+      console.warn('Erro ao desativar pânico nativo:', e);
+    }
+
+    // 4. Notify server (AFTER recording is confirmed stopped)
     await cancelarPanicoMobile(tipo);
 
     // Limpar localStorage
@@ -177,7 +216,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
   // Start panic activation (on hold start)
   const startHold = useCallback(() => {
     setState((prev) => ({ ...prev, isActivating: true }));
-    
+
     // Vibrate on hold start
     if (navigator.vibrate) {
       navigator.vibrate(50);
@@ -202,7 +241,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
     tipo: PanicActivationType = 'manual'
   ) => {
     setState((prev) => ({ ...prev, isActivating: false, isSendingToServer: true }));
-    
+
     // Vibrate on activation
     if (navigator.vibrate) {
       navigator.vibrate([100, 50, 100]);
@@ -212,7 +251,7 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
     const position = await location.getCurrentPosition();
     const lat = position?.latitude ?? 0;
     const lng = position?.longitude ?? 0;
-    
+
     // Start recording with panic origin
     await startRecording('botao_panico');
 
@@ -221,6 +260,16 @@ export function PanicProvider({ children }: { children: React.ReactNode }) {
 
     // Notify server
     const result = await acionarPanicoMobile(lat, lng, tipo);
+
+    // Notificar o Nativo sobre o pânico ATIVO para blindar WakeLock e IA
+    try {
+      await AudioTriggerNative.activatePanic({
+        protocolNumber: result.data?.numero_protocolo || 'manual',
+        activationType: tipo
+      });
+    } catch (e) {
+      console.warn('Erro ao ativar pânico nativo:', e);
+    }
 
     const panicStartTime = Date.now();
     startTimeRef.current = panicStartTime;

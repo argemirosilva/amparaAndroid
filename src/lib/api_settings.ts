@@ -6,8 +6,10 @@ import { getDeviceId } from './deviceId';
 import { getSessionToken, getUserEmail } from './api';
 import { ApiResponse } from './types';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 
-  'https://ilikiajeduezvvanjejz.supabase.co/functions/v1/mobile-api';
+const API_URL = import.meta.env.VITE_API_BASE_URL ||
+  'https://uogenwcycqykfsuongrl.supabase.co/functions/v1/mobile-api';
+
+const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZ2Vud2N5Y3F5a2ZzdW9uZ3JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4Mjg2NjIsImV4cCI6MjA4NjQwNDY2Mn0.hncTs6DDS-sbb8sT_QBOBf1mTcTu0e_Pc5yXo4tHZwE';
 
 // ============================================
 // Types
@@ -48,7 +50,7 @@ async function settingsApi<T>(
 ): Promise<ApiResponse<T>> {
   const token = getSessionToken();
   const email = getUserEmail();
-  
+
   if (!token) {
     console.error('[Settings API] No token available for', action);
     return { data: null, error: 'Sessão expirada. Faça login novamente.' };
@@ -67,6 +69,7 @@ async function settingsApi<T>(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'apikey': API_KEY,
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(15000), // 15s timeout
@@ -77,7 +80,7 @@ async function settingsApi<T>(
     }
 
     const data = await response.json();
-    
+
     // Check for session expiration
     if (!data.success && data.error?.includes('Sessão')) {
       return { data: null, error: 'Sessão expirada. Faça login novamente.' };
@@ -108,7 +111,7 @@ export async function changePassword(
   novaSenha: string
 ): Promise<ApiResponse<ChangePasswordResponse>> {
   console.log('[Settings API] Calling changePassword');
-  
+
   return await settingsApi<ChangePasswordResponse>('change_password', {
     senha_atual: senhaAtual,
     nova_senha: novaSenha,
@@ -127,7 +130,7 @@ export async function updateSchedules(
   periodosSemanaPatch: WeekSchedule
 ): Promise<ApiResponse<UpdateSchedulesResponse>> {
   console.log('[Settings API] Calling updateSchedules', periodosSemanaPatch);
-  
+
   return await settingsApi<UpdateSchedulesResponse>('update_schedules', {
     periodos_semana: periodosSemanaPatch,
   });
@@ -145,7 +148,7 @@ export async function validatePassword(
   senha: string
 ): Promise<ApiResponse<ValidatePasswordResponse>> {
   console.log('[Settings API] Calling validatePassword');
-  
+
   return await settingsApi<ValidatePasswordResponse>('validate_password', {
     senha,
   });

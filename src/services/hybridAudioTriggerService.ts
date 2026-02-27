@@ -21,7 +21,7 @@ import type { AudioTriggerEvent } from '@/plugins/audioTriggerNative';
 import { PermissionFlowState } from './permissionFlowState';
 
 // State machine modes (simplified)
-type TriggerMode = 
+type TriggerMode =
   | 'STOPPED'                  // Not started
   | 'WAITING_PERMISSION'       // Waiting for RECORD_AUDIO
   | 'RUNNING';                 // Native service running (works in fg and bg)
@@ -78,13 +78,13 @@ class HybridAudioTriggerService {
     }
 
     console.log('[HybridAudioTrigger] 🔧 Initializing v3 (Native-First)...');
-    
+
     // Register native listener (once)
     this.registerNativeListenerOnce();
-    
+
     // Register app state listener (for logging only, no mode switching)
     this.registerAppStateListener();
-    
+
     // Subscribe to permission flow changes
     this.permissionFlowUnsubscribe = PermissionFlowState.subscribe(() => {
       this.onPermissionFlowChanged();
@@ -92,7 +92,7 @@ class HybridAudioTriggerService {
 
     this.initialized = true;
     console.log('[HybridAudioTrigger] ✅ Initialized (Native-First mode)');
-    
+
     // CRITICAL: Sync status from native service on init
     // This handles the case where Android killed the JS process but native service is still running
     this.syncStatusFromNative();
@@ -171,29 +171,35 @@ class HybridAudioTriggerService {
 
     try {
       console.log('[HybridAudioTrigger] 🟢 NATIVE_STARTING (while app is in foreground)');
-      
+
       const options = this.nativeConfig ? { config: this.nativeConfig } : {};
       const result = await AudioTriggerNative.start(options);
-      
+
       if (result.alreadyRunning) {
         console.log('[HybridAudioTrigger] ✅ NATIVE already running (idempotent)');
       } else {
         console.log('[HybridAudioTrigger] ✅ NATIVE_STARTED');
       }
-      
+
       this.mode = 'RUNNING';
       this.pendingStart = false;
+
+      // Update singleton capture status
+      import('@/services/audioTriggerSingleton').then(({ audioTriggerSingleton }) => {
+        audioTriggerSingleton.setIsCapturing(true);
+      });
+
       this.notifyStateChange();
 
     } catch (error: any) {
       console.error('[HybridAudioTrigger] ❌ NATIVE_START_FAILED:', error);
-      
+
       // Check if it's a SecurityException (FGS not eligible)
       if (error.message?.includes('SecurityException') || error.message?.includes('not eligible')) {
         console.log('[HybridAudioTrigger] 🚫 FGS_NOT_ELIGIBLE: App was not in eligible state');
         this.pendingStart = true;
       }
-      
+
       this.mode = 'STOPPED';
       this.notifyStateChange();
     } finally {
@@ -221,6 +227,12 @@ class HybridAudioTriggerService {
     }
 
     this.mode = 'STOPPED';
+
+    // Update singleton capture status
+    import('@/services/audioTriggerSingleton').then(({ audioTriggerSingleton }) => {
+      audioTriggerSingleton.setIsCapturing(false);
+    });
+
     this.notifyStateChange();
   }
 
@@ -239,7 +251,7 @@ class HybridAudioTriggerService {
       if (isActive) {
         // App returned to foreground
         console.log('[HybridAudioTrigger] 📱 FOREGROUND detected');
-        
+
         // CRITICAL: Re-sync calibration status from native when returning to foreground
         // The native service may be calibrated but JS lost the state
         if (this.mode === 'RUNNING' && Capacitor.isNativePlatform()) {
@@ -250,7 +262,7 @@ class HybridAudioTriggerService {
             console.error('[HybridAudioTrigger] Failed to sync status from native:', error);
           }
         }
-        
+
         // If we have a pending start, try now (we're in eligible state)
         if (this.pendingStart) {
           console.log('[HybridAudioTrigger] 🔄 Pending start detected, retrying...');
@@ -259,7 +271,7 @@ class HybridAudioTriggerService {
       } else {
         // App going to background
         console.log('[HybridAudioTrigger] 🌙 BACKGROUND detected');
-        
+
         // DO NOT try to start native here (Android 14/15 will block it)
         // Native service should already be running from foreground start
         if (this.mode === 'RUNNING') {
@@ -286,7 +298,7 @@ class HybridAudioTriggerService {
 
     AudioTriggerNative.addListener('audioTriggerEvent', (event) => {
       console.log('[HybridAudioTrigger] 📡 Native event:', event.event);
-      
+
       // Handle FGS not eligible event
       if (event.event === 'fgsNotEligible') {
         console.log('[HybridAudioTrigger] 🚫 Received FGS_NOT_ELIGIBLE from native');
@@ -294,7 +306,21 @@ class HybridAudioTriggerService {
         this.pendingStart = true;
         this.notifyStateChange();
       }
-      
+
+      // AUTO-SYNC: If we receive any event from native, we ARE running
+      if (this.mode !== 'RUNNING' && event.event !== 'fgsNotEligible') {
+        console.log('[HybridAudioTrigger] 🔄 AUTO-SYNC: Native activity detected, setting mode to RUNNING');
+        this.mode = 'RUNNING';
+        this.pendingStart = false;
+
+        // Ensure singleton reflects this too
+        import('@/services/audioTriggerSingleton').then(({ audioTriggerSingleton }) => {
+          audioTriggerSingleton.setIsCapturing(true);
+        });
+
+        this.notifyStateChange();
+      }
+
       // Handle calibration status from native
       if (event.event === 'calibrationStatus' && event.isCalibrated !== undefined) {
         console.log('[HybridAudioTrigger] 📡 Native calibration status:', event.isCalibrated);
@@ -303,10 +329,10 @@ class HybridAudioTriggerService {
           audioTriggerSingleton.setCalibrationStatus(event.isCalibrated);
         });
       }
-      
+
       // Forward to event listeners
       this.notifyListeners(event);
-      
+
       // Forward to JS callback if registered
       if (this.jsCallbacks?.onDebug) {
         this.jsCallbacks.onDebug(event);
@@ -373,7 +399,7 @@ class HybridAudioTriggerService {
   async setNativeConfig(config: any) {
     this.nativeConfig = config;
     console.log('[HybridAudioTrigger] 🔧 Native config set:', config);
-    
+
     // Hot reload: update config if native is already running
     if (this.mode === 'RUNNING' && Capacitor.isNativePlatform()) {
       try {
@@ -427,11 +453,23 @@ class HybridAudioTriggerService {
   }
 
   /**
+   * Report monitoring status manually
+   */
+  async reportStatus(status: string, isMonitoring: boolean, motivo: string) {
+    try {
+      return await AudioTriggerNative.reportStatus({ status, isMonitoring, motivo });
+    } catch (error) {
+      console.error('[HybridAudioTrigger] Failed to report status:', error);
+      return { success: false };
+    }
+  }
+
+  /**
    * Cleanup
    */
   destroy() {
     console.log('[HybridAudioTrigger] 🧹 Destroying...');
-    
+
     if (this.permissionFlowUnsubscribe) {
       this.permissionFlowUnsubscribe();
     }

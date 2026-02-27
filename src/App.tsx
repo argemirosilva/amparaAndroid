@@ -44,18 +44,18 @@ const App = () => {
     const initAuth = async () => {
       try {
         console.log('[App] Initializing session service...');
-        
+
 
         // Initialize the session service (loads from native storage)
         await initializeSession();
-        
+
         // Initialize background state manager (monitors app visibility)
         initializeBackgroundStateManager();
-        
+
         // Check if authenticated
         const authenticated = isAuthenticated();
         console.log('[App] Authentication status:', authenticated);
-        
+
         // Persist session - don't validate token on app open
         // Token will be validated when making API calls
         // If token is invalid, API will return 401 and force logout
@@ -65,7 +65,7 @@ const App = () => {
         setAuthState(false);
       }
     };
-    
+
     initAuth();
   }, []);
 
@@ -73,12 +73,12 @@ const App = () => {
   useEffect(() => {
     if (authState === true && !servicesInitialized) {
       console.log('[App] User authenticated, initializing background services...');
-      
+
       const initServices = async () => {
         try {
           // Initialize config service (loads from cache immediately)
           await initializeConfigService();
-          
+
           // Start KeepAlive service if not already running (Android only)
           if (Capacitor.getPlatform() === 'android') {
             try {
@@ -86,7 +86,7 @@ const App = () => {
               console.log('[App] 🔍 Checking permissions before starting KeepAlive...');
               const permissions = await checkPermissions();
               console.log('[App] Permission status:', permissions);
-              
+
               // Only start KeepAlive if location permission is granted
               // (KeepAliveService uses FOREGROUND_SERVICE_TYPE_LOCATION)
               if (permissions.location === 'granted') {
@@ -102,19 +102,19 @@ const App = () => {
               console.error('[App] ❌ Error starting KeepAlive service:', error);
             }
           }
-          
+
           setServicesInitialized(true);
           console.log('[App] Background services initialized');
         } catch (error) {
           console.error('[App] Failed to initialize background services:', error);
         }
       };
-      
+
       initServices();
     } else if (authState === false && servicesInitialized) {
       // User logged out, stop services
       console.log('[App] User logged out, stopping background services...');
-      
+
       const stopServices = async () => {
         try {
           // Stop KeepAlive service (Android only)
@@ -123,14 +123,14 @@ const App = () => {
             await KeepAlive.stop();
             console.log('[App] KeepAlive service stopped');
           }
-          
+
           setServicesInitialized(false);
         } catch (error) {
           console.error('[App] Error stopping KeepAlive service:', error);
           setServicesInitialized(false);
         }
       };
-      
+
       stopServices();
     }
   }, [authState, servicesInitialized]);
@@ -142,14 +142,14 @@ const App = () => {
         console.log('[App] App became visible, reloading session...');
         const authenticated = await reloadSession();
         console.log('[App] Reload result:', authenticated, 'Current state:', authState);
-        
+
         // Always update state to force re-render, even if value seems the same
         // This handles cases where Android killed and restarted the WebView
         console.log('[App] Force updating auth state to:', authenticated);
         setAuthState(authenticated);
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
@@ -159,17 +159,17 @@ const App = () => {
   // Listen for session expiration from Native (KeepAliveService)
   useEffect(() => {
     let nativeListener: PluginListenerHandle | null = null;
-    
+
     const setupNativeListener = async () => {
       try {
         nativeListener = await SessionExpiredListener.addListener('sessionExpired', async (data) => {
           console.error('[App] Session expired event from Native:', data);
-          
+
           // Try to refresh token first
           console.log('[App] Attempting to refresh token...');
           const { refreshAccessToken } = await import('@/services/tokenRefreshService');
           const refreshed = await refreshAccessToken();
-          
+
           if (refreshed) {
             console.log('[App] Token refreshed successfully, session restored');
           } else {
@@ -182,9 +182,9 @@ const App = () => {
         console.error('[App] Failed to register native session expired listener:', error);
       }
     };
-    
+
     setupNativeListener();
-    
+
     return () => {
       if (nativeListener) {
         nativeListener.remove();
@@ -195,7 +195,20 @@ const App = () => {
   const handleLoginSuccess = async () => {
     console.log('[App] Login success, updating auth state');
     setAuthState(true);
-    // KeepAlive will be started by useEffect when authState changes
+
+    // Explicitly restart/update services to ensure new tokens are used
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        const permissions = await checkPermissions();
+        if (permissions.location === 'granted') {
+          console.log('[App] Refreshing KeepAlive service after login...');
+          const deviceId = getDeviceId();
+          await KeepAlive.start({ deviceId });
+        }
+      } catch (e) {
+        console.error('[App] Failed to refresh KeepAlive after login:', e);
+      }
+    }
   };
 
   const handleLogout = async () => {
@@ -223,27 +236,27 @@ const App = () => {
         <PermissionGuard>
           <BrowserRouter>
             {!authState ? (
-            <Routes>
-              <Route path="/" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          ) : (
-            <PanicProvider>
               <Routes>
-                <Route path="/" element={<HomePage onLogout={handleLogout} />} />
-                <Route path="/panic-active" element={<PanicActivePage />} />
-                <Route path="/recording" element={<RecordingPage />} />
-                <Route path="/pending" element={<PendingPage />} />
-                <Route path="/upload" element={<UploadPage />} />
-
-                <Route path="/audio-trigger-debug" element={<AudioTriggerDebugPage />} />
-                <Route path="/icon-selector" element={<IconSelector />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="*" element={<NotFound />} />
+                <Route path="/" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </PanicProvider>
-          )}
+            ) : (
+              <PanicProvider>
+                <Routes>
+                  <Route path="/" element={<HomePage onLogout={handleLogout} />} />
+                  <Route path="/panic-active" element={<PanicActivePage />} />
+                  <Route path="/recording" element={<RecordingPage />} />
+                  <Route path="/pending" element={<PendingPage />} />
+                  <Route path="/upload" element={<UploadPage />} />
+
+                  <Route path="/audio-trigger-debug" element={<AudioTriggerDebugPage />} />
+                  <Route path="/icon-selector" element={<IconSelector />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </PanicProvider>
+            )}
           </BrowserRouter>
         </PermissionGuard>
       </TooltipProvider>

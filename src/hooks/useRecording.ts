@@ -3,6 +3,7 @@ import { reportarStatusGravacao } from '@/lib/api';
 import { OrigemGravacao } from '@/lib/types';
 import { AudioTriggerNative } from '@/plugins/audioTriggerNative';
 import { getSessionToken, getUserEmail } from '@/lib/api';
+import { saveState, loadState } from '@/lib/appState';
 
 interface RecordingState {
   isRecording: boolean;
@@ -29,19 +30,21 @@ export function useRecording() {
   const isRecordingRef = useRef(false);
   const origemGravacaoRef = useRef<OrigemGravacao>('botao_manual');
   const currentSessionIdRef = useRef<string | null>(null);
-  const startedAtRef = useRef<number | null>(null);
+  const stopResolverRef = useRef<(() => void) | null>(null);
 
   // Listen to native recording events
   useEffect(() => {
-    const listener = AudioTriggerNative.addListener('audioTriggerEvent', (event) => {
+    const listenerPromise = AudioTriggerNative.addListener('audioTriggerEvent', (event) => {
       console.log('[useRecording] Native event:', event);
 
       switch (event.event) {
         case 'nativeRecordingStarted':
           currentSessionIdRef.current = event.sessionId || null;
-          // Capture startedAt timestamp from native
-          startedAtRef.current = event.startedAt || Date.now();
-          console.log('[useRecording] Recording started at:', new Date(startedAtRef.current).toISOString());
+          // Capture startedAt timestamp from native and save to app state
+          const startTimestamp = event.startedAt || Date.now();
+          console.log('[useRecording] Recording started at:', new Date(startTimestamp).toISOString());
+          saveState({ recordingStartTime: startTimestamp, status: 'recording' });
+
           // Update origem if provided by native (automatic detection)
           if (event.origemGravacao) {
             origemGravacaoRef.current = event.origemGravacao as OrigemGravacao;
@@ -63,7 +66,7 @@ export function useRecording() {
           if (event.segmentIndex !== undefined) {
             setState((prev) => ({
               ...prev,
-              segmentsSent: event.segmentIndex + 1,
+              segmentsSent: event.segmentIndex,
             }));
           }
           break;
@@ -86,7 +89,14 @@ export function useRecording() {
             isStopping: false,
           }));
           currentSessionIdRef.current = null;
-          startedAtRef.current = null;
+          saveState({ recordingStartTime: null, status: 'normal' });
+
+          // Resolve pending stopRecording promise
+          if (stopResolverRef.current) {
+            console.log('[useRecording] Stop confirmed by native event');
+            stopResolverRef.current();
+            stopResolverRef.current = null;
+          }
           break;
 
         case 'recordingState':
@@ -94,6 +104,16 @@ export function useRecording() {
           console.log('[useRecording] Syncing recording state from native:', event);
           if (event.isRecording !== undefined) {
             currentSessionIdRef.current = event.sessionId || null;
+
+            const currentState = loadState();
+
+            if (event.isRecording) {
+              let syncedStart = event.startedAt || currentState.recordingStartTime || Date.now();
+              saveState({ recordingStartTime: syncedStart, status: 'recording' });
+            } else {
+              saveState({ recordingStartTime: null, status: 'normal' });
+            }
+
             setState((prev) => ({
               ...prev,
               isRecording: event.isRecording,
@@ -105,17 +125,25 @@ export function useRecording() {
     });
 
     return () => {
-      listener.remove();
+      listenerPromise.then(l => l.remove());
     };
+  }, []);
+
+  // Request native status on mount to sync UI if already recording in background
+  useEffect(() => {
+    AudioTriggerNative.getStatus().catch(err => {
+      console.warn('[useRecording] Failed to request initial status from native:', err);
+    });
   }, []);
 
   // Duration timer
   useEffect(() => {
     if (state.isRecording && !state.isPaused) {
       timerRef.current = setInterval(() => {
-        // Calculate duration from startedAt timestamp (persistent across remounts)
-        if (startedAtRef.current) {
-          const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
+        // Calculate duration from global recordingStartTime (persistent across remounts)
+        const globalStart = loadState().recordingStartTime;
+        if (globalStart) {
+          const elapsed = Math.floor((Date.now() - globalStart) / 1000);
           setState((prev) => ({ ...prev, duration: elapsed }));
         } else {
           setState((prev) => ({ ...prev, duration: prev.duration + 1 }));
@@ -158,6 +186,7 @@ export function useRecording() {
       });
 
       isRecordingRef.current = true;
+      saveState({ recordingStartTime: Date.now(), status: 'recording' });
 
       setState((prev) => ({
         ...prev,
@@ -165,6 +194,7 @@ export function useRecording() {
         isPaused: false,
         isStopping: false,
         origemGravacao: origem,
+        duration: 0,
       }));
 
       console.log('[useRecording] Native recording started');
@@ -182,8 +212,25 @@ export function useRecording() {
 
       setState((prev) => ({ ...prev, isStopping: true }));
 
+      // Create a promise that resolves when native event is received
+      const stopPromise = new Promise<void>((resolve) => {
+        stopResolverRef.current = resolve;
+
+        // Security timeout (3s) to prevent blocking if native fails
+        setTimeout(() => {
+          if (stopResolverRef.current === resolve) {
+            console.warn('[useRecording] Stop timeout reached, forced resolve');
+            resolve();
+            stopResolverRef.current = null;
+          }
+        }, 3000);
+      });
+
       // Stop native recording
       await AudioTriggerNative.stopRecording();
+
+      // Wait for confirmation
+      await stopPromise;
 
       isRecordingRef.current = false;
 
@@ -191,7 +238,7 @@ export function useRecording() {
       if (currentSessionIdRef.current) {
         await reportarStatusGravacao(
           currentSessionIdRef.current,
-          'finalizada',
+          'finalizada' as any,
           state.segmentsSent
         );
       }
@@ -203,11 +250,15 @@ export function useRecording() {
         duration: 0,
       }));
 
-      console.log('[useRecording] Native recording stopped');
+      console.log('[useRecording] Native recording stopped (Sequenced)');
 
     } catch (error) {
       console.error('[useRecording] Error stopping native recording:', error);
       setState((prev) => ({ ...prev, isStopping: false }));
+      if (stopResolverRef.current) {
+        stopResolverRef.current();
+        stopResolverRef.current = null;
+      }
     }
   }, [state.segmentsSent]);
 

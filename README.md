@@ -4,6 +4,12 @@
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
+## Documentação da API
+
+📚 **Documentação sempre atualizada**: https://amparamulher.com.br/api-doc
+
+Consulte esta página para ver os endpoints mais recentes, payloads e responses da Mobile API.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

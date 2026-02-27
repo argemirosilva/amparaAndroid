@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { syncConfigMobile, getCachedConfig } from '@/lib/api';
-import { UserConfig, SupportContact, MonitoringPeriod, ServerAudioTriggerConfig, PeriodosSemana } from '@/lib/types';
+import { UserConfig, MonitoringPeriod, ServerAudioTriggerConfig, PeriodosSemana } from '@/lib/types';
 import type { AudioTriggerConfig } from '@/types/audioTrigger';
 import { saveServerConfig, loadServerConfig } from '@/utils/configStorage';
 import { getConfigFromServer } from '@/utils/configConverter';
@@ -92,16 +92,6 @@ export function useConfig() {
     return getConfigFromServer(null);
   }, []);
 
-  // Get support contacts (guardians)
-  const getGuardians = useCallback((): SupportContact[] => {
-    if (!state.config?.contatos_suporte) return [];
-    return state.config.contatos_suporte.filter(c => c.is_guardian);
-  }, [state.config]);
-
-  // Get all support contacts
-  const getSupportContacts = useCallback((): SupportContact[] => {
-    return state.config?.contatos_suporte || [];
-  }, [state.config]);
 
   // Check if voice trigger is enabled
   const isVoiceTriggerEnabled = useCallback((): boolean => {
@@ -129,8 +119,6 @@ export function useConfig() {
   return {
     ...state,
     syncConfig,
-    getGuardians,
-    getSupportContacts,
     isVoiceTriggerEnabled,
     isManualTriggerEnabled,
     reloadFromCache,

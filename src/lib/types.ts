@@ -12,7 +12,16 @@ export interface DeviceInfo {
 export interface LoginResponse {
   session: {
     token: string;
+    refresh_token?: string;
     expires_at: string;
+  };
+  // Novos campos do backend (resposta direta, sem wrapper)
+  access_token?: string;
+  refresh_token?: string;
+  user?: {
+    id: string;
+    email: string;
+    nome_completo: string;
   };
   usuario: {
     id: string;
@@ -29,18 +38,8 @@ export interface UserConfig {
     voz: boolean;
     manual: boolean;
   };
-  contatos_suporte: SupportContact[];
 }
 
-// Support Contact
-export interface SupportContact {
-  id: string;
-  nome: string;
-  telefone: string;
-  email?: string;
-  avatar_url?: string;
-  is_guardian: boolean;
-}
 
 // Panic Activation Response
 export interface PanicActivationResponse {
@@ -156,16 +155,24 @@ export type PanicActivationType = 'manual' | 'voz' | 'oculto' | 'widget';
 export type PanicCancelType = 'manual' | 'timeout' | 'coacao';
 
 // Recording origin types (for backend routing)
-export type OrigemGravacao = 
-  | 'comando_voz' 
-  | 'botao_panico' 
-  | 'botao_manual' 
-  | 'automatico' 
-  | 'agendado' 
+export type OrigemGravacao =
+  | 'comando_voz'
+  | 'botao_panico'
+  | 'botao_manual'
+  | 'automatico'
+  | 'agendado'
   | 'upload_arquivo';
 
 // Recording status types
 export type RecordingStatusType = 'iniciada' | 'pausada' | 'retomada' | 'finalizada' | 'enviando' | 'erro';
+
+// Motivo de parada para reportarStatusGravacao
+export type MotivoParada =
+  | 'usuario'
+  | 'silencio'
+  | 'timeout'
+  | 'erro'
+  | 'mic_solicitado_permanente';
 
 // App status types
 export type AppStatusType = 'normal' | 'recording' | 'panic';

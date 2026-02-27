@@ -16,11 +16,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -189,20 +191,23 @@
             android:stopWithTask="false"
             android:exported="false" />
 
-        <!-- KeepAlive Service for Doze Mode bypass -->
         <service
             android:name="tech.orizon.ampara.KeepAliveService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location"
-            android:stopWithTask="false" />
+            android:foregroundServiceType="location|specialUse"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keep-alive service to ensure connectivity and system status reporting in Doze mode" />
+        </service>
 
         <!-- AudioTrigger Service for background audio monitoring -->
         <service
             android:name="tech.orizon.ampara.AudioTriggerService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="microphone"
+            android:foregroundServiceType="location|microphone"
             android:stopWithTask="false" />
 
         <!-- BroadcastReceiver for AlarmManager to wake up in Doze Mode -->

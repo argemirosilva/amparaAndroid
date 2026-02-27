@@ -81,7 +81,7 @@ let syncIntervalId: NodeJS.Timeout | null = null;
 async function loadFromCache(): Promise<AppConfig | null> {
   try {
     console.log('[ConfigService] Loading from cache...');
-    
+
     // Try SecureStorage first (most reliable)
     const secureResult = await SecureStorage.get({ key: STORAGE_KEYS.CONFIG });
     if (secureResult.value) {
@@ -89,19 +89,23 @@ async function loadFromCache(): Promise<AppConfig | null> {
       console.log('[ConfigService] Loaded from SecureStorage', { version: config.version });
       return config;
     }
-    
+
     // Fallback to localStorage (legacy)
-    const cachedConfig = getCachedConfig();
+    const cachedConfig = getCachedConfig() as any;
     if (cachedConfig) {
-      console.log('[ConfigService] Loaded from localStorage (legacy)', { version: cachedConfig.version });
+      console.log('[ConfigService] Loaded from localStorage (legacy)', { version: cachedConfig.ultima_atualizacao });
+
+      // Transform legacy ConfigSyncResponse to AppConfig
+      const migratedConfig = transformApiConfigToAppConfig(cachedConfig as import('@/lib/types').ConfigSyncResponse);
+
       // Migrate to SecureStorage
-      await SecureStorage.set({ key: STORAGE_KEYS.CONFIG, value: JSON.stringify(cachedConfig) });
-      return cachedConfig as unknown as AppConfig;
+      await SecureStorage.set({ key: STORAGE_KEYS.CONFIG, value: JSON.stringify(migratedConfig) });
+      return migratedConfig;
     }
-    
+
     console.log('[ConfigService] No cached config found');
     return null;
-    
+
   } catch (error) {
     console.error('[ConfigService] Failed to load from cache:', error);
     return null;
@@ -114,27 +118,27 @@ async function loadFromCache(): Promise<AppConfig | null> {
 async function saveToCache(config: AppConfig): Promise<void> {
   try {
     console.log('[ConfigService] Saving to cache...', { version: config.version });
-    
+
     const configJson = JSON.stringify(config);
-    
+
     // Save to SecureStorage (primary)
     await SecureStorage.set({ key: STORAGE_KEYS.CONFIG, value: configJson });
-    
+
     // Also save to localStorage for backward compatibility
     localStorage.setItem(STORAGE_KEYS.CONFIG, configJson);
-    
+
     // Save metadata
     const metadata = {
       lastFetchedAt: new Date().toISOString(),
       version: config.version
     };
-    await SecureStorage.set({ 
-      key: STORAGE_KEYS.CONFIG_METADATA, 
-      value: JSON.stringify(metadata) 
+    await SecureStorage.set({
+      key: STORAGE_KEYS.CONFIG_METADATA,
+      value: JSON.stringify(metadata)
     });
-    
+
     console.log('[ConfigService] Config saved to cache');
-    
+
   } catch (error) {
     console.error('[ConfigService] Failed to save to cache:', error);
   }
@@ -147,13 +151,13 @@ function hasConfigExpired(config: AppConfig | null, lastFetchedAt: string | null
   if (!config || !lastFetchedAt) {
     return true;
   }
-  
+
   const lastFetchTime = new Date(lastFetchedAt).getTime();
   const now = Date.now();
   const ttlMs = config.ttl_seconds * 1000;
-  
+
   const expired = (now - lastFetchTime) > ttlMs;
-  
+
   if (expired) {
     console.log('[ConfigService] Config expired', {
       last_fetch: lastFetchedAt,
@@ -161,7 +165,7 @@ function hasConfigExpired(config: AppConfig | null, lastFetchedAt: string | null
       age_seconds: Math.floor((now - lastFetchTime) / 1000)
     });
   }
-  
+
   return expired;
 }
 
@@ -171,29 +175,29 @@ function hasConfigExpired(config: AppConfig | null, lastFetchedAt: string | null
 async function fetchFromRemote(currentVersion: number): Promise<AppConfig | null> {
   try {
     console.log('[ConfigService] Fetching from remote...', { current_version: currentVersion });
-    
+
     const result = await syncConfigMobile();
-    
+
     if (result.error) {
       console.error('[ConfigService] Remote fetch failed', { error: result.error });
       return null;
     }
-    
+
     if (!result.data?.configuracoes) {
       console.warn('[ConfigService] No config in response');
       return null;
     }
-    
+
     // Transform API response to AppConfig format
     const remoteConfig = transformApiConfigToAppConfig(result.data);
-    
-    console.log('[ConfigService] Fetched from remote', { 
+
+    console.log('[ConfigService] Fetched from remote', {
       version: remoteConfig.version,
       updated: remoteConfig.version > currentVersion
     });
-    
+
     return remoteConfig;
-    
+
   } catch (error) {
     console.error('[ConfigService] Remote fetch error:', error);
     return null;
@@ -204,16 +208,18 @@ async function fetchFromRemote(currentVersion: number): Promise<AppConfig | null
  * Transform API response to AppConfig format
  */
 function transformApiConfigToAppConfig(apiResponse: ConfigSyncResponse): AppConfig {
-  // ===== DEBUG: LOG COMPLETO DA RESPOSTA DA API =====
-  console.log('🔍 [ConfigService] API RESPONSE COMPLETA:', JSON.stringify(apiResponse, null, 2));
-  console.log('[ConfigService] audio_trigger_config from API -> IGNORED');
-  // ==================================================
-  
+  // ===== DEBUG =====
+  console.log('[ConfigService] transformApiConfigToAppConfig input periodos_semana:',
+    JSON.stringify(apiResponse.periodos_semana));
+  console.log('[ConfigService] transformApiConfigToAppConfig input periodos_hoje:',
+    JSON.stringify(apiResponse.periodos_hoje));
+  // =================
+
   // Use fields directly from apiResponse (not from configuracoes)
   // periodos_hoje already has { inicio, fim } format
   const periods = apiResponse.periodos_hoje || [];
-  
-  return {
+
+  const result: AppConfig = {
     version: Date.now(),
     ttl_seconds: 3600,
     monitoring_enabled: true, // Always enabled, dentro_horario controls active state
@@ -223,6 +229,11 @@ function transformApiConfigToAppConfig(apiResponse: ConfigSyncResponse): AppConf
     periodo_atual_index: apiResponse.periodo_atual_index ?? null,
     // audio_trigger: NEVER use from API - always use DEFAULT_CONFIG from audioTrigger.ts
   };
+
+  console.log('[ConfigService] transformApiConfigToAppConfig output periodos_semana:',
+    JSON.stringify(result.periodos_semana));
+
+  return result;
 }
 
 /**
@@ -230,13 +241,13 @@ function transformApiConfigToAppConfig(apiResponse: ConfigSyncResponse): AppConf
  */
 function applyConfig(config: AppConfig, source: 'cache' | 'remote' | 'default'): void {
   console.log('[ConfigService] Applying config', { version: config.version, source });
-  
+
   state.currentConfig = config;
   state.source = source;
   state.error = null;
-  
+
   notifyListeners();
-  
+
   // Update native audio trigger service with new config
   updateNativeAudioTrigger(config);
 }
@@ -248,18 +259,18 @@ async function updateNativeAudioTrigger(config: AppConfig): Promise<void> {
   if (!Capacitor.isNativePlatform()) {
     return;
   }
-  
+
   try {
     const nativeConfig = {
-      monitoringPeriods: config.monitoring_periods || []
+      monitoringPeriods: config.monitoring_periods || [],
       // audioTriggerConfig: NEVER use from API - always use DEFAULT_CONFIG
     };
-    
+
     console.log('[ConfigService] Updating native audio trigger config:', nativeConfig);
-    
+
     // Update via hybrid service (handles both running and stopped states)
     await hybridAudioTrigger.setNativeConfig(nativeConfig);
-    
+
     console.log('[ConfigService] Native audio trigger config updated successfully');
   } catch (error) {
     console.error('[ConfigService] Failed to update native audio trigger:', error);
@@ -283,17 +294,17 @@ function notifyListeners(): void {
  */
 export async function initializeConfigService(): Promise<void> {
   console.log('[ConfigService] Initializing...');
-  
+
   state.isLoading = true;
   notifyListeners();
-  
+
   try {
     // 1. Load from cache first (instant)
     const cachedConfig = await loadFromCache();
-    
+
     if (cachedConfig) {
       applyConfig(cachedConfig, 'cache');
-      
+
       // Load metadata to check TTL
       const metadataResult = await SecureStorage.get({ key: STORAGE_KEYS.CONFIG_METADATA });
       if (metadataResult.value) {
@@ -304,22 +315,22 @@ export async function initializeConfigService(): Promise<void> {
       // No cache, use default
       applyConfig(DEFAULT_CONFIG, 'default');
     }
-    
+
     // 2. Check if we need to fetch from remote
     const currentVersion = state.currentConfig?.version || 0;
     const shouldFetch = hasConfigExpired(state.currentConfig, state.lastFetchedAt);
-    
+
     if (shouldFetch) {
       console.log('[ConfigService] Cache expired or missing, fetching from remote...');
-      
+
       const remoteConfig = await fetchFromRemote(currentVersion);
-      
+
       if (remoteConfig && remoteConfig.version > currentVersion) {
         // New config available
         await saveToCache(remoteConfig);
         applyConfig(remoteConfig, 'remote');
         state.lastFetchedAt = new Date().toISOString();
-        
+
         console.log('[ConfigService] Config updated', {
           from_version: currentVersion,
           to_version: remoteConfig.version
@@ -335,11 +346,11 @@ export async function initializeConfigService(): Promise<void> {
     } else {
       console.log('[ConfigService] Using cached config (not expired)');
     }
-    
+
   } catch (error) {
     console.error('[ConfigService] Initialization error:', error);
     state.error = error instanceof Error ? error.message : 'Unknown error';
-    
+
     // Fallback to default if nothing else worked
     if (!state.currentConfig) {
       applyConfig(DEFAULT_CONFIG, 'default');
@@ -358,9 +369,9 @@ export function startConfigSync(intervalMs: number = 3600000): void {
     console.warn('[ConfigService] Sync already running');
     return;
   }
-  
+
   console.log('[ConfigService] Starting periodic sync', { interval_ms: intervalMs });
-  
+
   syncIntervalId = setInterval(async () => {
     await syncConfig();
   }, intervalMs);
@@ -382,15 +393,15 @@ export function stopConfigSync(): void {
  */
 export async function syncConfig(): Promise<void> {
   console.log('[ConfigService] Manual sync triggered');
-  
+
   const currentVersion = state.currentConfig?.version || 0;
   const remoteConfig = await fetchFromRemote(currentVersion);
-  
+
   if (remoteConfig && remoteConfig.version > currentVersion) {
     await saveToCache(remoteConfig);
     applyConfig(remoteConfig, 'remote');
     state.lastFetchedAt = new Date().toISOString();
-    
+
     console.log('[ConfigService] Config synced', {
       from_version: currentVersion,
       to_version: remoteConfig.version
@@ -408,17 +419,17 @@ export async function syncConfig(): Promise<void> {
  */
 export async function forceSyncConfig(): Promise<boolean> {
   console.log('[ConfigService] Force sync triggered - ignoring cache');
-  
+
   try {
     // Always fetch from remote, ignoring version check
     const remoteConfig = await fetchFromRemote(0);
-    
+
     if (remoteConfig) {
       // Save to cache and apply immediately
       await saveToCache(remoteConfig);
       applyConfig(remoteConfig, 'remote');
       state.lastFetchedAt = new Date().toISOString();
-      
+
       console.log('[ConfigService] Force sync successful', {
         version: remoteConfig.version
       });
@@ -452,7 +463,7 @@ export function getCurrentConfig(): AppConfig | null {
  */
 export function subscribeToConfig(listener: (state: ConfigState) => void): () => void {
   listeners.push(listener);
-  
+
   // Return unsubscribe function
   return () => {
     listeners = listeners.filter(l => l !== listener);
@@ -464,9 +475,9 @@ export function subscribeToConfig(listener: (state: ConfigState) => void): () =>
  */
 export async function reloadConfigFromCache(): Promise<void> {
   console.log('[ConfigService] Reloading from cache...');
-  
+
   const cachedConfig = await loadFromCache();
-  
+
   if (cachedConfig) {
     applyConfig(cachedConfig, 'cache');
   } else {

@@ -64,11 +64,11 @@ async function getCurrentLocation(): Promise<LocationData | null> {
 
   try {
     console.log('[LocationService] Getting current location...');
-    
+
     const position = await Geolocation.getCurrentPosition({
-      enableHighAccuracy: false, // Use passive/network location (low battery)
+      enableHighAccuracy: true,  // Usar GPS real para localização precisa
       timeout: CONFIG.TIMEOUT_MS,
-      maximumAge: 5 * 60 * 1000, // Accept cached location up to 5 minutes old
+      maximumAge: 60 * 1000, // Aceitar cache de até 1 minuto
     });
 
     const locationData: LocationData = {

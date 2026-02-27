@@ -39,46 +39,46 @@ export function HomePage({ onLogout }: HomePageProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [, forceUpdate] = useState({});
-  
+
   // Permissions check
   const { permissions, isLoading: isPermissionsLoading, hasAllRequired, requestAll } = usePermissions();
-  
+
   // Background services (connectivity + config)
   const { connectivity, config, isInitialized } = useBackgroundServices();
-  
+
   const appState = useAppState();
   const panic = usePanicContext();
   const recording = useRecording();
-  
+
   // Extract monitoring config from the new config service
   // Ensure monitoring_periods is a valid array with proper structure
   const rawPeriods = config.currentConfig?.monitoring_periods || [];
-  const validPeriods = Array.isArray(rawPeriods) 
+  const validPeriods = Array.isArray(rawPeriods)
     ? rawPeriods.filter(p => p && typeof p.inicio === 'string' && typeof p.fim === 'string')
     : [];
-  
+
   // Calculate monitoring status locally
   const monitoringStatus = getMonitoringGateStatus(new Date(), validPeriods);
-  
+
   const monitoring = {
     dentroHorario: monitoringStatus.isWithinPeriod,
     periodoAtualIndex: monitoringStatus.currentPeriodIndex,
     periodosHoje: validPeriods
   };
-  
+
   // REMOVED: audioTriggerConfig from API (use local defaults only)
   const isConfigLoading = config.isLoading;
   const periodosSemana = config.currentConfig?.periodos_semana ?? null;
-  
+
   const audioTrigger = useAudioTriggerSingleton();
-  
+
   // REMOVED: Update config from server (use local defaults only)
   // audioTrigger.updateConfig() no longer called
-  
+
   // Stealth notification - shows "Bem-estar Ativo" when monitoring is active
   // REMOVED: useBackgroundServices already manages ForegroundService
   // useStealthNotification(audioTrigger.isCapturing);
-  
+
   // Ref to track if we auto-started the recording (to avoid duplicate toasts)
   const autoRecordingStartedRef = useRef(false);
   // Ref to track if audio was started manually via debug panel
@@ -125,7 +125,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   useEffect(() => {
     const handleNativeEvent = (event: { event: string; reason?: string; sessionId?: string; segmentIndex?: number; isCalibrated?: boolean }) => {
       console.log('[Home] Native audio trigger event:', event);
-      
+
       if (event.event === 'discussionDetected') {
         // Native recording is handled automatically by the service
         // Just show notification to user
@@ -136,12 +136,12 @@ export function HomePage({ onLogout }: HomePageProps) {
           duration: 3000,
         });
       }
-      
+
       if (event.event === 'nativeRecordingStarted') {
         console.log('[Home] Native recording started:', event.sessionId);
         appState.setStatus('recording');
       }
-      
+
       if (event.event === 'nativeRecordingStopped') {
         console.log('[Home] Native recording stopped:', event.sessionId);
         appState.setStatus('idle');
@@ -151,12 +151,12 @@ export function HomePage({ onLogout }: HomePageProps) {
           duration: 3000,
         });
       }
-      
+
       if (event.event === 'calibrationStatus') {
         console.log('[Home] Calibration status changed:', event.isCalibrated);
         // State is already managed in audioTrigger.isCalibrated, no need for local state
       }
-      
+
       if (event.event === 'audioMetrics') {
         // Update audioTriggerSingleton with native metrics (for UI updates)
         try {
@@ -166,9 +166,9 @@ export function HomePage({ onLogout }: HomePageProps) {
         }
       }
     };
-    
+
     hybridAudioTrigger.addListener(handleNativeEvent);
-    
+
     return () => {
       hybridAudioTrigger.removeListener(handleNativeEvent);
     };
@@ -184,13 +184,13 @@ export function HomePage({ onLogout }: HomePageProps) {
       console.log('[Home] Permissions not granted, skipping auto-start');
       return;
     }
-    
+
     // Only start if not already capturing (prevents restart on navigation)
     if (audioTrigger.isCapturing) {
       console.log('[Home] Audio trigger already capturing, skipping auto-start');
       return;
     }
-    
+
     // HybridAudioTrigger will handle:
     // - Permission flow gates
     // - Callback validation
@@ -216,14 +216,20 @@ export function HomePage({ onLogout }: HomePageProps) {
       const newStatus = getMonitoringGateStatus(new Date(), validPeriods);
       const wasWithinPeriod = monitoring.dentroHorario;
       const isWithinPeriod = newStatus.isWithinPeriod;
-      
+
       if (wasWithinPeriod !== isWithinPeriod) {
         console.log('[Home] Period status changed:', { wasWithinPeriod, isWithinPeriod });
+
+        // Report status to API via Native Plugin
+        const status = isWithinPeriod ? 'janela_iniciada' : 'janela_finalizada';
+        hybridAudioTrigger.reportStatus(status, isWithinPeriod, 'agenda_automatica')
+          .catch(err => console.error('[Home] Failed to report period status:', err));
+
         // Force re-render without losing state
         forceUpdate({});
       }
     };
-    
+
     // Check every minute
     const interval = setInterval(checkPeriod, 60000);
     return () => clearInterval(interval);
@@ -234,16 +240,16 @@ export function HomePage({ onLogout }: HomePageProps) {
   // LIGHT mode: outside monitoring period (minimal processing for battery saving)
   useEffect(() => {
     if (!audioTrigger.isCapturing) return;
-    
+
     const newMode = monitoring.dentroHorario ? 'FULL' : 'LIGHT';
-    
+
     if (audioTrigger.config.processingMode !== newMode) {
       console.log('[Home] Switching AudioTrigger mode:', newMode, '| dentroHorario:', monitoring.dentroHorario);
       audioTrigger.setProcessingMode(newMode);
     }
   }, [
     hasAllRequired,
-    monitoring.dentroHorario, 
+    monitoring.dentroHorario,
     audioTrigger.isCapturing,
     audioTrigger.start,
     audioTrigger.stop,
@@ -254,10 +260,10 @@ export function HomePage({ onLogout }: HomePageProps) {
   // Auto-start recording when discussion is detected
   // IMPORTANT: Only auto-record if WITHIN monitoring period (monitoring gate)
   useEffect(() => {
-    const shouldAutoRecord = 
-      audioTrigger.discussionOn && 
+    const shouldAutoRecord =
+      audioTrigger.discussionOn &&
       monitoring.dentroHorario && // <-- MONITORING GATE CHECK
-      !recording.isRecording && 
+      !recording.isRecording &&
       !panic.isPanicActive &&
       !autoRecordingStartedRef.current;
 
@@ -275,7 +281,7 @@ export function HomePage({ onLogout }: HomePageProps) {
         }
       });
     }
-    
+
     // Reset the ref when discussion ends and recording stops
     if (!audioTrigger.discussionOn && !recording.isRecording) {
       autoRecordingStartedRef.current = false;
@@ -286,7 +292,7 @@ export function HomePage({ onLogout }: HomePageProps) {
 
   const handleRecordToggle = async () => {
     if (isRecordLoading) return; // Prevent multiple clicks
-    
+
     setIsRecordLoading(true);
     try {
       if (recording.isRecording) {
@@ -353,9 +359,9 @@ export function HomePage({ onLogout }: HomePageProps) {
     <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom relative overflow-hidden">
       {/* Background watermark logo */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <img 
-          src={amparaCircleLogo} 
-          alt="" 
+        <img
+          src={amparaCircleLogo}
+          alt=""
           className="w-[3200px] h-[3200px] object-contain opacity-20"
         />
       </div>
@@ -376,8 +382,8 @@ export function HomePage({ onLogout }: HomePageProps) {
             </TooltipTrigger>
             <TooltipContent>
               <p>
-                {connectivity.isOnline 
-                  ? `Online - Última resposta: ${connectivity.lastLatencyMs}ms` 
+                {connectivity.isOnline
+                  ? `Online - Última resposta: ${connectivity.lastLatencyMs}ms`
                   : 'Offline - Sem conexão com o servidor'}
               </p>
               {connectivity.lastSuccessfulPing && (
@@ -425,7 +431,7 @@ export function HomePage({ onLogout }: HomePageProps) {
               </TooltipContent>
             </Tooltip>
           )}
-          
+
           {/* Menu button */}
           <Button
             variant="ghost"
@@ -439,12 +445,12 @@ export function HomePage({ onLogout }: HomePageProps) {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center p-6">
-        
+
         {/* Top section: Audio meter with integrated monitoring status */}
         {!panic.isPanicActive && (
           <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
             {/* AudioTriggerDebugPanel removed - AudioTrigger starts automatically on login */}
-            <AudioTriggerMeter 
+            <AudioTriggerMeter
               score={audioTrigger.metrics?.score ?? 0}
               isCapturing={audioTrigger.isCapturing}
               state={audioTrigger.state}
@@ -480,13 +486,13 @@ export function HomePage({ onLogout }: HomePageProps) {
                   isLoading={panic.isSendingToServer}
                 />
               </motion.div>
-              
+
               {/* Recording button - Always reserve space, hide with opacity during panic */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
-                animate={{ 
+                animate={{
                   opacity: (!panic.isActivating && !panic.isSendingToServer) ? 1 : 0,
-                  y: 0 
+                  y: 0
                 }}
                 transition={{ delay: 0.3 }}
                 className="h-[80px] flex items-center justify-center"
@@ -508,20 +514,20 @@ export function HomePage({ onLogout }: HomePageProps) {
               className="flex flex-col items-center gap-6"
             >
               <motion.div
-                animate={{ 
-                  scale: [1, 1.03, 1], 
-                  opacity: [1, 0.8, 1] 
+                animate={{
+                  scale: [1, 1.03, 1],
+                  opacity: [1, 0.8, 1]
                 }}
-                transition={{ 
-                  duration: 1.5, 
-                  repeat: Infinity, 
-                  ease: "easeInOut" 
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
                 }}
                 className="text-6xl font-bold text-destructive"
               >
                 {formatDuration(panic.panicDuration)}
               </motion.div>
-              
+
               <motion.button
                 onClick={() => navigate('/panic-active')}
                 className={`
@@ -549,7 +555,7 @@ export function HomePage({ onLogout }: HomePageProps) {
       <footer className="py-4 px-4 flex items-center justify-center">
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-[6px] text-muted-foreground/60">powered by</span>
-          <img src={orizonLogo} alt="Orizon Tech" className="h-4 object-contain mix-blend-multiply opacity-70" />
+          <img src={orizonLogo} alt="Orizon Tech" className="h-8 object-contain mix-blend-multiply opacity-70" />
         </div>
       </footer>
 

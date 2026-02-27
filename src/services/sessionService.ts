@@ -9,11 +9,13 @@ import SecureStorage from '@/plugins/SecureStorage';
 const SESSION_KEY = 'ampara_token';
 const REFRESH_TOKEN_KEY = 'ampara_refresh_token';
 const USER_KEY = 'ampara_user';
+const DEVICE_ID_KEY = 'ampara_device_id';
 
 // In-memory cache for immediate synchronous access
 let cachedToken: string | null = null;
 let cachedRefreshToken: string | null = null;
 let cachedUser: string | null = null;
+let cachedDeviceId: string | null = null;
 let isInitialized = false;
 
 /**
@@ -22,65 +24,81 @@ let isInitialized = false;
  */
 export async function initializeSession(): Promise<void> {
   if (isInitialized) return;
-  
+
   try {
     console.log('[SessionService] Initializing...');
-    
+
     // Try multiple storage sources in order of reliability
     // 1. SecureStorage (native SharedPreferences - most reliable)
     let tokenFromSecure: string | null = null;
     let refreshTokenFromSecure: string | null = null;
     let userFromSecure: string | null = null;
-    
+    let deviceIdFromSecure: string | null = null;
+
     try {
-      const [tokenResult, refreshTokenResult, userResult] = await Promise.all([
+      const [tokenResult, refreshTokenResult, userResult, deviceIdResult] = await Promise.all([
         SecureStorage.get({ key: SESSION_KEY }),
         SecureStorage.get({ key: REFRESH_TOKEN_KEY }),
-        SecureStorage.get({ key: USER_KEY })
+        SecureStorage.get({ key: USER_KEY }),
+        SecureStorage.get({ key: DEVICE_ID_KEY })
       ]);
       tokenFromSecure = tokenResult.value;
       refreshTokenFromSecure = refreshTokenResult.value;
       userFromSecure = userResult.value;
+      deviceIdFromSecure = deviceIdResult.value;
     } catch (e) {
       console.warn('[SessionService] SecureStorage.get failed:', e);
     }
-    
+
     // 2. Capacitor Preferences (fallback)
     let tokenFromPrefs: string | null = null;
     let refreshTokenFromPrefs: string | null = null;
     let userFromPrefs: string | null = null;
-    
+    let deviceIdFromPrefs: string | null = null;
+
     try {
-      const [tokenResult, refreshTokenResult, userResult] = await Promise.all([
+      const [tokenResult, refreshTokenResult, userResult, deviceIdResult] = await Promise.all([
         Preferences.get({ key: SESSION_KEY }),
         Preferences.get({ key: REFRESH_TOKEN_KEY }),
-        Preferences.get({ key: USER_KEY })
+        Preferences.get({ key: USER_KEY }),
+        Preferences.get({ key: DEVICE_ID_KEY })
       ]);
       tokenFromPrefs = tokenResult.value;
       refreshTokenFromPrefs = refreshTokenResult.value;
       userFromPrefs = userResult.value;
+      deviceIdFromPrefs = deviceIdResult.value;
     } catch (e) {
       console.warn('[SessionService] Preferences.get failed:', e);
     }
-    
+
     // Fallback to localStorage
     const localToken = localStorage.getItem(SESSION_KEY);
     const localRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     const localUser = localStorage.getItem(USER_KEY);
-    
+    const localDeviceId = localStorage.getItem('ampara_device_id_obj');
+
     // Fallback to sessionStorage (survives page reloads but not app restarts)
     const sessionToken = sessionStorage.getItem(SESSION_KEY);
     const sessionRefreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
     const sessionUser = sessionStorage.getItem(USER_KEY);
-    
+
     // Use first available value (SecureStorage has priority)
     cachedToken = tokenFromSecure || tokenFromPrefs || localToken || sessionToken;
     cachedRefreshToken = refreshTokenFromSecure || refreshTokenFromPrefs || localRefreshToken || sessionRefreshToken;
     cachedUser = userFromSecure || userFromPrefs || localUser || sessionUser;
-    
+
+    // Handle deviceId specially since it might be an object in localStorage
+    let parsedLocalDeviceId = null;
+    if (localDeviceId) {
+      try {
+        parsedLocalDeviceId = JSON.parse(localDeviceId).device_id;
+      } catch (e) { }
+    }
+    cachedDeviceId = deviceIdFromSecure || deviceIdFromPrefs || parsedLocalDeviceId || localStorage.getItem(DEVICE_ID_KEY);
+
     console.log('[SessionService] Sources - Secure:', !!tokenFromSecure, 'Prefs:', !!tokenFromPrefs, 'Local:', !!localToken, 'Session:', !!sessionToken);
-    console.log('[SessionService] Loaded - Token:', !!cachedToken, 'RefreshToken:', !!cachedRefreshToken, 'User:', !!cachedUser);
-    
+    console.log('[SessionService] Loaded - Token:', !!cachedToken, 'RefreshToken:', !!cachedRefreshToken, 'User:', !!cachedUser, 'DeviceId:', cachedDeviceId);
+
     // Sync all storages if we found data
     if (cachedToken) {
       await syncToken(cachedToken);
@@ -91,7 +109,10 @@ export async function initializeSession(): Promise<void> {
     if (cachedUser) {
       await syncUser(cachedUser);
     }
-    
+    if (cachedDeviceId) {
+      await syncDeviceId(cachedDeviceId);
+    }
+
     isInitialized = true;
   } catch (error) {
     console.error('[SessionService] Initialization failed:', error);
@@ -120,6 +141,21 @@ export function getRefreshToken(): string | null {
  */
 export function getUserData(): string | null {
   return cachedUser;
+}
+
+/**
+ * Get the current device ID (synchronous)
+ */
+export function getDeviceId(): string | null {
+  return cachedDeviceId;
+}
+
+/**
+ * Set device ID with full persistence
+ */
+export async function setDeviceId(deviceId: string): Promise<void> {
+  cachedDeviceId = deviceId;
+  await syncDeviceId(deviceId);
 }
 
 /**
@@ -180,34 +216,40 @@ export async function clearSession(): Promise<void> {
     cachedToken = null;
     cachedRefreshToken = null;
     cachedUser = null;
-    
+    cachedDeviceId = null; // Clear cached device ID
+
     // Clear from all storages
     try {
       await Promise.all([
         SecureStorage.remove({ key: SESSION_KEY }),
         SecureStorage.remove({ key: REFRESH_TOKEN_KEY }),
-        SecureStorage.remove({ key: USER_KEY })
+        SecureStorage.remove({ key: USER_KEY }),
+        SecureStorage.remove({ key: DEVICE_ID_KEY }) // Clear device ID
       ]);
     } catch (e) {
       console.warn('[SessionService] SecureStorage.remove failed:', e);
     }
-    
+
     try {
       await Promise.all([
         Preferences.remove({ key: SESSION_KEY }),
         Preferences.remove({ key: REFRESH_TOKEN_KEY }),
-        Preferences.remove({ key: USER_KEY })
+        Preferences.remove({ key: USER_KEY }),
+        Preferences.remove({ key: DEVICE_ID_KEY }) // Clear device ID
       ]);
     } catch (e) {
       console.warn('[SessionService] Preferences.remove failed:', e);
     }
-    
+
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(DEVICE_ID_KEY); // Clear device ID
+    localStorage.removeItem('ampara_device_id_obj'); // Clear old device ID format
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
+    // sessionStorage.removeItem(DEVICE_ID_KEY); // Device ID is not stored in sessionStorage by syncDeviceId
   } catch (error) {
     console.error('[SessionService] Failed to clear session:', error);
   }
@@ -224,13 +266,13 @@ async function syncToken(token: string): Promise<void> {
   } catch (e) {
     console.warn('[SessionService] SecureStorage.set failed for token:', e);
   }
-  
+
   try {
     await Preferences.set({ key: SESSION_KEY, value: token });
   } catch (e) {
     console.warn('[SessionService] Preferences.set failed for token:', e);
   }
-  
+
   localStorage.setItem(SESSION_KEY, token);
   sessionStorage.setItem(SESSION_KEY, token);
 }
@@ -245,13 +287,13 @@ async function syncUser(userData: string): Promise<void> {
   } catch (e) {
     console.warn('[SessionService] SecureStorage.set failed for user:', e);
   }
-  
+
   try {
     await Preferences.set({ key: USER_KEY, value: userData });
   } catch (e) {
     console.warn('[SessionService] Preferences.set failed for user:', e);
   }
-  
+
   localStorage.setItem(USER_KEY, userData);
   sessionStorage.setItem(USER_KEY, userData);
 }
@@ -263,57 +305,73 @@ async function syncUser(userData: string): Promise<void> {
 export async function reloadSession(): Promise<boolean> {
   try {
     console.log('[SessionService] Reloading session...');
-    
+
     // Try multiple sources (SecureStorage first)
     let tokenFromSecure: string | null = null;
     let refreshTokenFromSecure: string | null = null;
     let userFromSecure: string | null = null;
-    
+    let deviceIdFromSecure: string | null = null;
+
     try {
-      const [tokenResult, refreshTokenResult, userResult] = await Promise.all([
+      const [tokenResult, refreshTokenResult, userResult, deviceIdResult] = await Promise.all([
         SecureStorage.get({ key: SESSION_KEY }),
         SecureStorage.get({ key: REFRESH_TOKEN_KEY }),
-        SecureStorage.get({ key: USER_KEY })
+        SecureStorage.get({ key: USER_KEY }),
+        SecureStorage.get({ key: DEVICE_ID_KEY })
       ]);
       tokenFromSecure = tokenResult.value;
       refreshTokenFromSecure = refreshTokenResult.value;
       userFromSecure = userResult.value;
+      deviceIdFromSecure = deviceIdResult.value;
     } catch (e) {
       console.warn('[SessionService] SecureStorage.get failed on reload:', e);
     }
-    
+
     let tokenFromPrefs: string | null = null;
     let refreshTokenFromPrefs: string | null = null;
     let userFromPrefs: string | null = null;
-    
+    let deviceIdFromPrefs: string | null = null;
+
     try {
-      const [tokenResult, refreshTokenResult, userResult] = await Promise.all([
+      const [tokenResult, refreshTokenResult, userResult, deviceIdResult] = await Promise.all([
         Preferences.get({ key: SESSION_KEY }),
         Preferences.get({ key: REFRESH_TOKEN_KEY }),
-        Preferences.get({ key: USER_KEY })
+        Preferences.get({ key: USER_KEY }),
+        Preferences.get({ key: DEVICE_ID_KEY })
       ]);
       tokenFromPrefs = tokenResult.value;
       refreshTokenFromPrefs = refreshTokenResult.value;
       userFromPrefs = userResult.value;
+      deviceIdFromPrefs = deviceIdResult.value;
     } catch (e) {
       console.warn('[SessionService] Preferences.get failed on reload:', e);
     }
-    
+
     const localToken = localStorage.getItem(SESSION_KEY);
     const localRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     const localUser = localStorage.getItem(USER_KEY);
+    const localDeviceId = localStorage.getItem('ampara_device_id_obj');
     const sessionToken = sessionStorage.getItem(SESSION_KEY);
     const sessionRefreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
     const sessionUser = sessionStorage.getItem(USER_KEY);
-    
+
     // Use first available (SecureStorage has priority)
     cachedToken = tokenFromSecure || tokenFromPrefs || localToken || sessionToken;
     cachedRefreshToken = refreshTokenFromSecure || refreshTokenFromPrefs || localRefreshToken || sessionRefreshToken;
     cachedUser = userFromSecure || userFromPrefs || localUser || sessionUser;
-    
+
+    // Handle deviceId specially since it might be an object in localStorage
+    let parsedLocalDeviceId = null;
+    if (localDeviceId) {
+      try {
+        parsedLocalDeviceId = JSON.parse(localDeviceId).device_id;
+      } catch (e) { }
+    }
+    cachedDeviceId = deviceIdFromSecure || deviceIdFromPrefs || parsedLocalDeviceId || localStorage.getItem(DEVICE_ID_KEY);
+
     console.log('[SessionService] Reload sources - Secure:', !!tokenFromSecure, 'Prefs:', !!tokenFromPrefs, 'Local:', !!localToken, 'Session:', !!sessionToken);
-    console.log('[SessionService] Reloaded - Token:', !!cachedToken, 'RefreshToken:', !!cachedRefreshToken, 'User:', !!cachedUser);
-    
+    console.log('[SessionService] Reloaded - Token:', !!cachedToken, 'RefreshToken:', !!cachedRefreshToken, 'User:', !!cachedUser, 'DeviceId:', cachedDeviceId);
+
     // If we found data, sync it back to all storages
     if (cachedToken) {
       await syncToken(cachedToken);
@@ -324,7 +382,10 @@ export async function reloadSession(): Promise<boolean> {
     if (cachedUser) {
       await syncUser(cachedUser);
     }
-    
+    if (cachedDeviceId) {
+      await syncDeviceId(cachedDeviceId);
+    }
+
     return !!cachedToken;
   } catch (error) {
     console.error('[SessionService] Reload failed:', error);
@@ -342,13 +403,34 @@ async function syncRefreshToken(refreshToken: string): Promise<void> {
   } catch (e) {
     console.warn('[SessionService] SecureStorage.set failed for refresh token:', e);
   }
-  
+
   try {
     await Preferences.set({ key: REFRESH_TOKEN_KEY, value: refreshToken });
   } catch (e) {
     console.warn('[SessionService] Preferences.set failed for refresh token:', e);
   }
-  
+
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+/**
+ * Sync device ID to all storages
+ */
+async function syncDeviceId(deviceId: string): Promise<void> {
+  try {
+    await SecureStorage.set({ key: DEVICE_ID_KEY, value: deviceId });
+  } catch (e) {
+    console.warn('[SessionService] SecureStorage.set failed for deviceId:', e);
+  }
+
+  try {
+    await Preferences.set({ key: DEVICE_ID_KEY, value: deviceId });
+  } catch (e) {
+    console.warn('[SessionService] Preferences.set failed for deviceId:', e);
+  }
+
+  localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  // Keep compatibility with deviceId.ts format
+  localStorage.setItem('ampara_device_id_obj', JSON.stringify({ device_id: deviceId, created_at: new Date().toISOString() }));
 }
