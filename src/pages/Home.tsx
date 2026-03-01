@@ -4,14 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { Triangle, Menu, LogOut, X, Upload, Calendar, Wifi, WifiOff, Palette, Info, Settings } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/Logo';
-
-import orizonLogo from '@/assets/orizon-tech-logo.png';
-import amparaCircleLogo from '@/assets/ampara-circle-logo.png';
 import { PanicButton } from '@/components/PanicButton';
+
 import { RecordButton } from '@/components/RecordButton';
 import { LogoutConfirmDialog } from '@/components/LogoutConfirmDialog';
+import { PasswordValidationDialog } from '@/components/PasswordValidationDialog';
 import { PermissionsRequest } from '@/components/PermissionsRequest';
+
 
 // MonitoringStatus is now integrated into AudioTriggerMeter
 import { MonitoringPeriodsList } from '@/components/MonitoringPeriodsList';
@@ -144,7 +143,8 @@ export function HomePage({ onLogout }: HomePageProps) {
 
       if (event.event === 'nativeRecordingStopped') {
         console.log('[Home] Native recording stopped:', event.sessionId);
-        appState.setStatus('idle');
+        appState.setStatus('normal');
+
         toast({
           title: 'Gravação finalizada',
           description: 'Áudio enviado com sucesso',
@@ -289,9 +289,24 @@ export function HomePage({ onLogout }: HomePageProps) {
   }, [audioTrigger.discussionOn, recording.isRecording, panic.isPanicActive, appState, toast]);
 
   const [isRecordLoading, setIsRecordLoading] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showPanicPulse, setShowPanicPulse] = useState(false);
 
   const handleRecordToggle = async () => {
     if (isRecordLoading) return; // Prevent multiple clicks
+
+    // Se o pânico estiver ativo, não permite parar a gravação
+    if (panic.isPanicActive && recording.isRecording) {
+      setShowPanicPulse(true);
+      setTimeout(() => setShowPanicPulse(false), 2000);
+      toast({
+        title: 'Ação não permitida',
+        description: 'Cancele o pânico antes de parar a gravação.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsRecordLoading(true);
     try {
@@ -323,6 +338,7 @@ export function HomePage({ onLogout }: HomePageProps) {
     }
   };
 
+
   const handlePanicStart = () => {
     panic.startHold();
   };
@@ -331,10 +347,36 @@ export function HomePage({ onLogout }: HomePageProps) {
     panic.cancelHold();
   };
 
+  const handlePasswordValidated = async (loginTipo: 'normal' | 'coacao') => {
+    setShowPasswordDialog(false);
+    setIsCancelling(true);
+
+    if (loginTipo === 'coacao') {
+      console.log('[Home] MODO COAÇÃO DETECTADO - Simulando cancelamento');
+      toast({
+        title: 'Proteção desativada',
+        description: 'O modo pânico foi encerrado.',
+      });
+      setIsCancelling(false);
+      return;
+    }
+
+    console.log('[Home] Cancelando pânico (modo normal)');
+    await panic.deactivatePanic();
+    appState.setStatus('normal');
+
+    toast({
+      title: 'Proteção desativada',
+      description: 'O modo pânico foi encerrado.',
+    });
+    setIsCancelling(false);
+  };
+
   const handleLogoutRequest = () => {
     setMenuOpen(false);
     setLogoutDialogOpen(true);
   };
+
 
   const handleLogoutConfirm = async () => {
     // Note: onLogout in App.tsx now handles clearing all storage via Preferences
@@ -357,17 +399,17 @@ export function HomePage({ onLogout }: HomePageProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom relative overflow-hidden">
-      {/* Background watermark logo */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <img
-          src={amparaCircleLogo}
-          alt=""
-          className="w-[3200px] h-[3200px] object-contain opacity-20"
-        />
-      </div>
-      {/* Header */}
+      <PasswordValidationDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        onValidated={handlePasswordValidated}
+        title="Confirmar Cancelamento"
+        description="Digite sua senha para cancelar o modo pânico"
+      />
       <header className="flex items-center justify-between px-4 py-2 bg-background">
-        <Logo size="sm" />
+
+        <div />
+
         <div className="flex items-center gap-2">
           {/* Connectivity indicator */}
           <Tooltip>
@@ -446,118 +488,96 @@ export function HomePage({ onLogout }: HomePageProps) {
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center p-6">
 
-        {/* Top section: Audio meter with integrated monitoring status */}
-        {!panic.isPanicActive && (
-          <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-auto">
-            {/* AudioTriggerDebugPanel removed - AudioTrigger starts automatically on login */}
-            <AudioTriggerMeter
-              score={audioTrigger.metrics?.score ?? 0}
-              isCapturing={audioTrigger.isCapturing}
-              state={audioTrigger.state}
-              isRecording={recording.isRecording}
-              recordingDuration={recording.duration}
-              recordingOrigin={recording.origemGravacao}
-              dentroHorario={monitoring.dentroHorario}
-              periodoAtualIndex={monitoring.periodoAtualIndex}
-              periodosHoje={monitoring.periodosHoje}
-              periodosSemana={periodosSemana}
-              isCalibrated={audioTrigger.isCalibrated}
-              isNoisy={audioTrigger.metrics?.isNoisy ?? false}
-              isLoading={isConfigLoading}
-              triggerMode={hybridAudioTrigger.getMode()}
-            />
-          </div>
-        )}
-
-        {/* Center section: Panic button + Record button */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 min-h-[280px]">
-          {!panic.isPanicActive ? (
-            <>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <PanicButton
-                  onHoldStart={handlePanicStart}
-                  onHoldEnd={handlePanicEnd}
-                  isActivating={panic.isActivating}
-                  disabled={recording.isRecording || panic.isSendingToServer}
-                  isLoading={panic.isSendingToServer}
-                />
-              </motion.div>
-
-              {/* Recording button - Always reserve space, hide with opacity during panic */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{
-                  opacity: (!panic.isActivating && !panic.isSendingToServer) ? 1 : 0,
-                  y: 0
-                }}
-                transition={{ delay: 0.3 }}
-                className="h-[80px] flex items-center justify-center"
-              >
-                {(!panic.isActivating && !panic.isSendingToServer) && (
-                  <RecordButton
-                    onClick={handleRecordToggle}
-                    isRecording={recording.isRecording}
-                    disabled={false}
-                    isLoading={isRecordLoading}
-                  />
-                )}
-              </motion.div>
-            </>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center gap-6"
-            >
-              <motion.div
-                animate={{
-                  scale: [1, 1.03, 1],
-                  opacity: [1, 0.8, 1]
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="text-6xl font-bold text-destructive"
-              >
-                {formatDuration(panic.panicDuration)}
-              </motion.div>
-
-              <motion.button
-                onClick={() => navigate('/panic-active')}
-                className={`
-                  w-32 h-32 rounded-full bg-gradient-safe 
-                  flex flex-col items-center justify-center 
-                  ${panic.canCancel() ? 'pulse-safe' : 'opacity-50'}
-                `}
-                whileTap={panic.canCancel() ? { scale: 0.95 } : {}}
-              >
-                {panic.canCancel() ? (
-                  <>
-                    <span className="text-xl font-bold text-white">Cancelar</span>
-                    <span className="text-[10px] text-white/80 mt-1">Agora estou segura</span>
-                  </>
-                ) : (
-                  <span className="text-sm font-bold text-white">Aguarde 5s...</span>
-                )}
-              </motion.button>
-            </motion.div>
-          )}
+        {/* Top section: Audio meter with integrated monitoring status - ALWAYS VISIBLE */}
+        <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-8">
+          <AudioTriggerMeter
+            score={audioTrigger.metrics?.score ?? 0}
+            isCapturing={audioTrigger.isCapturing}
+            state={audioTrigger.state}
+            isRecording={recording.isRecording}
+            recordingDuration={recording.duration}
+            recordingOrigin={recording.origemGravacao}
+            dentroHorario={monitoring.dentroHorario}
+            periodoAtualIndex={monitoring.periodoAtualIndex}
+            periodosHoje={monitoring.periodosHoje}
+            periodosSemana={periodosSemana}
+            isCalibrated={audioTrigger.isCalibrated}
+            isNoisy={audioTrigger.metrics?.isNoisy ?? false}
+            isLoading={isConfigLoading}
+            triggerMode={hybridAudioTrigger.getMode()}
+          />
         </div>
+
+
+        {/* Center section: Stable layout with fixed positions */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[400px]">
+
+          {/* Fixed Timer Area above Panic Button */}
+          <div className="h-16 flex flex-col items-center justify-end pb-2">
+            {(recording.isRecording || panic.isPanicActive) && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`text-4xl font-mono font-bold ${panic.isPanicActive ? 'text-destructive' : 'text-primary'}`}
+              >
+                {formatDuration(
+                  panic.isPanicActive
+                    ? panic.panicDuration
+                    : (recording.origemGravacao === 'botao_manual' ? recording.duration : 0)
+                )}
+              </motion.div>
+            )}
+            {recording.isRecording && !panic.isPanicActive && (
+              <span className="text-[10px] font-medium text-destructive uppercase tracking-widest">
+                Gravando {recording.origemGravacao === 'automatico' ? '(Detector Ao Redor)' : '(Modo Manual)'}
+              </span>
+            )}
+            {panic.isPanicActive && (
+              <span className="text-[10px] font-medium text-destructive uppercase tracking-widest animate-pulse">
+                Pânico Ativo
+              </span>
+            )}
+          </div>
+
+
+          {/* Panic Button - Fixed Size & Position */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <PanicButton
+              onHoldStart={panic.isPanicActive ? () => setShowPasswordDialog(true) : handlePanicStart}
+              onHoldEnd={panic.isPanicActive ? () => { } : handlePanicEnd}
+              isActivating={panic.isActivating}
+              isPanicActive={panic.isPanicActive}
+              shouldPulse={showPanicPulse}
+              disabled={panic.isSendingToServer || isCancelling}
+              isLoading={panic.isSendingToServer || isCancelling}
+            />
+          </motion.div>
+
+
+          {/* Recording Button - Fixed Size & Position */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="h-[100px] flex items-center justify-center"
+          >
+            <RecordButton
+              onClick={handleRecordToggle}
+              isRecording={recording.isRecording}
+              disabled={panic.isActivating || panic.isSendingToServer}
+              isLoading={isRecordLoading}
+            />
+          </motion.div>
+        </div>
+
       </main>
 
-      {/* Powered by footer */}
-      <footer className="py-4 px-4 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[6px] text-muted-foreground/60">powered by</span>
-          <img src={orizonLogo} alt="Orizon Tech" className="h-8 object-contain mix-blend-multiply opacity-70" />
-        </div>
-      </footer>
+      {/* Powered by footer removed */}
+
 
 
       {/* Side menu */}

@@ -224,8 +224,6 @@ export function AudioTriggerMeter({
     return null;
   };
 
-  const recordingText = getRecordingText();
-
   return (
     <div className="flex flex-col items-center gap-2">
       {/* Circular meter */}
@@ -249,8 +247,6 @@ export function AudioTriggerMeter({
             strokeLinecap="round"
           />
 
-
-
           {/* Progress arc with gradient color */}
           {score > 0 && (
             <motion.circle
@@ -270,9 +266,6 @@ export function AudioTriggerMeter({
               transition={{
                 strokeDashoffset: { duration: 0.5, ease: 'easeOut' },
                 stroke: { duration: 0.3 },
-              }}
-              style={{
-                filter: isRecording ? `drop-shadow(0 0 6px ${strokeColor})` : 'none',
               }}
             />
           )}
@@ -300,145 +293,103 @@ export function AudioTriggerMeter({
             </>
           )}
 
-          {/* Recording indicator - Red pulsing circle inside the same Ear container */}
-          {isRecording ? (
-            <motion.div
-              className={`p-1.5 rounded-full relative z-10 bg-destructive/10`}
-            >
-              <motion.div
-                className="w-3.5 h-3.5 rounded-full bg-destructive"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.8, 1, 0.8],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-                style={{
-                  boxShadow: '0 0 10px rgba(220, 38, 38, 0.5)',
-                }}
+          <motion.div
+            animate={isCapturing ? {
+              scale: [1, 1.03, 1],
+            } : {}}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+            className={`p-1.5 rounded-full relative z-10 ${isCapturing && dentroHorario
+              ? 'bg-success/10'
+              : 'bg-muted/40'
+              }`}
+          >
+            {isCapturing && dentroHorario ? (
+              <Ear
+                className={`w-3.5 h-3.5 ${!isCalibrated ? 'text-orange-500' :
+                  'text-emerald-500'
+                  }`}
               />
-            </motion.div>
-          ) : (
-            <motion.div
-              animate={isCapturing ? {
-                scale: [1, 1.03, 1],
-              } : {}}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-              className={`p-1.5 rounded-full relative z-10 ${isCapturing && dentroHorario
-                ? 'bg-success/10'
-                : 'bg-muted/40'
-                }`}
-            >
-              {isCapturing && dentroHorario ? (
-                <Ear
-                  className={`w-3.5 h-3.5 ${!isCalibrated ? 'text-orange-500' :
-                    'text-emerald-500'
-                    }`}
-                />
-              ) : (
-                <EarOff className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
-            </motion.div>
-          )}
+            ) : (
+              <EarOff className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
+          </motion.div>
         </div>
       </div>
 
-      {/* Recording status text */}
-      {recordingText && (
-        <motion.div
-          key={isRecording ? 'recording' : 'idle'}
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center gap-0.5"
-        >
-          <span className={`text-xs font-medium ${isAutoRecording ? 'text-amber-500' : 'text-destructive'}`}>
-            {recordingText}
-          </span>
-          <span className="text-[10px] text-muted-foreground">
-            {isAutoRecording ? 'Discussão detectada' : 'Gravação manual'}
-          </span>
-        </motion.div>
-      )}
-
       {/* Integrated monitoring status */}
-      {!recordingText && (
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          onClick={() => navigate('/schedule')}
-          className="flex flex-col items-center gap-0.5 hover:opacity-80 transition-opacity"
-        >
-          {monitoringStatus === 'loading' && (
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        onClick={() => navigate('/schedule')}
+        className="flex flex-col items-center gap-0.5 hover:opacity-80 transition-opacity"
+      >
+        {monitoringStatus === 'loading' && (
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse" />
+            <span className="text-xs text-muted-foreground">Carregando...</span>
+          </div>
+        )}
+
+        {monitoringStatus === 'active' && currentPeriod && (
+          <>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse" />
-              <span className="text-xs text-muted-foreground">Carregando...</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-medium text-emerald-500">Ativo</span>
+              <span className="text-[10px] text-muted-foreground">{currentPeriod.inicio}-{currentPeriod.fim}</span>
             </div>
-          )}
+            <span className="text-[10px] text-muted-foreground">
+              Termina em {formatTimeDiff(parseTime(currentPeriod.fim))}
+            </span>
+            {isNoisy ? (
+              <span className="text-[10px] font-medium text-orange-500">
+                ⚠️ Ambiente ruidoso
+              </span>
+            ) : (
+              <span className={`text-[10px] font-medium ${triggerMode === 'WAITING_PERMISSION' ? 'text-red-500' :
+                triggerMode === 'STOPPED' ? 'text-gray-500' :
+                  triggerMode === 'RUNNING' ? (isCalibrated ? 'text-emerald-500' : 'text-orange-500') :
+                    isCalibrated ? 'text-emerald-500' : 'text-orange-500'
+                }`}>
+                {triggerMode === 'WAITING_PERMISSION' ? 'Permissão pendente' :
+                  triggerMode === 'STOPPED' ? 'Aguardando...' :
+                    triggerMode === 'RUNNING' ? (isCalibrated ? 'Monitorando' : 'Calibrando...') :
+                      isCalibrated ? 'Calibrado' : 'Calibrando...'}
+              </span>
+            )}
+          </>
+        )}
 
-          {monitoringStatus === 'active' && currentPeriod && (
-            <>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-medium text-emerald-500">Ativo</span>
-                <span className="text-[10px] text-muted-foreground">{currentPeriod.inicio}-{currentPeriod.fim}</span>
-              </div>
+        {monitoringStatus === 'next' && nextPeriodInfo && (
+          <>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              <span className="text-xs font-medium text-primary">{nextPeriodInfo.dayLabel}</span>
+              <span className="text-[10px] text-muted-foreground">{nextPeriodInfo.period.inicio}-{nextPeriodInfo.period.fim}</span>
+            </div>
+            {nextPeriodInfo.dayLabel === 'Hoje' && (
               <span className="text-[10px] text-muted-foreground">
-                Termina em {formatTimeDiff(parseTime(currentPeriod.fim))}
+                Inicia em {formatTimeDiff(parseTime(nextPeriodInfo.period.inicio))}
               </span>
-              {isNoisy ? (
-                <span className="text-[10px] font-medium text-orange-500">
-                  ⚠️ Ambiente ruidoso
-                </span>
-              ) : (
-                <span className={`text-[10px] font-medium ${triggerMode === 'WAITING_PERMISSION' ? 'text-red-500' :
-                  triggerMode === 'STOPPED' ? 'text-gray-500' :
-                    triggerMode === 'RUNNING' ? (isCalibrated ? 'text-emerald-500' : 'text-orange-500') :
-                      isCalibrated ? 'text-emerald-500' : 'text-orange-500'
-                  }`}>
-                  {triggerMode === 'WAITING_PERMISSION' ? 'Permissão pendente' :
-                    triggerMode === 'STOPPED' ? 'Aguardando...' :
-                      triggerMode === 'RUNNING' ? (isCalibrated ? 'Monitorando' : 'Calibrando...') :
-                        isCalibrated ? 'Calibrado' : 'Calibrando...'}
-                </span>
-              )}
-            </>
-          )}
+            )}
+          </>
+        )}
 
-          {monitoringStatus === 'next' && nextPeriodInfo && (
-            <>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span className="text-xs font-medium text-primary">{nextPeriodInfo.dayLabel}</span>
-                <span className="text-[10px] text-muted-foreground">{nextPeriodInfo.period.inicio}-{nextPeriodInfo.period.fim}</span>
-              </div>
-              {nextPeriodInfo.dayLabel === 'Hoje' && (
-                <span className="text-[10px] text-muted-foreground">
-                  Inicia em {formatTimeDiff(parseTime(nextPeriodInfo.period.inicio))}
-                </span>
-              )}
-            </>
-          )}
-
-          {monitoringStatus === 'none' && (
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
-                <span className="text-xs text-muted-foreground">Sem monitoramento agendado</span>
-              </div>
-              <span className="text-[10px] text-muted-foreground/70">
-                Nenhum período configurado esta semana
-              </span>
+        {monitoringStatus === 'none' && (
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+              <span className="text-xs text-muted-foreground">Sem monitoramento agendado</span>
             </div>
-          )}
-        </motion.button>
-      )}
+            <span className="text-[10px] text-muted-foreground/70">
+              Nenhum período configurado esta semana
+            </span>
+          </div>
+        )}
+      </motion.button>
     </div>
   );
 }

@@ -17,6 +17,7 @@ const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 
 export interface ChangePasswordResponse {
   success: boolean;
+  error?: string;
 }
 
 export interface UpdateSchedulesResponse {
@@ -24,12 +25,15 @@ export interface UpdateSchedulesResponse {
   message?: string;
   periodos_atualizados?: number;
   errors?: string[];
+  error?: string;
 }
 
 export interface ValidatePasswordResponse {
   success: boolean;
   loginTipo: 'normal' | 'coacao';
+  error?: string;
 }
+
 
 export interface SchedulePeriod {
   inicio: string; // HH:MM

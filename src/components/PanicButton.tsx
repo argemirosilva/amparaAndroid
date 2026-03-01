@@ -5,6 +5,8 @@ interface PanicButtonProps {
   onHoldStart: () => void;
   onHoldEnd: () => void;
   isActivating: boolean;
+  isPanicActive?: boolean;
+  shouldPulse?: boolean;
   disabled?: boolean;
   isLoading?: boolean;
 }
@@ -13,9 +15,13 @@ export function PanicButton({
   onHoldStart,
   onHoldEnd,
   isActivating,
+  isPanicActive = false,
+  shouldPulse = false,
   disabled = false,
   isLoading = false,
 }: PanicButtonProps) {
+
+
   const isDisabled = disabled || isLoading;
   return (
     <div className="relative">
@@ -47,14 +53,20 @@ export function PanicButton({
         disabled={isDisabled}
         className={`
           relative w-[166px] h-[166px] rounded-full
-          bg-red-400/80
+          bg-gradient-panic luminosity-effect
           flex items-center justify-center
           transition-all duration-200
+          border-2 border-primary/20
           ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
-          ${isActivating ? 'animate-pulse-glow scale-105 !bg-destructive' : 'shadow-lg hover:bg-red-400'}
+          ${isActivating || shouldPulse ? 'shadow-glow-panic' : 'shadow-lg hover:opacity-90'}
+          ${shouldPulse ? 'pulse-panic' : ''}
         `}
+
+
+
         whileTap={isDisabled ? undefined : { scale: 0.95 }}
       >
+
         {/* Progress ring during activation */}
         {isActivating && (
           <svg className="absolute inset-0 w-full h-full -rotate-90">
@@ -100,9 +112,12 @@ export function PanicButton({
             </>
           ) : (
             <>
-              <span className="text-2xl font-bold tracking-wider">SOCORRO</span>
+              <span className="text-2xl font-bold tracking-wider">
+                {isPanicActive ? 'CANCELAR' : 'SOCORRO'}
+              </span>
             </>
           )}
+
         </div>
       </motion.button>
 

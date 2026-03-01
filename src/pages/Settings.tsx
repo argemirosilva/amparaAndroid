@@ -5,8 +5,8 @@ import { ArrowLeft, Lock, Calendar, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
+
 import { changePassword, updateSchedules, WeekSchedule, validatePassword } from '@/lib/api_settings';
 import { clearSessionToken } from '@/lib/api';
 import { PeriodosSemana } from '@/lib/types';
@@ -377,9 +377,9 @@ export default function SettingsPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <Logo size="sm" />
             <h1 className="text-lg font-semibold">Configurações</h1>
           </div>
+
         </div>
       </motion.div>
 
@@ -471,7 +471,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleChangePassword}
               disabled={isChangingPassword}
-              className="w-full"
+              className="w-full bg-secondary hover:bg-secondary/90 text-white"
             >
               {isChangingPassword ? (
                 <>
@@ -511,7 +511,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleSaveSchedule}
               disabled={isSavingSchedule}
-              className="w-full mt-4"
+              className="w-full mt-4 bg-secondary hover:bg-secondary/90 text-white"
             >
               {isSavingSchedule ? (
                 <>

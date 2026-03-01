@@ -7,57 +7,51 @@
 @layer base {
   :root {
     /* Core AMPARA Colors - Light Theme with Ice Gray background */
-    --background: 210 20% 96%;
-    --foreground: 220 30% 20%;
+    /* Paleta Híbrida - Roxo Ampara para Ações, Cinza Chumbo para Interfaces */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 270 50% 15%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 270 50% 15%;
+    --popover-foreground: 0 0% 10%;
 
-    /* Primary: Purple */
-    --primary: 270 70% 55%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Roxo Ampara (Original para Ações) */
+    --primary: 270 70% 45%;
+    --primary-foreground: 0 0% 98%;
 
-    /* Secondary: Pink */
-    --secondary: 330 70% 55%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary: Cinza Escuro Neutro (Para Login/Configurações Sóbreos) */
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 270 20% 90%;
-    --muted-foreground: 270 30% 40%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 300 60% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 10%;
 
-    /* Destructive/Panic: Red */
-    --destructive: 0 85% 55%;
-    --destructive-foreground: 0 0% 100%;
+    /* Destructive: Emergência (Vermelho Ampara) */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* Success: Green */
-    --success: 142 70% 45%;
-    --success-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 270 70% 45%;
 
-    /* Warning: Orange */
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --radius: 0.5rem;
 
-    --border: 270 20% 85%;
-    --input: 270 20% 92%;
-    --ring: 270 70% 55%;
-
-    --radius: 1rem;
-
-    /* Gradients */
+    /* Gradients Originais Restaurados */
     --gradient-primary: linear-gradient(135deg, hsl(270 70% 55%) 0%, hsl(330 70% 55%) 100%);
     --gradient-panic: linear-gradient(135deg, hsl(0 85% 55%) 0%, hsl(0 85% 40%) 100%);
     --gradient-recording: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(0 85% 55%) 100%);
     --gradient-safe: linear-gradient(135deg, hsl(142 70% 45%) 0%, hsl(170 70% 45%) 100%);
-    
-    /* Shadows */
-    --shadow-glow-primary: 0 0 40px hsla(270, 70%, 55%, 0.3);
-    --shadow-glow-panic: 0 0 60px hsla(0, 85%, 55%, 0.4);
-    --shadow-glow-recording: 0 0 40px hsla(38, 92%, 50%, 0.3);
+
+    /* Shadows Premium (Luminosity Effect) */
+    --shadow-glow-primary: 0 0 20px hsla(270, 70%, 55%, 0.3), inset 0 0 10px hsla(270, 70%, 80%, 0.2);
+    --shadow-glow-panic: 0 0 25px hsla(0, 85%, 55%, 0.4), inset 0 0 15px hsla(0, 85%, 80%, 0.2);
+    --shadow-glow-recording: 0 0 20px hsla(0, 85%, 55%, 0.3), inset 0 0 10px hsla(0, 85%, 80%, 0.2);
+
 
     --sidebar-background: 270 30% 96%;
     --sidebar-foreground: 270 50% 15%;
@@ -120,63 +114,69 @@
 }
 
 @layer components {
+
   /* Gradient backgrounds */
   .bg-gradient-primary {
-    background: linear-gradient(135deg, hsl(270 70% 55%) 0%, hsl(330 70% 55%) 100%);
+    background: var(--gradient-primary);
   }
 
   .bg-gradient-panic {
-    background: linear-gradient(135deg, hsl(0 85% 55%) 0%, hsl(0 85% 40%) 100%);
+    background: var(--gradient-panic);
   }
 
   .bg-gradient-recording {
-    background: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(0 85% 55%) 100%);
+    background: var(--gradient-recording);
   }
 
   .bg-gradient-safe {
-    background: linear-gradient(135deg, hsl(142 70% 45%) 0%, hsl(170 70% 45%) 100%);
+    background: var(--gradient-safe);
   }
 
   /* Glow effects */
   .glow-primary {
-    box-shadow: 0 0 40px hsla(270, 70%, 55%, 0.4);
+    box-shadow: var(--shadow-glow-primary);
   }
 
   .glow-panic {
-    box-shadow: 0 0 60px hsla(0, 85%, 55%, 0.5);
+    box-shadow: var(--shadow-glow-panic);
   }
 
   .glow-recording {
-    box-shadow: 0 0 40px hsla(38, 92%, 50%, 0.4);
-  }
-
-  .glow-safe {
-    box-shadow: 0 0 40px hsla(142, 70%, 45%, 0.4);
+    box-shadow: var(--shadow-glow-recording);
   }
 
   /* Pulse animations */
   .pulse-panic {
-    animation: pulse-panic 1.5s ease-in-out infinite;
+    animation: pulse-panic 2s ease-in-out infinite;
   }
 
-  .pulse-recording {
-    animation: pulse-recording 2s ease-in-out infinite;
-  }
-
-  .pulse-safe {
-    animation: pulse-safe 2s ease-in-out infinite;
-  }
-
-  /* Glass effect */
+  /* Glass effect Discreet */
   .glass {
-    background: hsla(270, 45%, 12%, 0.8);
+    background: hsla(0, 0%, 10%, 0.8);
     backdrop-filter: blur(12px);
-    border: 1px solid hsla(270, 30%, 25%, 0.5);
+    border: 1px solid hsla(0, 0%, 100%, 0.1);
+  }
+
+  /* Luminosity Effect Premium */
+  .luminosity-effect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .luminosity-effect::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, hsla(0, 0%, 100%, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
   }
 }
 
 @layer utilities {
-  /* Safe area padding for mobile */
   .safe-area-inset-top {
     padding-top: env(safe-area-inset-top);
   }
@@ -184,21 +184,14 @@
   .safe-area-inset-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
-
-  /* Text gradient */
-  .text-gradient {
-    background: linear-gradient(135deg, hsl(270 70% 55%) 0%, hsl(330 70% 55%) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
 }
 
 @keyframes pulse-panic {
-  0%, 100% {
+  100% {
     box-shadow: 0 0 20px hsla(0, 85%, 55%, 0.4);
     transform: scale(1);
   }
+
   50% {
     box-shadow: 0 0 60px hsla(0, 85%, 55%, 0.7);
     transform: scale(1.02);
@@ -206,19 +199,25 @@
 }
 
 @keyframes pulse-recording {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 15px hsla(38, 92%, 50%, 0.3);
   }
+
   50% {
     box-shadow: 0 0 35px hsla(38, 92%, 50%, 0.6);
   }
 }
 
 @keyframes pulse-safe {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px hsla(142, 70%, 45%, 0.3);
     transform: scale(1);
   }
+
   50% {
     box-shadow: 0 0 50px hsla(142, 70%, 45%, 0.5);
     transform: scale(1.02);
