@@ -24,7 +24,7 @@ export function RecordButton({ onClick, isRecording, disabled = false, isLoading
         ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
         ${isRecording
           ? 'bg-destructive text-white hover:bg-destructive/90 shadow-glow-recording'
-          : 'bg-secondary text-white hover:bg-secondary/90'
+          : 'bg-black text-white hover:bg-black/90'
         }
       `}
 

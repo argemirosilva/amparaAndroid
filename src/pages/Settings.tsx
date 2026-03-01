@@ -352,7 +352,7 @@ export default function SettingsPage() {
           onCancel={handlePasswordCancel}
           isValidating={isValidatingPassword}
         />
-        <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="min-h-screen bg-app-deep flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       </>
@@ -360,26 +360,19 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col safe-area-inset-top safe-area-inset-bottom">
+    <div className="min-h-screen bg-app-deep flex flex-col safe-area-inset-top safe-area-inset-bottom">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3"
+        className="sticky top-0 z-10 bg-background/70 backdrop-blur-md border-b border-border/70 px-4 pb-4"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
+          minHeight: 'calc(env(safe-area-inset-top) + 6.5rem)',
+        }}
       >
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/')}
-            className="h-9 w-9"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">Configurações</h1>
-          </div>
-
+        <div className="flex items-end h-full">
+          <h1 className="text-lg font-semibold">Configurações</h1>
         </div>
       </motion.div>
 
@@ -390,7 +383,7 @@ export default function SettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border rounded-lg p-6"
+          className="card-glass-dark rounded-2xl p-6"
         >
           <div className="flex items-center gap-2 mb-4">
             <Lock className="h-5 w-5 text-primary" />
@@ -409,7 +402,7 @@ export default function SettingsPage() {
                   onChange={(e) => setSenhaAtual(e.target.value)}
                   placeholder="Digite sua senha atual"
                   disabled={isChangingPassword}
-                  className="pr-10"
+                  className="pr-10 bg-background/70 border-border/80 focus-visible:ring-black"
                 />
                 <button
                   type="button"
@@ -432,7 +425,7 @@ export default function SettingsPage() {
                   onChange={(e) => setNovaSenha(e.target.value)}
                   placeholder="Digite a nova senha (mín. 6 caracteres)"
                   disabled={isChangingPassword}
-                  className="pr-10"
+                  className="pr-10 bg-background/70 border-border/80 focus-visible:ring-black"
                 />
                 <button
                   type="button"
@@ -455,7 +448,7 @@ export default function SettingsPage() {
                   onChange={(e) => setConfirmarSenha(e.target.value)}
                   placeholder="Digite a nova senha novamente"
                   disabled={isChangingPassword}
-                  className="pr-10"
+                  className="pr-10 bg-background/70 border-border/80 focus-visible:ring-black"
                 />
                 <button
                   type="button"
@@ -471,7 +464,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleChangePassword}
               disabled={isChangingPassword}
-              className="w-full bg-secondary hover:bg-secondary/90 text-white"
+              className="w-full rounded-xl bg-black hover:bg-black/90 text-white"
             >
               {isChangingPassword ? (
                 <>
@@ -490,7 +483,7 @@ export default function SettingsPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-card border border-border rounded-lg p-6"
+          className="card-glass-dark rounded-2xl p-6"
         >
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="h-5 w-5 text-primary" />
@@ -511,7 +504,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleSaveSchedule}
               disabled={isSavingSchedule}
-              className="w-full mt-4 bg-secondary hover:bg-secondary/90 text-white"
+              className="w-full mt-4 rounded-xl bg-black hover:bg-black/90 text-white"
             >
               {isSavingSchedule ? (
                 <>
@@ -526,6 +519,21 @@ export default function SettingsPage() {
         </motion.div>
 
 
+      </div>
+
+      {/* Bottom back button */}
+      <div
+        className="border-t border-border/70 bg-background/70 backdrop-blur-md px-4 pt-3"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+      >
+        <Button
+          variant="outline"
+          className="w-full h-11"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
       </div>
     </div>
   );

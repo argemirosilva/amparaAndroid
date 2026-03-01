@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, X, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getUserEmail } from '@/lib/api';
+import { getUserEmail, logoutMobile } from '@/lib/api';
 import { validatePassword } from '@/lib/api_settings';
 import { App } from '@capacitor/app';
 
@@ -26,7 +26,7 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!password.trim()) {
       setError('Digite sua senha');
       return;
@@ -34,7 +34,9 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
 
     const email = getUserEmail();
     if (!email) {
-      setError('Sessão inválida. Faça login novamente.');
+      // Se não tem email, a sessão já está inválida - força logout local
+      console.warn('[Logout] No email found - session already invalid, forcing local logout');
+      onConfirm();
       return;
     }
 
@@ -43,27 +45,46 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
 
     try {
       // Validate password and check for coercion
+      console.log('[Logout] Validating password...');
       const result = await validatePassword(password);
-      
+      console.log('[Logout] Validation result:', { hasError: !!result.error, error: result.error, hasData: !!result.data });
+
       if (result.error) {
-        // Se o erro for 401 (Sessão expirada), forçamos o logout local
-        if (result.error.includes('401') || result.error.includes('Sessão expirada')) {
-          console.warn('[Logout] Session expired during password validation, forcing local logout');
+        console.warn('[Logout] Validation returned error:', result.error);
+        // Se o erro for relacionado a sessão inválida, forçamos o logout local SEM chamar API
+        const errorLower = result.error.toLowerCase();
+        if (errorLower.includes('401') ||
+            errorLower.includes('403') ||
+            errorLower.includes('forbidden') ||
+            errorLower.includes('sessão') ||
+            errorLower.includes('session') ||
+            errorLower.includes('expirada') ||
+            errorLower.includes('expired') ||
+            errorLower.includes('inválida') ||
+            errorLower.includes('invalid') ||
+            errorLower.includes('device') ||
+            errorLower.includes('device_id') ||
+            errorLower.includes('dispositivo')) {
+          console.warn('[Logout] ✅ Session invalid detected - forcing local logout without API call');
+          // NÃO chama logoutMobile() porque a sessão já está morta no backend
           onConfirm();
           return;
         }
-        
+
+        console.warn('[Logout] Password incorrect or other error');
         setError('Senha incorreta');
         setIsLoading(false);
         return;
       }
 
       if (!result.data?.success) {
+        console.warn('[Logout] Validation success=false:', result.data);
         setError('Senha incorreta');
         setIsLoading(false);
         return;
       }
 
+      console.log('[Logout] ✅ Password validated successfully, loginTipo:', result.data.loginTipo);
       const isCoercion = result.data.loginTipo === 'coacao';
 
       setIsLoading(false);
@@ -80,11 +101,39 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
         }
         onClose();
       } else {
-        // Normal mode: proceed with actual logout
+        // Normal mode: call logout API first, then proceed with local cleanup
+        console.log('[Logout] Valid password - calling logout API');
+        try {
+          await logoutMobile();
+        } catch (error) {
+          console.warn('[Logout] API call failed, but proceeding with local logout:', error);
+        }
         onConfirm();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Logout] Error validating password:', error);
+
+      // Se a exceção for relacionada a sessão inválida, forçar logout SEM chamar API
+      const errorMsg = error?.message || error?.toString() || '';
+      const errorLower = errorMsg.toLowerCase();
+      if (errorLower.includes('401') ||
+          errorLower.includes('403') ||
+          errorLower.includes('forbidden') ||
+          errorLower.includes('sessão') ||
+          errorLower.includes('session') ||
+          errorLower.includes('expirada') ||
+          errorLower.includes('expired') ||
+          errorLower.includes('inválida') ||
+          errorLower.includes('invalid') ||
+          errorLower.includes('device') ||
+          errorLower.includes('device_id') ||
+          errorLower.includes('dispositivo')) {
+        console.warn('[Logout] Session invalid exception, forcing local logout without API call');
+        // NÃO chama logoutMobile() porque a sessão já está morta no backend
+        onConfirm();
+        return;
+      }
+
       setError('Erro ao verificar senha');
       setIsLoading(false);
     }

@@ -194,11 +194,11 @@ export function PendingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border">
+      <header
+        className="flex items-center justify-between px-4 pb-3 border-b border-border"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+      >
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
           <h1 className="text-lg font-semibold">Pendências</h1>
         </div>
 
@@ -307,6 +307,21 @@ export function PendingPage() {
           </div>
         )}
       </main>
+
+      {/* Bottom back button */}
+      <div
+        className="border-t border-border px-4 pt-3 bg-background/70 backdrop-blur-md"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+      >
+        <Button
+          variant="outline"
+          className="w-full h-11"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Voltar
+        </Button>
+      </div>
     </div>
   );
 }

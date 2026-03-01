@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Triangle, Menu, LogOut, X, Upload, Calendar, Wifi, WifiOff, Palette, Info, Settings } from 'lucide-react';
+import { Triangle, Menu, LogOut, X, Upload, Wifi, WifiOff, Info, Settings, Mic, Square } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { PanicButton } from '@/components/PanicButton';
@@ -27,6 +27,8 @@ import { useBackgroundServices } from '@/hooks/useBackgroundServices';
 import { hybridAudioTrigger } from '@/services/hybridAudioTriggerService';
 import { audioTriggerSingleton } from '@/services/audioTriggerSingleton';
 import { getMonitoringGateStatus } from '@/services/monitoringGateService';
+import { getSessionToken, getUserEmail } from '@/lib/api';
+import { getRefreshToken } from '@/services/sessionService';
 
 interface HomePageProps {
   onLogout: () => void;
@@ -180,8 +182,8 @@ export function HomePage({ onLogout }: HomePageProps) {
   // Phase 4: Auto-start audio monitoring on login (keeps app alive 24/7)
   // Only stops on logout
   useEffect(() => {
-    if (!hasAllRequired) {
-      console.log('[Home] Permissions not granted, skipping auto-start');
+    if (isPermissionsLoading) {
+      console.log('[Home] Permissions still loading, postponing auto-start');
       return;
     }
 
@@ -197,7 +199,13 @@ export function HomePage({ onLogout }: HomePageProps) {
     // - Foreground/background transitions
     console.log('[Home] Phase 4: Auto-starting hybrid audio trigger...');
     const timer = setTimeout(() => {
-      hybridAudioTrigger.start().catch(err => {
+      const startConfig = {
+        monitoringPeriods: validPeriods,
+        sessionToken: getSessionToken() || undefined,
+        refreshToken: getRefreshToken() || undefined,
+        emailUsuario: getUserEmail() || undefined,
+      };
+      hybridAudioTrigger.start(startConfig).catch(err => {
         console.error('[Home] Failed to auto-start hybrid audio trigger:', err);
         toast({
           title: "Erro ao iniciar monitoramento",
@@ -207,7 +215,29 @@ export function HomePage({ onLogout }: HomePageProps) {
       });
     }, 500);
     return () => clearTimeout(timer);
-  }, [hasAllRequired, toast, audioTrigger.isCapturing]);
+  }, [isPermissionsLoading, toast, validPeriods]);
+
+  // Re-send tokens to native when app resumes from background (session already active)
+  useEffect(() => {
+    import('@capacitor/app').then(({ App }) => {
+      const listener = App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+          console.log('[Home] 🔄 App resumed - re-sending tokens to native');
+          const sessionToken = getSessionToken();
+          const refreshToken = getRefreshToken();
+          const emailUsuario = getUserEmail();
+          if (sessionToken && emailUsuario) {
+            hybridAudioTrigger.setNativeConfig({
+              sessionToken,
+              refreshToken: refreshToken || undefined,
+              emailUsuario,
+            }).catch(err => console.error('[Home] Failed to update config on resume:', err));
+          }
+        }
+      });
+      return () => { listener.then(l => l.remove()); };
+    });
+  }, []);
 
   // Periodic check for monitoring period changes (every minute)
   // This ensures the app switches modes automatically when entering/exiting periods
@@ -292,12 +322,15 @@ export function HomePage({ onLogout }: HomePageProps) {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showPanicPulse, setShowPanicPulse] = useState(false);
+  const isRecordingEffective = recording.isRecording || appState.status === 'recording';
+  const menuControlHeightPx = 40;
+  const controlsVerticalOffsetPx = Math.round(menuControlHeightPx * 1.5);
 
   const handleRecordToggle = async () => {
     if (isRecordLoading) return; // Prevent multiple clicks
 
     // Se o pânico estiver ativo, não permite parar a gravação
-    if (panic.isPanicActive && recording.isRecording) {
+    if (panic.isPanicActive && isRecordingEffective) {
       setShowPanicPulse(true);
       setTimeout(() => setShowPanicPulse(false), 2000);
       toast({
@@ -310,7 +343,7 @@ export function HomePage({ onLogout }: HomePageProps) {
 
     setIsRecordLoading(true);
     try {
-      if (recording.isRecording) {
+      if (isRecordingEffective) {
         await recording.stopRecording();
         appState.setStatus('normal');
         toast({
@@ -318,14 +351,16 @@ export function HomePage({ onLogout }: HomePageProps) {
           description: `${recording.segmentsSent} segmentos enviados.`,
         });
       } else {
+        // Optimistic UI status to avoid delayed "Gravando" indication in meter.
+        appState.setStatus('recording');
         const success = await recording.startRecording();
         if (success) {
-          appState.setStatus('recording');
           toast({
             title: 'Gravação iniciada',
             description: 'O áudio está sendo enviado em tempo real.',
           });
         } else {
+          appState.setStatus('normal');
           toast({
             title: 'Erro ao iniciar gravação',
             description: 'Verifique as permissões do microfone.',
@@ -398,7 +433,7 @@ export function HomePage({ onLogout }: HomePageProps) {
   */
 
   return (
-    <div className="min-h-screen flex flex-col bg-background safe-area-inset-top safe-area-inset-bottom relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-app-deep safe-area-inset-top safe-area-inset-bottom relative overflow-hidden">
       <PasswordValidationDialog
         open={showPasswordDialog}
         onOpenChange={setShowPasswordDialog}
@@ -406,11 +441,14 @@ export function HomePage({ onLogout }: HomePageProps) {
         title="Confirmar Cancelamento"
         description="Digite sua senha para cancelar o modo pânico"
       />
-      <header className="flex items-center justify-between px-4 py-2 bg-background">
+      <header
+        className="flex items-center justify-between px-4 pb-2 bg-transparent"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+      >
 
         <div />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" style={{ marginTop: `${controlsVerticalOffsetPx}px` }}>
           {/* Connectivity indicator */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -489,12 +527,12 @@ export function HomePage({ onLogout }: HomePageProps) {
       <main className="flex-1 flex flex-col items-center p-6">
 
         {/* Top section: Audio meter with integrated monitoring status - ALWAYS VISIBLE */}
-        <div className="w-full max-w-sm flex flex-col items-center pt-4 mb-8">
+        <div className="w-full max-w-sm flex flex-col items-center pt-2 mb-8">
           <AudioTriggerMeter
             score={audioTrigger.metrics?.score ?? 0}
             isCapturing={audioTrigger.isCapturing}
             state={audioTrigger.state}
-            isRecording={recording.isRecording}
+            isRecording={isRecordingEffective}
             recordingDuration={recording.duration}
             recordingOrigin={recording.origemGravacao}
             dentroHorario={monitoring.dentroHorario}
@@ -510,11 +548,11 @@ export function HomePage({ onLogout }: HomePageProps) {
 
 
         {/* Center section: Stable layout with fixed positions */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[400px]">
+        <div className="flex-1 w-full max-w-sm flex flex-col items-center justify-center gap-4 min-h-[400px]">
 
           {/* Fixed Timer Area above Panic Button */}
           <div className="h-16 flex flex-col items-center justify-end pb-2">
-            {(recording.isRecording || panic.isPanicActive) && (
+            {(isRecordingEffective || panic.isPanicActive) && (
               <motion.div
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -527,7 +565,7 @@ export function HomePage({ onLogout }: HomePageProps) {
                 )}
               </motion.div>
             )}
-            {recording.isRecording && !panic.isPanicActive && (
+            {isRecordingEffective && !panic.isPanicActive && (
               <span className="text-[10px] font-medium text-destructive uppercase tracking-widest">
                 Gravando {recording.origemGravacao === 'automatico' ? '(Detector Ao Redor)' : '(Modo Manual)'}
               </span>
@@ -563,14 +601,42 @@ export function HomePage({ onLogout }: HomePageProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="h-[100px] flex items-center justify-center"
+            className="w-full mt-4"
           >
-            <RecordButton
-              onClick={handleRecordToggle}
-              isRecording={recording.isRecording}
-              disabled={panic.isActivating || panic.isSendingToServer}
-              isLoading={isRecordLoading}
-            />
+            <div className="card-glass-dark rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-background/55 flex items-center justify-center border border-border/60">
+                  <Mic className="w-5 h-5 text-foreground" />
+                </div>
+                <div>
+                  <p className="text-xl font-semibold text-foreground">Gravação</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isRecordingEffective ? 'Gravando agora' : 'Pronta para gravar'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleRecordToggle}
+                disabled={panic.isActivating || panic.isSendingToServer || isRecordLoading}
+                aria-label={isRecordingEffective ? 'Parar gravação' : 'Iniciar gravação manual'}
+                className={`rounded-full w-14 h-14 p-0 border-0 ${
+                  isRecordingEffective
+                    ? 'bg-black hover:bg-black/90 text-white'
+                    : 'btn-primary-neon hover:opacity-90 text-white'
+                }`}
+              >
+                {isRecordLoading ? (
+                  '...'
+                ) : isRecordingEffective ? (
+                  <Square className="w-5 h-5 fill-current" />
+                ) : (
+                  <span className="relative flex items-center justify-center w-6 h-6">
+                    <span className="absolute w-6 h-6 rounded-full border-2 border-white/90" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-white" />
+                  </span>
+                )}
+              </Button>
+            </div>
           </motion.div>
         </div>
 
@@ -594,7 +660,13 @@ export function HomePage({ onLogout }: HomePageProps) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25 }}
-            className="absolute right-0 top-0 bottom-0 w-72 bg-card border-l border-border p-6"
+            className="absolute right-0 top-0 bottom-0 w-72 card-glass-dark border-l border-border"
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top) + 1rem)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)',
+              paddingLeft: '1.5rem',
+              paddingRight: '1.5rem',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-8">
@@ -632,18 +704,6 @@ export function HomePage({ onLogout }: HomePageProps) {
               >
                 <Upload className="w-5 h-5" />
                 Enviar arquivo
-              </Button>
-
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3"
-                onClick={() => {
-                  navigate('/icon-selector');
-                  setMenuOpen(false);
-                }}
-              >
-                <Palette className="w-5 h-5" />
-                Alterar ícone do app
               </Button>
 
               <Button

@@ -214,30 +214,30 @@ export function WeeklyScheduleEditor({ initialSchedule, onScheduleChange }: Week
                   {editingDay === day ? (
                     <div className="space-y-3 bg-card border border-border p-3 rounded">
                       <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Início</Label>
+                        <div className="space-y-2 min-w-0">
+                          <Label className="text-xs font-medium">Início</Label>
                           <Input
                             type="time"
                             value={editingPeriod.inicio}
                             onChange={(e) => setEditingPeriod({ ...editingPeriod, inicio: e.target.value })}
-                            className="h-9"
+                            className="h-5 w-[60%] min-w-[64px] text-[10px] px-1"
                           />
                         </div>
-                        <div>
-                          <Label className="text-xs">Fim</Label>
+                        <div className="space-y-2 min-w-0">
+                          <Label className="text-xs font-medium">Fim</Label>
                           <Input
                             type="time"
                             value={editingPeriod.fim}
                             onChange={(e) => setEditingPeriod({ ...editingPeriod, fim: e.target.value })}
-                            className="h-9"
+                            className="h-5 w-[60%] min-w-[64px] text-[10px] px-1"
                           />
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                           size="sm"
                           onClick={() => handleSavePeriod(day)}
-                          className="flex-1"
+                          className="w-full sm:flex-1"
                         >
                           Salvar Período
                         </Button>
@@ -248,7 +248,7 @@ export function WeeklyScheduleEditor({ initialSchedule, onScheduleChange }: Week
                             setEditingDay(null);
                             setEditingPeriod({ inicio: '', fim: '' });
                           }}
-                          className="flex-1"
+                          className="w-full sm:flex-1"
                         >
                           Cancelar
                         </Button>
