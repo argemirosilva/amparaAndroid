@@ -3,6 +3,7 @@ package tech.orizon.ampara;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.util.Log;
 
 /**
@@ -22,7 +23,12 @@ public class KeepAliveAlarmReceiver extends BroadcastReceiver {
         serviceIntent.setAction("ACTION_EXECUTE_PING");
         
         try {
-            context.startService(serviceIntent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Android 8+: start as foreground service to avoid background-start restrictions
+                context.startForegroundService(serviceIntent);
+            } else {
+                context.startService(serviceIntent);
+            }
             Log.d(TAG, "KeepAliveService triggered successfully");
         } catch (Exception e) {
             Log.e(TAG, "Error starting KeepAliveService: " + e.getMessage());

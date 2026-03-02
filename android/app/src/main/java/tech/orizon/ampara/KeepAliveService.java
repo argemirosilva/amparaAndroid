@@ -46,6 +46,8 @@ public class KeepAliveService extends Service {
     private static final String CHANNEL_ID = "ampara_keepalive";
     private static final int NOTIFICATION_ID = 9999;
     private static final String WAKELOCK_TAG = "Ampara::KeepAliveLock";
+    // Trilha 1: evitar wakelock infinito em caso de crash
+    private static final long WAKELOCK_TIMEOUT_MS = 2 * 60 * 1000L; // 2 min
 
     // Tempo máximo de vida do service antes de restart (5 minutos para evitar
     // timeout do dataSync)
@@ -754,8 +756,8 @@ public class KeepAliveService extends Service {
                             PowerManager.PARTIAL_WAKE_LOCK,
                             WAKELOCK_TAG);
                 }
-                wakeLock.acquire();
-                Log.d(TAG, "WakeLock acquired and held: " + wakeLock.isHeld());
+                wakeLock.acquire(WAKELOCK_TIMEOUT_MS);
+                Log.d(TAG, "WakeLock acquired (timeout ms=" + WAKELOCK_TIMEOUT_MS + ") held=" + wakeLock.isHeld());
             }
         } catch (Exception e) {
             Log.e(TAG, "Error acquiring WakeLock", e);

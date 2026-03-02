@@ -18,6 +18,8 @@ public class UploadQueue {
     private AudioUploader uploader;
     private BlockingQueue<UploadTask> queue;
     private Thread workerThread;
+    // De-dupe in-flight tasks to avoid enqueuing the same file multiple times
+    private final java.util.Set<String> inFlightPaths = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private volatile boolean isRunning = false;
     private AtomicInteger pendingCount = new AtomicInteger(0);
     private AtomicInteger successCount = new AtomicInteger(0);
@@ -101,6 +103,17 @@ public class UploadQueue {
      * Add upload task to queue
      */
     public void enqueue(UploadTask task) {
+        if (task == null || task.filePath == null) {
+            Log.w(TAG, "Ignoring enqueue: null task/filePath");
+            return;
+        }
+
+        // Prevent duplicate enqueues for the same file while it's already in-flight
+        if (!inFlightPaths.add(task.filePath)) {
+            Log.d(TAG, "Duplicate task ignored (already in-flight): " + task.filePath);
+            return;
+        }
+
         try {
             queue.put(task);
             pendingCount.incrementAndGet();
@@ -110,6 +123,7 @@ public class UploadQueue {
                     task.segmentIndex, queue.size()));
 
         } catch (InterruptedException e) {
+            inFlightPaths.remove(task.filePath);
             Log.e(TAG, "Error enqueueing task", e);
         }
     }
@@ -130,6 +144,7 @@ public class UploadQueue {
                 java.io.File audioFile = new java.io.File(task.filePath);
                 if (!audioFile.exists()) {
                     Log.w(TAG, "File no longer exists, skipping: " + task.filePath);
+                    inFlightPaths.remove(task.filePath);
                     pendingCount.decrementAndGet();
                     notifyProgress();
                     continue;
@@ -181,6 +196,9 @@ public class UploadQueue {
                     Log.w(TAG, "Task removed from memory queue but remains on disk for future retry: " + task.filePath);
                 }
 
+                // Task finished (success or failure) -> allow future retries
+                inFlightPaths.remove(task.filePath);
+
             } catch (InterruptedException e) {
                 if (!isRunning)
                     break;
@@ -188,6 +206,9 @@ public class UploadQueue {
             } catch (Exception e) {
                 Log.e(TAG, "Unexpected error in queue processing", e);
                 if (task != null) {
+                    if (task.filePath != null) {
+                        inFlightPaths.remove(task.filePath);
+                    }
                     pendingCount.decrementAndGet();
                     failureCount.incrementAndGet();
                     notifyProgress();
