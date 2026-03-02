@@ -2,6 +2,7 @@ package tech.orizon.ampara.plugins;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.util.Log;
 
 import com.getcapacitor.JSObject;
@@ -50,7 +51,12 @@ public class PanicPlugin extends Plugin {
             intent.setAction("PANIC_ACTIVATED");
             intent.putExtra("protocolNumber", protocolNumber);
             intent.putExtra("activationType", activationType);
-            getContext().startService(intent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Android 8+: avoid background service start restrictions
+                getContext().startForegroundService(intent);
+            } else {
+                getContext().startService(intent);
+            }
             
             JSObject result = new JSObject();
             result.put("success", true);
@@ -79,7 +85,12 @@ public class PanicPlugin extends Plugin {
             Intent intent = new Intent(getContext(), AudioTriggerService.class);
             intent.setAction("PANIC_DEACTIVATED");
             intent.putExtra("cancelType", cancelType);
-            getContext().startService(intent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Android 8+: avoid background service start restrictions
+                getContext().startForegroundService(intent);
+            } else {
+                getContext().startService(intent);
+            }
             
             JSObject result = new JSObject();
             result.put("success", true);

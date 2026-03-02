@@ -50,6 +50,10 @@ public class AudioTriggerService extends Service {
     private static final String CHANNEL_ID = "AudioTriggerChannel";
     private static final int NOTIFICATION_ID = 1001;
 
+    // Trilha 1: segurança de energia/retry
+    private static final long WAKELOCK_TIMEOUT_MS = 2 * 60 * 1000L; // 2 min
+    private static final long UPLOAD_RETRY_INTERVAL_MS = 5 * 60 * 1000L; // 5 min
+
     // Microphone state machine for mutual exclusion
     private enum MicrophoneState {
         IDLE, // Service not started
@@ -89,11 +93,16 @@ public class AudioTriggerService extends Service {
     private int frameCounter = 0;
     private int aggregationCounter = 0;
     private long lastDiagnosticLog = 0;
+    private long lastWakeLockCheck = 0;
     private long manualStopCooldownUntil = 0;
 
     // Simulated aggregations during recording (when AudioRecord is paused)
     private android.os.Handler recordingHandler;
     private Runnable recordingAggregationRunnable;
+
+    // Trilha 1: retry periódico de uploads pendentes (offline/timeout)
+    private final android.os.Handler uploadRetryHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable uploadRetryRunnable;
 
     @Override
     public void onCreate() {
@@ -168,10 +177,29 @@ public class AudioTriggerService extends Service {
         // Register connectivity listener
         registerNetworkCallback();
 
-        // Clear pending uploads from previous sessions to avoid accumulation
+        // Trilha 1: NÃO apagar pendências. Em vez disso, retentar o que já está em disco.
         if (uploadQueue != null) {
             uploadQueue.start();
-            uploadQueue.clearPendingUploads();
+            // defaultSessionId/origem só são usados se o parse do filename falhar
+            uploadQueue.retryPendingUploads("recovery", currentOrigemGravacao);
+
+            // Retry periódico (ex.: aparelho ficou offline por muito tempo)
+            uploadRetryRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (uploadQueue != null) {
+                            uploadQueue.retryPendingUploads("recovery", currentOrigemGravacao);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error during periodic upload retry", e);
+                    } finally {
+                        uploadRetryHandler.removeCallbacks(this);
+                        uploadRetryHandler.postDelayed(this, UPLOAD_RETRY_INTERVAL_MS);
+                    }
+                }
+            };
+            uploadRetryHandler.postDelayed(uploadRetryRunnable, UPLOAD_RETRY_INTERVAL_MS);
         }
     }
 
@@ -543,6 +571,12 @@ public class AudioTriggerService extends Service {
 
         while (isRunning && audioRecord != null) {
             try {
+                // Trilha 1: renovar wakelock com baixo overhead
+                long now = System.currentTimeMillis();
+                if (now - lastWakeLockCheck > 10000) { // 10s
+                    acquireWakeLock();
+                    lastWakeLockCheck = now;
+                }
                 // Read one frame
                 int samplesRead = audioRecord.read(frameBuffer, 0, frameSamples);
 
@@ -984,20 +1018,32 @@ public class AudioTriggerService extends Service {
     }
 
     private void acquireWakeLock() {
-        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-        if (powerManager != null) {
-            wakeLock = powerManager.newWakeLock(
-                    PowerManager.PARTIAL_WAKE_LOCK,
-                    "Ampara::AudioTriggerWakeLock");
-            wakeLock.acquire();
-            Log.d(TAG, "WakeLock acquired");
+        try {
+            PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+            if (powerManager != null && (wakeLock == null || !wakeLock.isHeld())) {
+                if (wakeLock == null) {
+                    wakeLock = powerManager.newWakeLock(
+                            PowerManager.PARTIAL_WAKE_LOCK,
+                            "Ampara::AudioTriggerWakeLock");
+                }
+                // Trilha 1: sempre com timeout (evita wakelock infinito em crashes)
+                wakeLock.acquire(WAKELOCK_TIMEOUT_MS);
+                Log.d(TAG, "WakeLock acquired (timeout ms=" + WAKELOCK_TIMEOUT_MS + ")");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error acquiring WakeLock", e);
         }
     }
 
     private void releaseWakeLock() {
-        if (wakeLock != null && wakeLock.isHeld()) {
-            wakeLock.release();
-            Log.d(TAG, "WakeLock released");
+        try {
+            if (wakeLock != null && wakeLock.isHeld()) {
+                wakeLock.release();
+                wakeLock = null;
+                Log.d(TAG, "WakeLock released");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error releasing WakeLock", e);
         }
     }
 
@@ -1018,6 +1064,12 @@ public class AudioTriggerService extends Service {
         // Stop upload queue
         if (uploadQueue != null) {
             uploadQueue.stop();
+        }
+
+        // Cancelar retry periódico
+        if (uploadRetryRunnable != null) {
+            uploadRetryHandler.removeCallbacks(uploadRetryRunnable);
+            uploadRetryRunnable = null;
         }
 
         stopAudioCapture();
@@ -1355,10 +1407,10 @@ public class AudioTriggerService extends Service {
                     @Override
                     public void onAvailable(Network network) {
                         super.onAvailable(network);
-                        Log.i(TAG, "Internet connection available - triggering upload scan");
+                        Log.i(TAG, "Internet connection available - triggering upload retry scan");
                         if (uploadQueue != null) {
                             uploadQueue.start();
-                            uploadQueue.autoScanAndEnqueue();
+                            uploadQueue.retryPendingUploads("recovery", currentOrigemGravacao);
                         }
                     }
                 };
